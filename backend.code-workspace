@@ -1,0 +1,32 @@
+{
+  "folders": [
+    {
+      "path": "backend"
+    }
+  ],
+  "extensions": {
+    "recommendations": [
+      "ms-python.black-formatter",
+      "ms-python.isort",
+      "ms-python.pylint",
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "dotjoshjohnson.xml"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Run dev server",
+        "command": ".venv/Scripts/Activate.ps1; py app.py",
+        "type": "shell",
+        "args": [],
+        "presentation": {
+          "reveal": "always"
+        },
+        "group": "build"
+      }
+    ]
+  }
+}
