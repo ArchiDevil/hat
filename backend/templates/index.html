@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Backend</title>
+</head>
+
+<body>
+    <h1>Process TMX matches</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <h2>Upload files</h2>
+        <label for="tmx-file">Select a TMX file:</label>
+        <input id="tmx-file" name="tmx-file" type="file" accept=".tmx" />
+        <br />
+        <label for="xliff-file">Select a XLIFF file:</label>
+        <input id="xliff-file" name="xliff-file" type="file" accept=".xliff" />
+        <button type="submit">Submit</button>
+    </form>
+</body>
+
+</html>
