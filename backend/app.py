@@ -3,6 +3,7 @@ import sqlite3
 from quart import Quart, render_template, request, abort
 
 from tmx import extract_tmx_content
+from xliff import extract_xliff_content
 
 
 def create_app(mode="Production"):
@@ -32,7 +33,7 @@ def create_app(mode="Production"):
         ]
 
         # extract TMX pairs
-        pairs = extract_tmx_content("".join(tmx_data))
+        tmx_data = extract_tmx_content(" ".join(tmx_data))
 
         # put them into an sqlite database
         db_path = Path(app.instance_path) / "tmx.db"
@@ -54,11 +55,12 @@ def create_app(mode="Production"):
             """
             INSERT INTO tmx VALUES (?, ?)
             """,
-            pairs,
+            tmx_data,
         )
         conn.commit()
 
         # parse XLIFF file
+        xliff_data = extract_xliff_content(" ".join(xliff_data))
 
         # find original segments in a DB and put them into XLIFF
 
@@ -66,7 +68,7 @@ def create_app(mode="Production"):
 
         return await render_template(
             "upload.html",
-            tmx_data=pairs,
+            tmx_data=tmx_data,
             xliff_data=xliff_data,
         )
 

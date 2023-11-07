@@ -4,10 +4,9 @@ from xml.etree import ElementTree
 def extract_tmx_content(
     content: str, orig_lang="en", trans_lang="ru"
 ) -> list[tuple[str, str]]:
-    # this method reads and extract pairs from a TMX file content
-    # returns a list of tuples
     root = ElementTree.fromstring(content)
-    pairs: list[tuple[str, str]] = []
+
+    segments: list[tuple[str, str]] = []
     for tu in root.iter("tu"):
         orig_tuv = tu.find(f"./tuv[@lang='{orig_lang}']")
         trans_tuv = tu.find(f"./tuv[@lang='{trans_lang}']")
@@ -30,6 +29,6 @@ def extract_tmx_content(
             if seg.text is not None:
                 translation += seg.text
 
-        pairs.append((original, translation))
+        segments.append((original, translation))
 
-    return pairs
+    return segments
