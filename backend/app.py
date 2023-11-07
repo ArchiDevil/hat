@@ -1,3 +1,5 @@
+from pathlib import Path
+import sqlite3
 from quart import Quart, render_template, request, abort
 
 from tmx import extract_tmx_content
@@ -6,6 +8,9 @@ from tmx import extract_tmx_content
 def create_app(mode="Production"):
     app = Quart(__name__)
     app.config.from_object(f"settings.{mode}")
+
+    if not Path(app.instance_path).exists():
+        Path(app.instance_path).mkdir(parents=True)
 
     @app.route("/")
     async def index():
@@ -26,7 +31,38 @@ def create_app(mode="Production"):
             line.decode(encoding="utf-8").strip() for line in xliff_data.readlines()
         ]
 
+        # extract TMX pairs
         pairs = extract_tmx_content("".join(tmx_data))
+
+        # put them into an sqlite database
+        db_path = Path(app.instance_path) / "tmx.db"
+        if not db_path.exists():
+            db_path.touch()
+
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute("DROP TABLE IF EXISTS tmx")
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tmx (
+                source TEXT,
+                target TEXT
+            )
+            """
+        )
+        c.executemany(
+            """
+            INSERT INTO tmx VALUES (?, ?)
+            """,
+            pairs,
+        )
+        conn.commit()
+
+        # parse XLIFF file
+
+        # find original segments in a DB and put them into XLIFF
+
+        # provide new XLIFF content
 
         return await render_template(
             "upload.html",
