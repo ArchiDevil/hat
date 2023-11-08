@@ -60,21 +60,45 @@ def create_app(mode="Production"):
         conn.commit()
 
         # parse XLIFF file
-        xliff_data = extract_xliff_content(" ".join(xliff_data))
+        xliff_content = extract_xliff_content(" ".join(xliff_data))
 
         # find original segments in a DB and put them into XLIFF
+        originals = 0
+        matches = 0
+        for segment in xliff_content.segments():
+            orig = segment.original
+            originals += 1
+            if not orig:
+                continue
+
+            c.execute(
+                """
+                SELECT target FROM tmx WHERE source = ? LIMIT 1
+                """,
+                (orig,),
+            )
+            result = c.fetchall()
+            if not result:
+                continue
+
+            segment.translation = result[0][0]
+            matches += 1
+
+        c.close()
+        conn.close()
 
         # provide new XLIFF content
 
         return await render_template(
             "upload.html",
             tmx_data=tmx_data,
-            xliff_data=xliff_data,
+            xliff_data=xliff_content,
+            originals=originals if originals else 1,
+            matches=matches,
         )
 
     return app
 
 
 if __name__ == "__main__":
-    app = create_app("Development")
-    app.run(debug=True)
+    create_app("Development").run(debug=True)

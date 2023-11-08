@@ -2,16 +2,20 @@
 <html lang="en">
 
 <body>
-    <p>TMX DATA:</p>
+    <p>Original segments: {{ originals }}</p>
+    <p>Matched segments: {{ matches }}</p>
+    <p>Match percent: {{ matches / originals }}</p>
+
+    <!-- <p>TMX DATA:</p>
     <ul>
         {% for line in tmx_data %}
         <li>{{line}}</li>
         {% endfor %}
-    </ul>
+    </ul> -->
 
     <p>XLIFF DATA</p>
     <ul>
-        {% for line in xliff_data %}
+        {% for line in xliff_data.segments() %}
         <li>{{line}}</li>
         {% endfor %}
     </ul>
