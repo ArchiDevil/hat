@@ -1,6 +1,5 @@
 from typing import Optional
-from xml.etree import ElementTree
-from xml.etree.ElementTree import Element
+from lxml import etree
 
 
 class XliffSegment:
@@ -51,7 +50,7 @@ class XliffSegment:
 
 
 class XliffData:
-    def __init__(self, segments: list[XliffSegment], root: Element) -> None:
+    def __init__(self, segments: list[XliffSegment], root: etree._Element) -> None:
         self.__segments = segments
         self.__root = root
 
@@ -60,7 +59,7 @@ class XliffData:
         return self.__segments
 
     @property
-    def xliff_file(self) -> Element:
+    def xliff_file(self):
         return self.__root
 
     def commit(self) -> None:
@@ -70,7 +69,7 @@ class XliffData:
             if not segment.dirty:
                 continue
 
-            node = self.__root.find(f'id="{segment.id_}"')
+            node = self.__root.find(f'id="{segment.id_}"', namespaces=self.__root.nsmap)
 
             # this is actually a critical error and should never happen!
             assert node, "Unable to find node"
@@ -82,33 +81,33 @@ class XliffData:
 
     def write(self) -> None:
         # TODO: temporary solution, should be replaced with something more robust
-        et = ElementTree.ElementTree(self.__root)
+        et: etree._ElementTree = etree.ElementTree(self.__root)
         et.write(
-            "output.xliff",
-            encoding="utf-8",
-            xml_declaration=True,
-            default_namespace="urn:oasis:names:tc:xliff:document:1.2",
+            "output.xliff", pretty_print=True, xml_declaration=True, encoding="utf-8"
         )
 
 
 # this is 1.2 version parser as SmartCAT supports only this version
-def extract_xliff_content(content: str) -> XliffData:
-    root = ElementTree.fromstring(content)
+def extract_xliff_content(content: bytes) -> XliffData:
+    root: etree._Element = etree.fromstring(
+        content, parser=etree.XMLParser(recover=True)
+    )
 
     version = root.attrib.get("version")
     if not version or version != "1.2":
         raise RuntimeError("Error: XLIFF version is not supported")
 
-    # TODO: P1 support XLIFF namespace urn:oasis:names:tc:xliff:document:1.2
-    # TODO: P2 support XLIFFs without namespaces
     # TODO: P3 support multi-file XLIFFs
 
+    # The default namespace for XLIFF is a urn:oasis:names:tc:xliff:document:1.2
+    # but it can be omitted in the document with lxml
+
     segments: list[XliffSegment] = []
-    for unit in root.iter("{urn:oasis:names:tc:xliff:document:1.2}trans-unit"):
+    for unit in root.iter("{*}trans-unit"):
         segment_id = unit.attrib.get("id")
         approved = unit.attrib.get("approved") == "yes"
-        src_segment = unit.find("{urn:oasis:names:tc:xliff:document:1.2}source")
-        tgt_segment = unit.find("{urn:oasis:names:tc:xliff:document:1.2}target")
+        src_segment = unit.find("{*}source")
+        tgt_segment = unit.find("{*}target")
 
         if not segment_id:
             print("Error: <unit> does not have id attribute", unit.text)
