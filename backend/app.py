@@ -65,7 +65,7 @@ def create_app(mode="Production"):
         # find original segments in a DB and put them into XLIFF
         originals = 0
         matches = 0
-        for segment in xliff_content.segments():
+        for segment in xliff_content.segments:
             orig = segment.original
             originals += 1
             if not orig:

@@ -51,9 +51,9 @@ class XliffSegment:
 
 
 class XliffData:
-    def __init__(self, segments: list[XliffSegment], xliff_file: Element) -> None:
+    def __init__(self, segments: list[XliffSegment], root: Element) -> None:
         self.__segments = segments
-        self.__xliff_file = xliff_file
+        self.__root = root
 
     @property
     def segments(self) -> list[XliffSegment]:
@@ -61,7 +61,7 @@ class XliffData:
 
     @property
     def xliff_file(self) -> Element:
-        return self.__xliff_file
+        return self.__root
 
     def commit(self) -> None:
         # go over segments and apply changes to translation and accepted attributes
@@ -70,7 +70,25 @@ class XliffData:
             if not segment.dirty:
                 continue
 
-        # TODO: find node and update it
+            node = self.__root.find(f'id="{segment.id_}"')
+
+            # this is actually a critical error and should never happen!
+            assert node, "Unable to find node"
+            node.attrib["approved"] = "yes" if segment.approved else "no"
+
+            target_node = node.find("target")
+            assert target_node, "Unable to find target node"
+            target_node.text = segment.translation
+
+    def write(self) -> None:
+        # TODO: temporary solution, should be replaced with something more robust
+        et = ElementTree.ElementTree(self.__root)
+        et.write(
+            "output.xliff",
+            encoding="utf-8",
+            xml_declaration=True,
+            default_namespace="urn:oasis:names:tc:xliff:document:1.2",
+        )
 
 
 # this is 1.2 version parser as SmartCAT supports only this version
@@ -81,8 +99,9 @@ def extract_xliff_content(content: str) -> XliffData:
     if not version or version != "1.2":
         raise RuntimeError("Error: XLIFF version is not supported")
 
-    # TODO: support XLIFF namespace urn:oasis:names:tc:xliff:document:1.2
-    # TODO: support XLIFFs without namespaces
+    # TODO: P1 support XLIFF namespace urn:oasis:names:tc:xliff:document:1.2
+    # TODO: P2 support XLIFFs without namespaces
+    # TODO: P3 support multi-file XLIFFs
 
     segments: list[XliffSegment] = []
     for unit in root.iter("{urn:oasis:names:tc:xliff:document:1.2}trans-unit"):
