@@ -115,11 +115,11 @@ def extract_xliff_content(content: bytes) -> XliffData:
 
         segment_id = int(segment_id)
 
-        if src_segment is None or not src_segment.text:
+        if src_segment is None:
             print("Error: <unit> does not have <source>", unit.text)
             continue
 
-        if tgt_segment is None or not tgt_segment.text:
+        if tgt_segment is None:
             print("Error: <unit> does not have <target>", unit.text)
             continue
 
