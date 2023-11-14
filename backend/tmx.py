@@ -29,13 +29,13 @@ def extract_tmx_content(
         original, translation = "", ""
         # find <seg> in orig_tuv
         for seg in orig_tuv.iter("seg"):
-            if seg.text is not None:
-                original += seg.text
+            text_iter = list(seg.itertext())
+            original = "".join(text_iter)
 
         # find <seg> in trans_tuv
         for seg in trans_tuv.iter("seg"):
-            if seg.text is not None:
-                translation += seg.text
+            text_iter = list(seg.itertext())
+            translation = "".join(text_iter)
 
         segments.append((original, translation))
 
