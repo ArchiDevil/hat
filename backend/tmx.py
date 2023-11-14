@@ -1,6 +1,11 @@
 from lxml import etree
 
 
+def __parse_seg(seg: etree._Element) -> str:
+    text_iter = list(seg.itertext())
+    return "".join(text_iter)
+
+
 def extract_tmx_content(
     content: bytes, orig_lang="en", trans_lang="ru"
 ) -> list[tuple[str, str]]:
@@ -28,15 +33,21 @@ def extract_tmx_content(
 
         original, translation = "", ""
         # find <seg> in orig_tuv
-        for seg in orig_tuv.iter("seg"):
-            text_iter = list(seg.itertext())
-            original = "".join(text_iter)
+        seg = orig_tuv.find("seg")
+        if seg is None:
+            raise RuntimeError(
+                f"Malformed XML: original <tuv> does not have <seg>, {tu.text}"
+            )
 
-        # find <seg> in trans_tuv
-        for seg in trans_tuv.iter("seg"):
-            text_iter = list(seg.itertext())
-            translation = "".join(text_iter)
+        original = __parse_seg(seg)
 
+        seg = trans_tuv.find("seg")
+        if seg is None:
+            raise RuntimeError(
+                f"Malformed XML: translation <tuv> does not have <seg>, {tu.text}"
+            )
+
+        translation = __parse_seg(seg)
         segments.append((original, translation))
 
     return segments
