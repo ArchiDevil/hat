@@ -89,9 +89,8 @@ class XliffData:
             trans_unit.attrib["approved"] = "yes" if segment.approved else "no"
 
             target_node = trans_unit.find(".//target", namespaces=self.__root.nsmap)
-            print(target_node)
-
             assert target_node is not None, "Unable to find target node"
+
             target_node.text = segment.translation
             target_node.attrib["state"] = segment.state
 
