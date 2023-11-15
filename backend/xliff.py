@@ -4,13 +4,19 @@ from lxml import etree
 
 class XliffSegment:
     def __init__(
-        self, id_: int, approved: Optional[bool], source: str, target: str
+        self,
+        id_: int,
+        approved: Optional[bool],
+        source: str,
+        target: str,
+        state: Optional[str],
     ) -> None:
         self.__id = id_
         self.__approved = approved if approved else False
         self.__source = source
         self.__target = target
         self.__dirty = False
+        self.__state = state
 
     @property
     def id_(self) -> int:
@@ -29,12 +35,17 @@ class XliffSegment:
         return self.__target
 
     @property
+    def state(self) -> Optional[str]:
+        return self.__state
+
+    @property
     def dirty(self) -> bool:
         return self.__dirty
 
     @translation.setter
     def translation(self, value: str) -> None:
         self.__target = value
+        self.__state = "translated"
         self.__dirty = True
 
     @approved.setter
@@ -69,15 +80,20 @@ class XliffData:
             if not segment.dirty:
                 continue
 
-            node = self.__root.find(f'id="{segment.id_}"', namespaces=self.__root.nsmap)
+            trans_unit = self.__root.find(
+                f'.//trans-unit[@id="{segment.id_}"]', namespaces=self.__root.nsmap
+            )
 
             # this is actually a critical error and should never happen!
-            assert node, "Unable to find node"
-            node.attrib["approved"] = "yes" if segment.approved else "no"
+            assert trans_unit is not None, "Unable to find node"
+            trans_unit.attrib["approved"] = "yes" if segment.approved else "no"
 
-            target_node = node.find("target")
-            assert target_node, "Unable to find target node"
+            target_node = trans_unit.find(".//target", namespaces=self.__root.nsmap)
+            print(target_node)
+
+            assert target_node is not None, "Unable to find target node"
             target_node.text = segment.translation
+            target_node.attrib["state"] = segment.state
 
     def write(self) -> None:
         # TODO: temporary solution, should be replaced with something more robust
@@ -106,8 +122,8 @@ def extract_xliff_content(content: bytes) -> XliffData:
     for unit in root.iter("{*}trans-unit"):
         segment_id = unit.attrib.get("id")
         approved = unit.attrib.get("approved") == "yes"
-        src_segment = unit.find("{*}source")
-        tgt_segment = unit.find("{*}target")
+        src_segment = unit.find("source", namespaces=root.nsmap)
+        tgt_segment = unit.find("target", namespaces=root.nsmap)
 
         if not segment_id:
             print("Error: <unit> does not have id attribute", unit.text)
@@ -124,7 +140,13 @@ def extract_xliff_content(content: bytes) -> XliffData:
             continue
 
         segments.append(
-            XliffSegment(segment_id, approved, src_segment.text, tgt_segment.text)
+            XliffSegment(
+                segment_id,
+                approved,
+                src_segment.text,
+                tgt_segment.text,
+                tgt_segment.attrib.get("state"),
+            )
         )
 
     return XliffData(segments, root)
