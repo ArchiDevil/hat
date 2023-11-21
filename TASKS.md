@@ -4,9 +4,9 @@
 
 - Upload page: DONE
 - Process TMX file: DONE
-- Process XLIFF file: IN PROGRESS
-- Put data into new XLIFF file: NOT STARTED
-- Take ID and Approved attributes into account: NOT STARTED
+- Process XLIFF file: DONE
+- Take ID and Approved attributes into account: DONE
+- Put data into new XLIFF file: DONE
 - Put file to download: NOT STARTED
 
 ## R2 - XLIFF to multiple TMX with persistent DB
