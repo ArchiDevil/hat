@@ -23,15 +23,11 @@ def extract_tmx_content(
 
     segments: list[tuple[str, str]] = []
     for tu in root.iter("tu"):
-        for tuv in tu.iter('tuv'):
-            pass
+        orig_search_string = ".//tuv[@lang='en' or @xml:lang='en']"
+        trans_search_string = ".//tuv[@lang='ru' or @xml:lang='ru']"
+        orig_tuv: etree._Element | None = tu.xpath(orig_search_string, namespaces=nsmap)
+        trans_tuv: etree._Element | None = tu.xpath(trans_search_string, namespaces=nsmap)
 
-        orig_tuv: etree._Element | None = tu.find(
-            ".//tuv[@lang='en'] or .//tuv[@xml:lang='en']", namespaces=nsmap
-        )
-        trans_tuv: etree._Element | None = tu.find(
-            ".//tuv[@lang='ru'] or .//tuv[@xml:lang='ru']", namespaces=nsmap
-        )
         if orig_tuv is None:
             print("Error: original <tu> does not have specified language", tu.text)
             continue
@@ -39,6 +35,9 @@ def extract_tmx_content(
         if trans_tuv is None:
             print("Error: translation <tu> does not have specified language", tu.text)
             continue
+
+        orig_tuv = orig_tuv[0]
+        trans_tuv = trans_tuv[0]
 
         original, translation = "", ""
         # find <seg> in orig_tuv
