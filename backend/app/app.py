@@ -19,21 +19,18 @@ def create_app(mode="Production"):
 
     @app.post("/upload")
     async def upload():
-        tmx_data = (await request.files).get("tmx-file")
-        xliff_data = (await request.files).get("xliff-file")
+        files = await request.files
+        tmx_data = files.get("tmx-file", None)
+        xliff_data = files.get("xliff-file", None)
 
         if not tmx_data or not xliff_data:
             abort(400, "Missing tmx or xliff file")
 
-        tmx_data = [
-            line.decode(encoding="utf-8").strip() for line in tmx_data.readlines()
-        ]
-        xliff_data = [
-            line.decode(encoding="utf-8").strip() for line in xliff_data.readlines()
-        ]
+        tmx_data = tmx_data.read()
+        xliff_data = xliff_data.read()
 
         # extract TMX pairs
-        tmx_data = extract_tmx_content(" ".join(tmx_data))
+        tmx_data = extract_tmx_content(tmx_data)
 
         # put them into an sqlite database
         db_path = Path(app.instance_path) / "tmx.db"
@@ -60,7 +57,7 @@ def create_app(mode="Production"):
         conn.commit()
 
         # parse XLIFF file
-        xliff_content = extract_xliff_content(" ".join(xliff_data))
+        xliff_content = extract_xliff_content(xliff_data)
 
         # find original segments in a DB and put them into XLIFF
         originals = 0
@@ -82,6 +79,7 @@ def create_app(mode="Production"):
                 continue
 
             segment.translation = result[0][0]
+            segment.approved = True
             matches += 1
 
         c.close()

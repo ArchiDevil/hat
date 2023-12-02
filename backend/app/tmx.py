@@ -14,15 +14,24 @@ def extract_tmx_content(
     )
 
     version = root.attrib["version"]
-    if not version or version != "1.4":
+    if not version or version not in ["1.1", "1.4"]:
         raise RuntimeError("Unsupported TMX version")
 
-    nsmap = {"xml": "http://www.w3.org/XML/1998/namespace"}
+    nsmap = {
+        "xml": "http://www.w3.org/XML/1998/namespace",
+    }
 
     segments: list[tuple[str, str]] = []
     for tu in root.iter("tu"):
-        orig_tuv = tu.find(f".//tuv[@xml:lang='{orig_lang}']", namespaces=nsmap)
-        trans_tuv = tu.find(f".//tuv[@xml:lang='{trans_lang}']", namespaces=nsmap)
+        for tuv in tu.iter('tuv'):
+            pass
+
+        orig_tuv: etree._Element | None = tu.find(
+            ".//tuv[@lang='en'] or .//tuv[@xml:lang='en']", namespaces=nsmap
+        )
+        trans_tuv: etree._Element | None = tu.find(
+            ".//tuv[@lang='ru'] or .//tuv[@xml:lang='ru']", namespaces=nsmap
+        )
         if orig_tuv is None:
             print("Error: original <tu> does not have specified language", tu.text)
             continue
