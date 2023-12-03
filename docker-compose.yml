@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      dockerfile: backend.Dockerfile
+      context: .
+    restart: always
+
+  proxy:
+    build:
+      dockerfile: proxy.Dockerfile
+      context: .
+    ports:
+      - 80:80
+    depends_on:
+      - backend
+    restart: always

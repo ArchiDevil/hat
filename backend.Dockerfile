@@ -6,4 +6,6 @@ COPY ./backend/requirements.txt /app/requirements.txt
 WORKDIR /app
 RUN pip install -r ./requirements.txt
 
+EXPOSE 8000
+
 CMD ["hypercorn", "-b", "0.0.0.0:8000", "--workers=4", "--access-logfile", "-", "--error-logfile", "-"]
