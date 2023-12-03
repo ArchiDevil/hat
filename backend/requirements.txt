@@ -1,3 +1,4 @@
 quart==0.19.3
 lxml==4.9.3
 pytest==7.4.*
+hypercorn=0.15.*
