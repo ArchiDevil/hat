@@ -2,16 +2,17 @@ from pathlib import Path
 import sqlite3
 from quart import Quart, render_template, request, abort, send_file
 
-from tmx import extract_tmx_content
-from xliff import extract_xliff_content
+from app.tmx import extract_tmx_content
+from app.xliff import extract_xliff_content
 
 
 def create_app(mode="Production"):
     app = Quart(__name__)
-    app.config.from_object(f"settings.{mode}")
+    app.config.from_object(f"app.settings.{mode}")
 
-    if not Path(app.instance_path).exists():
-        Path(app.instance_path).mkdir(parents=True)
+    instance_path = app.instance_path
+    if not Path(instance_path).exists():
+        Path(instance_path).mkdir(parents=True)
 
     @app.route("/")
     async def index():
