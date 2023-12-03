@@ -1,4 +1,5 @@
 from typing import Optional
+from io import BytesIO
 from lxml import etree
 
 
@@ -94,12 +95,11 @@ class XliffData:
             target_node.text = segment.translation
             target_node.attrib["state"] = segment.state
 
-    def write(self) -> None:
-        # TODO: temporary solution, should be replaced with something more robust
+    def write(self) -> BytesIO:
+        output = BytesIO()
         et: etree._ElementTree = etree.ElementTree(self.__root)
-        et.write(
-            "output.xliff", pretty_print=True, xml_declaration=True, encoding="utf-8"
-        )
+        et.write(output, pretty_print=True, xml_declaration=True, encoding="utf-8")
+        return output
 
 
 # this is 1.2 version parser as SmartCAT supports only this version
@@ -142,8 +142,8 @@ def extract_xliff_content(content: bytes) -> XliffData:
             XliffSegment(
                 segment_id,
                 approved,
-                src_segment.text if src_segment.text else '',
-                tgt_segment.text if tgt_segment.text else '',
+                src_segment.text if src_segment.text else "",
+                tgt_segment.text if tgt_segment.text else "",
                 tgt_segment.attrib.get("state"),
             )
         )
