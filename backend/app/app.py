@@ -1,6 +1,6 @@
 from pathlib import Path
 import sqlite3
-from quart import Quart, render_template, request, abort
+from quart import Quart, render_template, request, abort, send_file
 
 from tmx import extract_tmx_content
 from xliff import extract_xliff_content
@@ -85,14 +85,14 @@ def create_app(mode="Production"):
         c.close()
         conn.close()
 
-        # provide new XLIFF content
+        xliff_content.commit()
 
-        return await render_template(
-            "upload.html",
-            tmx_data=tmx_data,
-            xliff_data=xliff_content,
-            originals=originals if originals else 1,
-            matches=matches,
+        output_file = xliff_content.write()
+        return await send_file(
+            output_file,
+            "application/xml",
+            as_attachment=True,
+            attachment_filename="output.xliff",
         )
 
     return app
