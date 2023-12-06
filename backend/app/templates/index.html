@@ -17,6 +17,23 @@
         <input id="xliff-file" name="xliff-file" type="file" accept=".xliff" />
         <button type="submit">Submit</button>
     </form>
+    <div>
+        <h1>TMX files list</h1>
+        <ul>
+            {% for file in tmx_files %}
+            <li>file</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <h1>XLIFF documents</h1>
+        <ul>
+            {% for doc in xliff_docs %}
+            <li>doc</li>
+            {% endfor %}
+        </ul>
+    </div>
 </body>
 
 </html>

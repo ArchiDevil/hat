@@ -1,9 +1,12 @@
+import os
 from pathlib import Path
 import sqlite3
 from quart import Quart, render_template, request, abort, send_file, current_app
 
 from app.tmx import extract_tmx_content
 from app.xliff import extract_xliff_content
+from app.db import get_session
+from app.schema import TmxDocument, XliffDocument
 
 
 def get_instance_path():
@@ -16,10 +19,17 @@ def get_instance_path():
 def create_app(mode="Production"):
     app = Quart(__name__)
     app.config.from_object(f"app.settings.{mode}")
+    db_url = os.environ.get(
+        "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres"
+    )
+    app.config["DATABASE"] = db_url
 
     @app.route("/")
     async def index():
-        return await render_template("index.html")
+        with get_session() as session:
+            tmxs = session.query(TmxDocument.name)
+            xliffs = session.query(XliffDocument.name)
+        return await render_template("index.html", tmx_files=tmxs, xliff_docs=xliffs)
 
     @app.post("/upload")
     async def upload():
@@ -100,7 +110,3 @@ def create_app(mode="Production"):
         )
 
     return app
-
-
-if __name__ == "__main__":
-    create_app("Development").run(debug=True)
