@@ -27,6 +27,12 @@ python3 app/app.py
 
 ## Running the production version
 
+Before setting up the production version you need to adjust environment configs.
+To do this copy `.env.example` to `.env` and fill in all needed variables.
+
+Also you have to adjust `alembic.ini` file to match your database settings. It
+is located in `backend` directory.
+
 To run production version of the tool you need to use `docker compose`:
 
 ```bash
