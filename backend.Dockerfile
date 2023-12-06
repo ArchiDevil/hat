@@ -8,4 +8,10 @@ COPY ./backend/app /app/app
 
 WORKDIR /app
 EXPOSE 8000
-CMD ["hypercorn", "-b", "0.0.0.0:8000", "--workers=4", "--access-logfile", "-", "--error-logfile", "-", "asgi:app"]
+CMD [ \
+    "hypercorn", "-b", "0.0.0.0:8000", \
+    "--workers=4", \
+    "--access-logfile", "-", \
+    "--error-logfile", "-", \
+    "asgi:app" \
+    ]
