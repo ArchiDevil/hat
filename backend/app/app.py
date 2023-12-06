@@ -1,18 +1,21 @@
 from pathlib import Path
 import sqlite3
-from quart import Quart, render_template, request, abort, send_file
+from quart import Quart, render_template, request, abort, send_file, current_app
 
 from app.tmx import extract_tmx_content
 from app.xliff import extract_xliff_content
 
 
+def get_instance_path():
+    instance_path = Path(current_app.instance_path)
+    if not instance_path.exists():
+        instance_path.mkdir(parents=True)
+    return instance_path
+
+
 def create_app(mode="Production"):
     app = Quart(__name__)
     app.config.from_object(f"app.settings.{mode}")
-
-    instance_path = app.instance_path
-    if not Path(instance_path).exists():
-        Path(instance_path).mkdir(parents=True)
 
     @app.route("/")
     async def index():
@@ -34,7 +37,7 @@ def create_app(mode="Production"):
         tmx_data = extract_tmx_content(tmx_data)
 
         # put them into an sqlite database
-        db_path = Path(app.instance_path) / "tmx.db"
+        db_path = get_instance_path() / "tmx.db"
         if not db_path.exists():
             db_path.touch()
 
