@@ -25,6 +25,9 @@ Then run Quart dev server:
 python3 app/app.py
 ```
 
+You will need PostgreSQL server running on a local machine. Set up connection
+string to the environment variable `DATABASE_URL` or update `__init__.py` file.
+
 ## Running the production version
 
 Before setting up the production version you need to adjust environment configs.
