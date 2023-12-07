@@ -40,13 +40,13 @@ def create_app(mode="Production"):
             xliffs = session.query(XliffDocument.name)
         return await render_template("index.html", tmx_files=tmxs, xliff_docs=xliffs)
 
-    @app.get("/tmx/<id>")
+    @app.get("/tmx/<id_>")
     async def tmx(id_: int):
         with get_session() as session:
             tmx = session.query(TmxDocument).filter_by(id=id_).first()
             if not tmx:
                 abort(404, f"TMX {id_} not found")
-        return await render_template("tmx.html", tmx=tmx)
+            return await render_template("tmx.html", tmx=tmx)
 
     @app.post("/tmx/upload")
     async def tmx_upload():
@@ -67,7 +67,7 @@ def create_app(mode="Production"):
 
             new_id = tmx.id
 
-        return redirect(url_for("tmx", id=new_id))
+        return redirect(url_for("tmx", id_=new_id))
 
     @app.post("/upload")
     async def upload():
