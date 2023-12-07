@@ -1,12 +1,21 @@
 import os
 from pathlib import Path
 import sqlite3
-from quart import Quart, render_template, request, abort, send_file, current_app
+from quart import (
+    Quart,
+    render_template,
+    request,
+    abort,
+    send_file,
+    current_app,
+    redirect,
+    url_for,
+)
 
 from app.tmx import extract_tmx_content
 from app.xliff import extract_xliff_content
 from app.db import get_session
-from app.schema import TmxDocument, XliffDocument
+from app.schema import TmxDocument, TmxRecord, XliffDocument, XliffRecord
 
 
 def get_instance_path():
@@ -30,6 +39,35 @@ def create_app(mode="Production"):
             tmxs = session.query(TmxDocument.name)
             xliffs = session.query(XliffDocument.name)
         return await render_template("index.html", tmx_files=tmxs, xliff_docs=xliffs)
+
+    @app.get("/tmx/<id>")
+    async def tmx(id_: int):
+        with get_session() as session:
+            tmx = session.query(TmxDocument).filter_by(id=id_).first()
+            if not tmx:
+                abort(404, f"TMX {id_} not found")
+        return await render_template("tmx.html", tmx=tmx)
+
+    @app.post("/tmx/upload")
+    async def tmx_upload():
+        files = await request.files
+        tmx_data = files.get("tmx-file", None)
+        if not tmx_data:
+            abort(400, "Missing tmx file")
+        tmx_data = tmx_data.read()
+        tmx_data = extract_tmx_content(tmx_data)
+        with get_session() as session:
+            tmx = TmxDocument(name="test")
+            session.add(tmx)
+            session.commit()
+
+            for source, target in tmx_data:
+                tmx.records.append(TmxRecord(source=source, target=target))
+            session.commit()
+
+            new_id = tmx.id
+
+        return redirect(url_for("tmx", id=new_id))
 
     @app.post("/upload")
     async def upload():
