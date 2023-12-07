@@ -71,6 +71,16 @@ def create_app(mode="Production"):
 
         return redirect(url_for("tmx", id_=new_id))
 
+    @app.get("/tmx/<id_>/delete")
+    async def tmx_delete(id_: int):
+        with get_session() as session:
+            tmx = session.query(TmxDocument).filter_by(id=id_).first()
+            if not tmx:
+                abort(404, f"TMX {id_} not found")
+            session.delete(tmx)
+            session.commit()
+        return redirect(url_for("index"))
+
     @app.post("/upload")
     async def upload():
         files = await request.files

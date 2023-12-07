@@ -29,7 +29,8 @@
         </form>
         <ul>
             {% for file in tmx_files %}
-            <li><a href="/tmx/{{file.id}}">{{ file.name }} -> {{file.id}}</a></li>
+            <li><a href="/tmx/{{file.id}}">{{ file.name }} -> {{file.id}}</a> <a
+                    href="/tmx/{{file.id}}/delete">!Delete</a></li>
             {% endfor %}
         </ul>
     </div>
