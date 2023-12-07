@@ -36,9 +36,11 @@ def create_app(mode="Production"):
     @app.route("/")
     async def index():
         with get_session() as session:
-            tmxs = session.query(TmxDocument.name)
-            xliffs = session.query(XliffDocument.name)
-        return await render_template("index.html", tmx_files=tmxs, xliff_docs=xliffs)
+            tmx_files = session.query(TmxDocument).all()
+            xliff_docs = session.query(XliffDocument).all()
+        return await render_template(
+            "index.html", tmx_files=tmx_files, xliff_docs=xliff_docs
+        )
 
     @app.get("/tmx/<id_>")
     async def tmx(id_: int):
