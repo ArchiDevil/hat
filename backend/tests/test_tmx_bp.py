@@ -54,9 +54,13 @@ async def test_can_upload_tmx(client: QuartClient):
     assert response.status_code == 302
     assert "tmx/1" in response.location
 
-    response = await client.get("/tmx/1")
-    assert response.status_code == 200
-    assert "Handbook" in (await response.data).decode("utf-8")
+    async with client.app.app_context():
+        with get_session() as session:
+            doc = session.query(TmxDocument).filter_by(id=1).first()
+            assert doc is not None
+            assert doc.name == "test"
+            assert len(doc.records) == 1
+            assert "Handbook" in doc.records[0].source
 
 
 async def test_shows_404_when_no_file_uploaded(client: QuartClient):
