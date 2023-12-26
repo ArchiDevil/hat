@@ -36,11 +36,20 @@
     </div>
 
     <div>
-        <h1>XLIFF documents</h1>
+        <h1>XLIFF documents list</h1>
+        <form action="/xliff/upload" method="post" enctype="multipart/form-data"
+            style="border: 1px solid grey; padding: 4px;width: 600px;">
+            <label for="xliff-file">Select a XLIFF file:</label>
+            <input id="xliff-file" name="xliff-file" type="file" accept=".xliff" />
+            <br />
+            <button type="submit">Upload</button>
+        </form>
         <ul>
-            {% for doc in xliff_docs %}
-            <li>doc</li>
+            {% for file in xliff_docs %}
+            <li><a href="/xliff/{{file.id}}">{{ file.name }} -> {{file.id}}</a> <a
+                    href="/xliff/{{file.id}}/delete">!Delete</a></li>
             {% endfor %}
+
         </ul>
     </div>
 </body>

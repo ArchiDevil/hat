@@ -2,7 +2,7 @@ import os
 from quart import Quart
 
 from app import index
-from app import tmx_bp
+from app.bps import tmx, xliff
 
 
 def create_app(mode="Production"):
@@ -13,6 +13,7 @@ def create_app(mode="Production"):
     )
     app.config["DATABASE"] = db_url
     app.register_blueprint(index.bp)
-    app.register_blueprint(tmx_bp.bp)
+    app.register_blueprint(tmx.bp)
+    app.register_blueprint(xliff.bp)
 
     return app

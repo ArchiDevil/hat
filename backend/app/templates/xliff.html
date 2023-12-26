@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Backend</title>
+</head>
+
+<body>
+    <h1>XLIFF file viewer</h1>
+    <h2>Records table</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Source</th>
+                <th>Target</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in xliff.records %}
+            <tr>
+                <td>{{ record.source }}</td>
+                <td>{{ record.target }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+
+</html>
