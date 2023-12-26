@@ -5,24 +5,24 @@ from app.schema import TmxDocument, TmxRecord
 from app.tmx import extract_tmx_content
 
 
-bp = Blueprint("tmx", __name__)
+bp = Blueprint("tmx", __name__, url_prefix="/tmx")
 
 
-@bp.get("/tmx/<id_>")
-async def tmx(id_: int):
+@bp.get("/<id_>")
+async def index(id_: int):
     with get_session() as session:
         doc = session.query(TmxDocument).filter_by(id=id_).first()
         if not doc:
-            abort(404, f"TMX {id_} not found")
+            abort(404)
         return await render_template("tmx.html", tmx=doc)
 
 
-@bp.post("/tmx/upload")
+@bp.post("/upload")
 async def tmx_upload():
     files = await request.files
     tmx_data = files.get("tmx-file", None)
     if not tmx_data:
-        abort(400, "Missing tmx file")
+        abort(400)
     tmx_data = tmx_data.read()
     tmx_data = extract_tmx_content(tmx_data)
     with get_session() as session:
@@ -36,15 +36,15 @@ async def tmx_upload():
 
         new_id = doc.id
 
-    return redirect(url_for("tmx", id_=new_id))
+    return redirect(url_for("tmx.index", id_=new_id))
 
 
-@bp.get("/tmx/<id_>/delete")
+@bp.get("/<id_>/delete")
 async def tmx_delete(id_: int):
     with get_session() as session:
         doc = session.query(TmxDocument).filter_by(id=id_).first()
         if not doc:
-            abort(404, f"TMX {id_} not found")
+            abort(404)
         session.delete(doc)
         session.commit()
-    return redirect(url_for("index"))
+    return redirect(url_for("app.index"))

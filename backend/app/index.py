@@ -8,7 +8,7 @@ from app.tmx import extract_tmx_content
 from app.xliff import extract_xliff_content
 
 
-bp = Blueprint("index", __name__)
+bp = Blueprint("app", __name__)
 
 
 def get_instance_path():
