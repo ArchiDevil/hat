@@ -8,16 +8,6 @@
 
 <body>
     <h1>Process TMX matches</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <h2>Upload files</h2>
-        <label for="tmx-file">Select a TMX file:</label>
-        <input id="tmx-file" name="tmx-file" type="file" accept=".tmx" />
-        <br />
-        <label for="xliff-file">Select a XLIFF file:</label>
-        <input id="xliff-file" name="xliff-file" type="file" accept=".xliff" />
-        <br />
-        <button type="submit">Submit</button>
-    </form>
     <div>
         <h1>TMX files list</h1>
         <form action="/tmx/upload" method="post" enctype="multipart/form-data"
