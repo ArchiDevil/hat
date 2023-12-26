@@ -9,5 +9,9 @@ class Development(Config):
     DEBUG = True
 
 
+class Testing(Config):
+    TESTING = True
+
+
 class Production(Config):
-    pass
+    SECRET_KEY = "REAL SECRET KEY"

@@ -1,22 +1,11 @@
 from contextlib import contextmanager
-from typing import Generator
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session, Session
 
 from quart import current_app, g
 
-
-@contextmanager
-def get_session() -> Generator[scoped_session, None, None]:
-    # this is the first request to the DB
-    if "engine" not in g:
-        init_connection()
-    try:
-        session = g.sessionmaker()
-        yield session
-    finally:
-        g.sessionmaker.remove()
+from app import schema
 
 
 def init_connection():
@@ -26,8 +15,26 @@ def init_connection():
     g.sessionmaker = scoped_session(session_factory)
 
 
-def close_connection(e=None):
+def close_connection():
     g.pop("sessionmaker", None)
-    engine = g.pop("engine", None)
+    engine: Engine | None = g.pop("engine", None)
     if engine is not None:
         engine.dispose()
+
+
+def reinit_schema():
+    init_connection()
+    schema.Base.metadata.drop_all(g.engine)
+    schema.Base.metadata.create_all(g.engine)
+    close_connection()
+
+
+@contextmanager
+def get_session():
+    if "engine" not in g:
+        init_connection()
+    try:
+        session: Session = g.sessionmaker()
+        yield session
+    finally:
+        session.close()
