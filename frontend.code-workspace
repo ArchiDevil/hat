@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "path": "frontend"
+    }
+  ],
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "bradlc.vscode-tailwindcss",
+      "vue.vscode-typescript-vue-plugin",
+      "vue.volar"
+    ]
+  },
+  "settings": {
+    "editor.tabSize": 2,
+    "[vue]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+  }
+}
