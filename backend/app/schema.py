@@ -36,6 +36,7 @@ class XliffDocument(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
+    original_document: Mapped[str] = mapped_column()
 
     records: Mapped[list["XliffRecord"]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
