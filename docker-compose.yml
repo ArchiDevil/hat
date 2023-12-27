@@ -24,7 +24,7 @@ services:
       dockerfile: proxy.Dockerfile
       context: .
     ports:
-      - 80:80
+      - 6916:6916
     depends_on:
       - backend
     restart: on-failure

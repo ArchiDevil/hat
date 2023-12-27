@@ -56,8 +56,8 @@ docker-compose up -d --build
 ```
 
 This will build all needed images and run services in detached mode. Please
-note that reverse proxy is listening to `80` port on the localhost, so you need
-to set up something to listed on the domain name if you need.
+note that reverse proxy is listening to `6916` port on the localhost, so you
+need to set up something to listed on the domain name if you need.
 
 The production version is located (or will be if not yet) at
 https://hat.codecliffs.ru
