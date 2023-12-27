@@ -34,12 +34,11 @@ async def upload():
 
         for segment in xliff_data.segments:
             if not segment.approved:
-                stmt = (
+                tmx_data = session.execute(
                     select(TmxRecord.source, TmxRecord.target)
                     .where(TmxRecord.source == segment.original)
                     .limit(1)
-                )
-                tmx_data = session.scalar(stmt)
+                ).first()
                 if tmx_data:
                     segment.translation = tmx_data.target
                     segment.approved = True
