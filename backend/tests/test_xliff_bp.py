@@ -41,7 +41,7 @@ async def test_upload(client: QuartClient):
         with get_session() as session:
             doc = session.query(XliffDocument).filter_by(id=1).first()
             assert doc is not None
-            assert doc.name == "test"
+            assert doc.name == "tests/small.xliff"
             assert len(doc.records) == 1
             assert doc.records[0].id == 675606
             assert doc.records[0].document_id == 1

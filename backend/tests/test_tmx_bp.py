@@ -58,7 +58,7 @@ async def test_can_upload_tmx(client: QuartClient):
         with get_session() as session:
             doc = session.query(TmxDocument).filter_by(id=1).first()
             assert doc is not None
-            assert doc.name == "test"
+            assert doc.name == "tests/small.tmx"
             assert len(doc.records) == 1
             assert "Handbook" in doc.records[0].source
 

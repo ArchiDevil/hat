@@ -33,11 +33,12 @@ async def upload():
     if not xliff_data:
         abort(400)
 
+    filename = xliff_data.filename
     xliff_data = xliff_data.read()
     original_document = xliff_data.decode("utf-8")
     xliff_data = extract_xliff_content(xliff_data)
     with get_session() as session:
-        doc = XliffDocument(name="test", original_document=original_document)
+        doc = XliffDocument(name=filename, original_document=original_document)
         session.add(doc)
 
         for segment in xliff_data.segments:

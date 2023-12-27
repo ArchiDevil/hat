@@ -23,10 +23,12 @@ async def tmx_upload():
     tmx_data = files.get("tmx-file", None)
     if not tmx_data:
         abort(400)
+
+    filename = tmx_data.filename
     tmx_data = tmx_data.read()
     tmx_data = extract_tmx_content(tmx_data)
     with get_session() as session:
-        doc = TmxDocument(name="test")
+        doc = TmxDocument(name=filename)
         session.add(doc)
         session.commit()
 
