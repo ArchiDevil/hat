@@ -1,5 +1,6 @@
 <script lang="ts">
 import {defineComponent} from 'vue'
+import {mande} from 'mande'
 
 interface TmxFile {
   id: number
@@ -18,23 +19,9 @@ export default defineComponent({
       xliff_docs: [] as XliffDoc[],
     }
   },
-  mounted() {
-    this.loadTmxFiles()
-    this.loadXliffDocs()
-  },
-  methods: {
-    loadTmxFiles() {
-      this.tmx_files = [
-        {id: 1, name: 'test.tmx'},
-        {id: 2, name: 'test2.tmx'},
-      ]
-    },
-    loadXliffDocs() {
-      this.xliff_docs = [
-        {id: 1, name: 'test.xliff'},
-        {id: 2, name: 'test2.xliff'},
-      ]
-    },
+  async mounted() {
+    this.tmx_files = await mande('/api/tmx').get<TmxFile[]>()
+    this.xliff_docs = await mande('/api/xliff').get<XliffDoc[]>()
   },
 })
 </script>
@@ -48,7 +35,7 @@ export default defineComponent({
         action="/tmx/upload"
         method="post"
         enctype="multipart/form-data"
-        style="border: 1px solid grey; padding: 4px; width: 600px">
+        class="form">
         <label for="tmx-file">Select a TMX file:</label>
         <input
           id="tmx-file"
@@ -72,7 +59,7 @@ export default defineComponent({
         action="/xliff/upload"
         method="post"
         enctype="multipart/form-data"
-        style="border: 1px solid grey; padding: 4px; width: 600px">
+        class="form">
         <label for="xliff-file">Select a XLIFF file:</label>
         <input
           id="xliff-file"
@@ -92,4 +79,10 @@ export default defineComponent({
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.form {
+  border: 2px solid grey;
+  padding: 8px;
+  width: 600px;
+}
+</style>

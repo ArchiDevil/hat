@@ -26,11 +26,14 @@
   "homepage": "https://github.com/ArchiDevil/hat#readme",
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
+    "@vue/test-utils": "^2.4.3",
+    "jsdom": "^23.0.1",
     "vite": "^5.0.10",
     "vitest": "^1.1.0",
     "vue-tsc": "^1.8.27"
   },
   "dependencies": {
+    "mande": "^2.0.8",
     "vue": "^3.3.13"
   }
 }
