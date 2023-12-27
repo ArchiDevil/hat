@@ -1,0 +1,31 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "hat frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArchiDevil/hat.git"
+  },
+  "keywords": [
+    "vue",
+    "typescript",
+    "cat",
+    "nlp"
+  ],
+  "author": "ArchiDevil",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ArchiDevil/hat/issues"
+  },
+  "homepage": "https://github.com/ArchiDevil/hat#readme",
+  "devDependencies": {
+    "vite": "^5.0.10",
+    "vitest": "^1.1.0"
+  }
+}

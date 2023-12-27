@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Backend</title>
+</head>
+
+<body>
+    <h1>Process TMX matches</h1>
+    <div>
+        <h1>TMX files list</h1>
+        <form action="/tmx/upload" method="post" enctype="multipart/form-data"
+            style="border: 1px solid grey; padding: 4px;width: 600px;">
+            <label for="tmx-file">Select a TMX file:</label>
+            <input id="tmx-file" name="tmx-file" type="file" accept=".tmx" />
+            <br />
+            <button type="submit">Upload</button>
+        </form>
+        <ul>
+            {% for file in tmx_files %}
+            <li><a href="/tmx/{{file.id}}">{{ file.name }} -> {{file.id}}</a> <a
+                    href="/tmx/{{file.id}}/delete">!Delete</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div>
+        <h1>XLIFF documents list</h1>
+        <form action="/xliff/upload" method="post" enctype="multipart/form-data"
+            style="border: 1px solid grey; padding: 4px;width: 600px;">
+            <label for="xliff-file">Select a XLIFF file:</label>
+            <input id="xliff-file" name="xliff-file" type="file" accept=".xliff" />
+            <br />
+            <button type="submit">Upload</button>
+        </form>
+        <ul>
+            {% for file in xliff_docs %}
+            <li><a href="/xliff/{{file.id}}">{{ file.name }} -> {{file.id}}</a> <a
+                    href="/xliff/{{file.id}}/delete">!Delete</a></li>
+            {% endfor %}
+
+        </ul>
+    </div>
+
+    <script src="src/index.ts" type="module" async></script>
+</body>
+
+</html>
