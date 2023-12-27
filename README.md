@@ -28,6 +28,19 @@ python3 app/app.py
 You will need PostgreSQL server running on a local machine. Set up connection
 string to the environment variable `DATABASE_URL` or update `__init__.py` file.
 
+### Running tests
+
+To run tests you need to install `pytest` and `pytest-asyncio` packages. They
+are already listed in `requirements.txt` file, so you if you installed all
+dependencies from a previous section you are good to go.
+
+It order to run tests you need to run `pytest` command from the `backend`
+directory.
+
+```bash
+pytest
+```
+
 ## Running the production version
 
 Before setting up the production version you need to adjust environment configs.
