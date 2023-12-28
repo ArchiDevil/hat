@@ -1,6 +1,12 @@
 :6916 {
     root * /usr/share/caddy
-    handle * {
+    file_server
+
+    handle /api/* {
         reverse_proxy backend:8000
+    }
+
+    handle {
+        try_files {path} {path}/ index.html
     }
 }
