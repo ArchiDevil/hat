@@ -2,7 +2,7 @@ import os
 from quart import Quart
 
 from app import index
-from app.bps import tmx, xliff
+from app.bps import tmx, xliff, api
 
 
 def create_app(mode="Production", additional_config=None):
@@ -20,5 +20,6 @@ def create_app(mode="Production", additional_config=None):
     app.register_blueprint(index.bp)
     app.register_blueprint(tmx.bp)
     app.register_blueprint(xliff.bp)
+    app.register_blueprint(api.bp)
 
     return app
