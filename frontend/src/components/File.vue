@@ -2,7 +2,7 @@
 import Button from './Button.vue'
 import Link from './Link.vue'
 
-defineEmits(['delete', 'open'])
+defineEmits(['delete'])
 defineProps(['file', 'type'])
 </script>
 

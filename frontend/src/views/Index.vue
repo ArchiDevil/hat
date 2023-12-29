@@ -1,9 +1,8 @@
-<script lang="ts">
-import {defineComponent} from 'vue'
+<script setup lang="ts">
+import {Ref, onMounted, ref} from 'vue'
 import {mande} from 'mande'
 
 import File from '../components/File.vue'
-import Button from '../components/Button.vue'
 import UploadingDialog from '../components/UploadingDialog.vue'
 
 interface TmxDoc {
@@ -16,54 +15,44 @@ interface XliffDoc {
   name: string
 }
 
-export default defineComponent({
-  components: {Button, File, UploadingDialog},
-  data() {
-    return {
-      tmx_docs: [] as TmxDoc[],
-      xliff_docs: [] as XliffDoc[],
-    }
-  },
-  async mounted() {
-    await this.getTmxDocs()
-    await this.getXliffDocs()
-  },
-  methods: {
-    openTmx(id: number) {
-      window.location.href = `/tmx/${id}`
-    },
-    async deleteTmx(id: number) {
-      await mande(`/api/tmx/${id}/delete`).post()
-      await this.getTmxDocs()
-    },
-    openXliff(id: number) {
-      window.location.href = `/xliff/${id}`
-    },
-    async deleteXliff(id: number) {
-      await mande(`/api/xliff/${id}/delete`).post()
-      await this.getXliffDocs()
-    },
-    async getTmxDocs() {
-      this.tmx_docs = [
-        {id: 1, name: 'test.tmx'},
-        {id: 2, name: 'test2.tmx'},
-      ]
-      // this.tmx_docs = await mande('/api/tmx').get<TmxDoc[]>()
-    },
-    async getXliffDocs() {
-      this.xliff_docs = [
-        {id: 1, name: 'test.xliff'},
-        {id: 2, name: 'test2.xliff'},
-      ]
-      // this.xliff_docs = await mande('/api/xliff').get<XliffDoc[]>()
-    },
-  },
+const tmx_docs = ref([]) as Ref<TmxDoc[]>
+const xliff_docs = ref([]) as Ref<XliffDoc[]>
+
+const getTmxDocs = async () => {
+  tmx_docs.value = [
+    {id: 1, name: 'test.tmx'},
+    {id: 2, name: 'test2.tmx'},
+  ]
+  // tmx_docs.value = await mande('/api/tmx').get<TmxDoc[]>()
+}
+
+const deleteTmx = async (id: number) => {
+  await mande(`/api/tmx/${id}/delete`).post()
+  await getTmxDocs()
+}
+
+const getXliffDocs = async () => {
+  xliff_docs.value = [
+    {id: 1, name: 'test.xliff'},
+    {id: 2, name: 'test2.xliff'},
+  ]
+  // this.xliff_docs = await mande('/api/xliff').get<XliffDoc[]>()
+}
+
+const deleteXliff = async (id: number) => {
+  await mande(`/api/xliff/${id}/delete`).post()
+  await getXliffDocs()
+}
+
+onMounted(async () => {
+  await getTmxDocs()
+  await getXliffDocs()
 })
 </script>
 
 <template>
-  <div class="text-base text-slate-900 font-medium">
-    <h1 class="font-bold text-2xl">Process TMX matches</h1>
+  <div>
+    <h1 class="font-bold text-2xl pt-8">Process TMX matches</h1>
     <div class="mt-8">
       <h2 class="font-bold text-lg">TMX files list</h2>
       <UploadingDialog
@@ -74,8 +63,7 @@ export default defineComponent({
         v-for="file in tmx_docs"
         :file="file"
         type="tmx"
-        @delete="deleteTmx(file.id)"
-        @open="openTmx(file.id)" />
+        @delete="deleteTmx(file.id)" />
     </div>
 
     <div class="mt-8">
@@ -85,18 +73,10 @@ export default defineComponent({
         extension=".xliff"
         url="/xliff/upload" />
       <File
-        v-for="file in tmx_docs"
+        v-for="file in xliff_docs"
         :file="file"
         type="xliff"
-        @delete="deleteXliff(file.id)"
-        @open="openXliff(file.id)" />
+        @delete="deleteXliff(file.id)" />
     </div>
   </div>
 </template>
-
-<style scoped>
-.form {
-  @apply p-2 min-w-96;
-  border: 2px solid grey;
-}
-</style>
