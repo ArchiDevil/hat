@@ -1,19 +1,32 @@
 <script lang="ts">
 import {defineComponent} from 'vue'
-import Button from './Button.vue'
 import {mande} from 'mande'
+import Button from './Button.vue'
 
 export default defineComponent({
   components: {Button},
   emits: ['uploaded'],
   props: ['title', 'extension', 'url'],
+  data() {
+    return {
+      file: null as File | null,
+    }
+  },
+  computed: {
+    uploadAvailable() {
+      return this.file != null
+    },
+  },
   methods: {
     async uploadFile() {
+      if (!this.uploadAvailable) {
+        return
+      }
+
       const formData = new FormData()
-      formData.append(
-        'file',
-        (document.getElementById('file-input') as HTMLInputElement).files![0]
-      )
+      const input = this.$refs.input as HTMLInputElement
+      const attachedFile = input.files![0]
+      formData.append('file', attachedFile)
       try {
         const response = await mande(this.url).post('', formData, {
           headers: {
@@ -25,12 +38,19 @@ export default defineComponent({
         console.error(error)
       }
     },
+    updateFiles() {
+      const input = this.$refs.input as HTMLInputElement
+      if (!input.files) {
+        return
+      }
+      this.file = input.files[0]
+    },
   },
 })
 </script>
 
 <template>
-  <div>
+  <div class="p-2 min-w-96 border border-slate-500">
     <label
       for="file"
       class="font-semibold mr-2">
@@ -39,14 +59,13 @@ export default defineComponent({
     <input
       id="file-input"
       type="file"
-      accept=".tmx" />
-    <Button @click="uploadFile">Upload</Button>
+      ref="input"
+      @change="updateFiles"
+      :accept="extension" />
+    <Button
+      @click="uploadFile"
+      :disabled="!uploadAvailable">
+      Upload
+    </Button>
   </div>
 </template>
-
-<style scoped>
-div {
-  @apply p-2 min-w-96;
-  @apply border border-slate-500 border-solid;
-}
-</style>
