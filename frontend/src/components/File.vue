@@ -1,19 +1,14 @@
-<script lang="ts">
-import {defineComponent} from 'vue'
-
+<script setup lang="ts">
 import Button from './Button.vue'
 import Link from './Link.vue'
 
-export default defineComponent({
-  components: {Button, Link},
-  props: ['file', 'type'],
-  emits: ['delete', 'open'],
-})
+defineEmits(['delete', 'open'])
+defineProps(['file', 'type'])
 </script>
 
 <template>
   <div
-    class="bg-slate-200 my-1 p-1 border-slate-500 border flex items-baseline"
+    class="bg-slate-200 my-1 py-1 px-2 border-slate-500 border flex items-baseline"
     style="appearance: button">
     <div class="w-24">#{{ file.id }} {{ file.name }}</div>
     <Link

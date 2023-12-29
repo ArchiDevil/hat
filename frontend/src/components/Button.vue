@@ -1,15 +1,26 @@
-<script lang="ts">
-import {defineComponent} from 'vue'
-
-export default defineComponent({
-  emits: ['click'],
-})
+<script setup lang="ts">
+defineEmits(['click'])
 </script>
 
 <template>
-  <button
-    @click="($event) => $emit('click', $event)"
-    class="py-1 px-2 border rounded border-slate-600 bg-slate-400 text-slate-50 hover:bg-slate-600 transition-colors h-8">
+  <button @click="($event) => $emit('click', $event)">
     <slot></slot>
   </button>
 </template>
+
+<style scoped>
+button {
+  @apply py-1 px-2 h-8;
+  @apply border rounded border-slate-600;
+  @apply bg-slate-400;
+  @apply transition-colors;
+}
+
+button:hover {
+  @apply bg-slate-600;
+}
+
+button:disabled {
+  @apply border-slate-300 bg-slate-200 text-slate-50;
+}
+</style>
