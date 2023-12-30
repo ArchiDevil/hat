@@ -2,7 +2,7 @@ from quart.testing import QuartClient
 from quart.datastructures import FileStorage
 
 from app.db import get_session
-from app.schema import TmxDocument, XliffDocument
+from app.schema import TmxDocument, TmxRecord, XliffDocument
 
 
 async def test_can_return_list_of_tmx_docs(client: QuartClient):
@@ -107,3 +107,46 @@ async def test_can_delete_xliff_doc(client: QuartClient):
 async def test_returns_404_when_deleting_nonexistent_xliff_doc(client: QuartClient):
     response = await client.post("/api/xliff/1/delete")
     assert response.status_code == 404
+
+
+async def test_upload(client: QuartClient):
+    with open("tests/small.xliff", "rb") as fp:
+        response = await client.post(
+            "/api/xliff/upload", files={"file": FileStorage(stream=fp)}
+        )
+    assert response.status_code == 200
+
+    async with client.app.app_context():
+        with get_session() as session:
+            doc = session.query(XliffDocument).filter_by(id=1).first()
+            assert doc is not None
+            assert doc.name == "tests/small.xliff"
+            assert len(doc.records) == 1
+            assert doc.records[0].id == 675606
+            assert doc.records[0].document_id == 1
+            assert doc.original_document.startswith("<?xml version=")
+
+
+async def test_upload_process_xliff_file(client: QuartClient):
+    async with client.app.app_context():
+        with get_session() as session:
+            tmx_records = [TmxRecord(source="Regional Effects", target="Translation")]
+            session.add(TmxDocument(name="test", records=tmx_records))
+            session.commit()
+
+    with open("tests/small.xliff", "rb") as fp:
+        response = await client.post(
+            "/api/xliff/upload", files={"file": FileStorage(stream=fp)}
+        )
+    assert response.status_code == 200
+
+    async with client.app.app_context():
+        with get_session() as session:
+            doc = session.query(XliffDocument).filter_by(id=1).first()
+            assert doc is not None
+            assert doc.records[0].target == "Translation"
+
+
+async def test_upload_no_file(client: QuartClient):
+    response = await client.post("/api/xliff/upload", files={})
+    assert response.status_code == 400
