@@ -1,4 +1,4 @@
-from quart import Blueprint
+from quart import Blueprint, abort
 
 from app.schema import TmxDocument, XliffDocument
 from app.db import get_session
@@ -19,6 +19,18 @@ async def tmx_files():
         ]
 
 
+@bp.post("/tmx/<int:doc_id>/delete")
+async def delete_tmx(doc_id: int):
+    with get_session() as session:
+        doc = session.query(TmxDocument).filter(TmxDocument.id == doc_id).first()
+        if not doc:
+            abort(404)
+
+        session.query(TmxDocument).filter(TmxDocument.id == doc_id).delete()
+        session.commit()
+        return "ok"
+
+
 @bp.get("/xliff")
 async def xliff_files():
     with get_session() as session:
@@ -30,3 +42,15 @@ async def xliff_files():
             }
             for doc in docs
         ]
+
+
+@bp.post("/xliff/<int:doc_id>/delete")
+async def delete_xliff(doc_id: int):
+    with get_session() as session:
+        doc = session.query(XliffDocument).filter(XliffDocument.id == doc_id).first()
+        if not doc:
+            abort(404)
+
+        session.query(XliffDocument).filter(XliffDocument.id == doc_id).delete()
+        session.commit()
+        return "ok"
