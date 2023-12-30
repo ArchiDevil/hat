@@ -19,11 +19,7 @@ const tmx_docs = ref([]) as Ref<TmxDoc[]>
 const xliff_docs = ref([]) as Ref<XliffDoc[]>
 
 const getTmxDocs = async () => {
-  tmx_docs.value = [
-    {id: 1, name: 'test.tmx'},
-    {id: 2, name: 'test2.tmx'},
-  ]
-  // tmx_docs.value = await mande('/api/tmx').get<TmxDoc[]>()
+  tmx_docs.value = await mande('/api/tmx').get<TmxDoc[]>()
 }
 
 const deleteTmx = async (id: number) => {
@@ -32,11 +28,7 @@ const deleteTmx = async (id: number) => {
 }
 
 const getXliffDocs = async () => {
-  xliff_docs.value = [
-    {id: 1, name: 'test.xliff'},
-    {id: 2, name: 'test2.xliff'},
-  ]
-  // this.xliff_docs = await mande('/api/xliff').get<XliffDoc[]>()
+  xliff_docs.value = await mande('/api/xliff').get<XliffDoc[]>()
 }
 
 const deleteXliff = async (id: number) => {
