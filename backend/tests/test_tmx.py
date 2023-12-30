@@ -1,4 +1,4 @@
-import app.tmx as tmx
+from app.tmx import extract_tmx_content
 
 
 def test_can_load_simplest_tmx_1_1():
@@ -21,7 +21,7 @@ def test_can_load_simplest_tmx_1_1():
 </tmx>
 """.encode()
 
-    data = tmx.extract_tmx_content(content)
+    data = extract_tmx_content(content)
     assert len(data) == 1
     assert data[0][0] == '"My anger consumes me.'
     assert data[0][1] == '"Злость поглощает меня.'
@@ -46,7 +46,7 @@ def test_can_load_simplest_tmx_1_4():
 </tmx>
 """.encode()
 
-    data = tmx.extract_tmx_content(content)
+    data = extract_tmx_content(content)
     assert len(data) == 1
     assert data[0][0] == "Each character who plays the game makes a Wisdom check"
     assert data[0][1] == "Каждый персонаж, участвующий в игре, делает проверку Мудрости"
@@ -73,7 +73,7 @@ def test_can_load_tagged_1_4():
 </tmx>
 """.encode()
 
-    data = tmx.extract_tmx_content(content)
+    data = extract_tmx_content(content)
     assert len(data) == 1
     assert (
         data[0][0]
@@ -111,7 +111,7 @@ def test_can_load_multiple_segments():
     </tu>
 """.encode()
 
-    data = tmx.extract_tmx_content(content)
+    data = extract_tmx_content(content)
     assert len(data) == 2
     assert data[0][0] == '"My anger consumes me.'
     assert data[0][1] == '"Злость поглощает меня.'
