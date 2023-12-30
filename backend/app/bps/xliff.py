@@ -85,16 +85,3 @@ async def download(id_: int):
         file = processed_document.write()
 
     return await send_file(file, mimetype="application/xliff+xml")
-
-
-@bp.get("/<id_>/delete")
-async def delete(id_: int):
-    with get_session() as session:
-        doc = session.query(XliffDocument).filter_by(id=id_).first()
-        if not doc:
-            abort(404)
-
-        session.delete(doc)
-        session.commit()
-
-    return redirect(url_for("app.index"))

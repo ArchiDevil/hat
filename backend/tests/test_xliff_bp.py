@@ -74,31 +74,6 @@ async def test_upload_no_file(client: QuartClient):
     assert response.status_code == 400
 
 
-async def test_delete(client: QuartClient):
-    async with client.app.app_context():
-        with get_session() as session:
-            records = [
-                XliffRecord(source="test1", target="test1"),
-                XliffRecord(source="test2", target="test2"),
-            ]
-            session.add(
-                XliffDocument(name="test", records=records, original_document="")
-            )
-            session.commit()
-
-    response = await client.get("/xliff/1/delete")
-    assert response.status_code == 302
-
-    async with client.app.app_context():
-        with get_session() as session:
-            assert session.query(XliffDocument).filter_by(id=1).first() is None
-
-
-async def test_delete_not_found(client: QuartClient):
-    response = await client.get("/xliff/1/delete")
-    assert response.status_code == 404
-
-
 async def test_download_xliff(client: QuartClient):
     async with client.app.app_context():
         with get_session() as session:

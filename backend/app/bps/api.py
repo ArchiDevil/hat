@@ -5,6 +5,8 @@ from app.db import get_session
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
+# TMX things
+
 
 @bp.get("/tmx")
 async def tmx_files():
@@ -26,9 +28,12 @@ async def delete_tmx(doc_id: int):
         if not doc:
             abort(404)
 
-        session.query(TmxDocument).filter(TmxDocument.id == doc_id).delete()
+        session.delete(doc)
         session.commit()
         return "ok"
+
+
+# XLIFF things
 
 
 @bp.get("/xliff")
@@ -51,6 +56,6 @@ async def delete_xliff(doc_id: int):
         if not doc:
             abort(404)
 
-        session.query(XliffDocument).filter(XliffDocument.id == doc_id).delete()
+        session.delete(doc)
         session.commit()
         return "ok"
