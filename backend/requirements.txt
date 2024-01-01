@@ -1,4 +1,5 @@
-quart==0.19.3
+quart==0.19.4
+quart-cors==0.7.0
 lxml==4.9.3
 hypercorn==0.15.*
 alembic==1.13.*
