@@ -34,7 +34,7 @@ async def test_can_delete_tmx_doc(client: QuartClient):
 
     response = await client.post("/api/tmx/1/delete")
     assert response.status_code == 200
-    assert await response.data == b"ok"
+    assert await response.data == b'{"result":"ok"}\n'
 
     async with client.app.app_context():
         with get_session() as session:
@@ -97,7 +97,7 @@ async def test_can_delete_xliff_doc(client: QuartClient):
 
     response = await client.post("/api/xliff/1/delete")
     assert response.status_code == 200
-    assert await response.data == b"ok"
+    assert await response.data == b'{"result":"ok"}\n'
 
     async with client.app.app_context():
         with get_session() as session:

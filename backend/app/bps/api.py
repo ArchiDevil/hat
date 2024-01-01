@@ -33,7 +33,7 @@ async def delete_tmx(doc_id: int):
 
         session.delete(doc)
         session.commit()
-        return "ok"
+        return {"result": "ok"}
 
 
 @bp.post("/tmx/upload")
@@ -55,7 +55,7 @@ async def tmx_upload():
             doc.records.append(TmxRecord(source=source, target=target))
         session.commit()
 
-    return "ok"
+    return {"result": "ok"}
 
 
 # XLIFF things
@@ -83,7 +83,7 @@ async def delete_xliff(doc_id: int):
 
         session.delete(doc)
         session.commit()
-        return "ok"
+        return {"result": "ok"}
 
 
 @bp.post("/xliff/upload")
@@ -120,4 +120,4 @@ async def upload():
 
         session.commit()
 
-    return "ok"
+    return {"result": "ok"}
