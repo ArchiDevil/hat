@@ -53,7 +53,8 @@ onMounted(async () => {
       <UploadingDialog
         title="Select a TMX file:"
         extension=".tmx"
-        url="/tmx/upload" />
+        url="/tmx/upload"
+        @uploaded="getTmxDocs()" />
       <File
         v-for="file in tmx_docs"
         :file="file"
@@ -66,7 +67,8 @@ onMounted(async () => {
       <UploadingDialog
         title="Select a XLIFF file:"
         extension=".xliff"
-        url="/xliff/upload" />
+        url="/xliff/upload"
+        @uploaded="getXliffDocs()" />
       <File
         v-for="file in xliff_docs"
         :file="file"

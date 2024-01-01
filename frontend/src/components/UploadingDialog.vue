@@ -10,6 +10,7 @@ const props = defineProps(['title', 'extension', 'url'])
 const file = ref(null) as Ref<File | null>
 const input = ref(null)
 const uploadAvailable = computed(() => file.value != null)
+const uploading = ref(false)
 
 const updateFiles = () => {
   const element = input.value as unknown as HTMLInputElement
@@ -34,7 +35,9 @@ const uploadFile = async () => {
   try {
     const api = apiAccessor(props.url)
     defaults.headers = {}
+    uploading.value = true
     const response = await api.post('', formData)
+    uploading.value = false
     emit('uploaded', response)
   } catch (error) {
     console.error(error)
@@ -58,9 +61,15 @@ const uploadFile = async () => {
       @change="updateFiles"
       :accept="extension" />
     <Button
+      class="ml-2"
       @click="uploadFile"
-      :disabled="!uploadAvailable">
+      :disabled="!uploadAvailable || uploading">
       Upload
     </Button>
+    <span
+      class="ml-2"
+      v-if="uploading">
+      Uploading...
+    </span>
   </div>
 </template>
