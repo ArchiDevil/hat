@@ -4,6 +4,7 @@ import {flushPromises, mount} from '@vue/test-utils'
 import Index from './Index.vue'
 
 beforeEach(() => {
+  // TODO: update to use apiAccessor
   vi.restoreAllMocks()
   vi.unmock('mande')
 })

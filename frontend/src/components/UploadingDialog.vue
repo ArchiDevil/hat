@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {Ref, ref, computed} from 'vue'
-import {mande} from 'mande'
+import {apiAccessor} from '../api'
+import {defaults} from 'mande'
 import Button from './Button.vue'
 
 const emit = defineEmits(['uploaded'])
@@ -23,20 +24,22 @@ const uploadFile = async () => {
     return
   }
 
-  const formData = new FormData()
-  const element = input as unknown as HTMLInputElement
+  const element = input.value as unknown as HTMLInputElement
   const attachedFile = element.files![0]
-  formData.append('file', attachedFile)
-  try {
-    const response = await mande(props.url).post('', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
 
+  const formData = new FormData()
+  formData.append('file', attachedFile)
+  // this is a workaround for a bug in mande
+  const defaultHeaders = defaults.headers
+  try {
+    const api = apiAccessor(props.url)
+    defaults.headers = {}
+    const response = await api.post('', formData)
     emit('uploaded', response)
   } catch (error) {
     console.error(error)
+  } finally {
+    defaults.headers = defaultHeaders
   }
 }
 </script>

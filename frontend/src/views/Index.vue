@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {Ref, onMounted, ref} from 'vue'
-import {mande} from 'mande'
+import {apiAccessor} from '../api'
 
 import File from '../components/File.vue'
 import UploadingDialog from '../components/UploadingDialog.vue'
@@ -15,24 +15,27 @@ interface XliffDoc {
   name: string
 }
 
+const tmxApi = apiAccessor('/tmx')
+const xliffApi = apiAccessor('/xliff')
+
 const tmx_docs = ref([]) as Ref<TmxDoc[]>
 const xliff_docs = ref([]) as Ref<XliffDoc[]>
 
 const getTmxDocs = async () => {
-  tmx_docs.value = await mande('/api/tmx').get<TmxDoc[]>()
+  tmx_docs.value = await tmxApi.get<TmxDoc[]>()
 }
 
 const deleteTmx = async (id: number) => {
-  await mande(`/api/tmx/${id}/delete`).post()
+  await tmxApi.post(`/${id}/delete`)
   await getTmxDocs()
 }
 
 const getXliffDocs = async () => {
-  xliff_docs.value = await mande('/api/xliff').get<XliffDoc[]>()
+  xliff_docs.value = await xliffApi.get<XliffDoc[]>()
 }
 
 const deleteXliff = async (id: number) => {
-  await mande(`/api/xliff/${id}/delete`).post()
+  await xliffApi.post(`/${id}/delete`)
   await getXliffDocs()
 }
 
