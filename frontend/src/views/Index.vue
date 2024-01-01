@@ -18,24 +18,29 @@ interface XliffDoc {
 const tmxApi = apiAccessor('/tmx')
 const xliffApi = apiAccessor('/xliff')
 
-const tmx_docs = ref([]) as Ref<TmxDoc[]>
-const xliff_docs = ref([]) as Ref<XliffDoc[]>
+const tmxDocs = ref([]) as Ref<TmxDoc[]>
+const xliffDocs = ref([]) as Ref<XliffDoc[]>
+const fileDeleting = ref(false)
 
 const getTmxDocs = async () => {
-  tmx_docs.value = await tmxApi.get<TmxDoc[]>()
+  tmxDocs.value = await tmxApi.get<TmxDoc[]>()
 }
 
 const deleteTmx = async (id: number) => {
+  fileDeleting.value = true
   await tmxApi.post(`/${id}/delete`)
+  fileDeleting.value = false
   await getTmxDocs()
 }
 
 const getXliffDocs = async () => {
-  xliff_docs.value = await xliffApi.get<XliffDoc[]>()
+  xliffDocs.value = await xliffApi.get<XliffDoc[]>()
 }
 
 const deleteXliff = async (id: number) => {
+  fileDeleting.value = true
   await xliffApi.post(`/${id}/delete`)
+  fileDeleting.value = false
   await getXliffDocs()
 }
 
@@ -56,8 +61,9 @@ onMounted(async () => {
         url="/tmx/upload"
         @uploaded="getTmxDocs()" />
       <File
-        v-for="file in tmx_docs"
+        v-for="file in tmxDocs"
         :file="file"
+        :busy="fileDeleting"
         type="tmx"
         @delete="deleteTmx(file.id)" />
     </div>
@@ -70,8 +76,9 @@ onMounted(async () => {
         url="/xliff/upload"
         @uploaded="getXliffDocs()" />
       <File
-        v-for="file in xliff_docs"
+        v-for="file in xliffDocs"
         :file="file"
+        :busy="fileDeleting"
         type="xliff"
         @delete="deleteXliff(file.id)" />
     </div>

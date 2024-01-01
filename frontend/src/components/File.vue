@@ -3,23 +3,31 @@ import Button from './Button.vue'
 import Link from './Link.vue'
 
 defineEmits(['delete'])
-defineProps(['file', 'type'])
+defineProps(['file', 'type', 'busy'])
 </script>
 
 <template>
   <div
-    class="bg-slate-200 my-1 py-1 px-2 border-slate-500 border flex items-baseline"
-    style="appearance: button">
-    <div class="w-24">#{{ file.id }} {{ file.name }}</div>
+    class="bg-slate-200 my-1 py-1 px-2 border-slate-500 border flex items-baseline">
+    <div class="w-48 text-ellipsis whitespace-nowrap overflow-hidden">
+      #{{ file.id }} {{ file.name }}
+    </div>
     <Link
       :href="`${type}/${file.id}`"
-      class="ml-2">
+      class="ml-2"
+      :disabled="busy">
       Open
     </Link>
     <Button
       class="ml-2"
-      @click="$emit('delete')">
+      @click="$emit('delete')"
+      :disabled="busy">
       Delete
     </Button>
+    <span
+      class="ml-2"
+      v-if="busy">
+      Busy...
+    </span>
   </div>
 </template>
