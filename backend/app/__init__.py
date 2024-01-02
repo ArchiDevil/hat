@@ -3,7 +3,7 @@ from quart import Quart
 from quart_cors import cors
 
 from app import index
-from app.bps import tmx, xliff, api
+from app.bps import xliff, api
 
 
 def create_app(mode="Production", additional_config=None):
@@ -22,7 +22,6 @@ def create_app(mode="Production", additional_config=None):
         app.config["DATABASE"] = db_url
 
     app.register_blueprint(cors(index.bp, allow_origin="*") if app.debug else index.bp)
-    app.register_blueprint(cors(tmx.bp, allow_origin="*") if app.debug else tmx.bp)
     app.register_blueprint(cors(xliff.bp, allow_origin="*") if app.debug else xliff.bp)
     app.register_blueprint(cors(api.bp, allow_origin="*") if app.debug else api.bp)
 
