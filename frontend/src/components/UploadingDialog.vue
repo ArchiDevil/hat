@@ -11,8 +11,10 @@ const file = ref(null) as Ref<File | null>
 const input = ref(null)
 const uploadAvailable = computed(() => file.value != null)
 const uploading = ref(false)
+const status = ref()
 
 const updateFiles = () => {
+  status.value = undefined
   const element = input.value as unknown as HTMLInputElement
   if (!element.files) {
     return
@@ -36,11 +38,14 @@ const uploadFile = async () => {
     const api = apiAccessor(props.url)
     defaults.headers = {}
     uploading.value = true
+    status.value = 'Uploading...'
     const response = await api.post('', formData)
     uploading.value = false
+    status.value = 'Done!'
     emit('uploaded', response)
-  } catch (error) {
-    console.error(error)
+  } catch (error: any) {
+    uploading.value = false
+    status.value = `${error.message} :(`
   } finally {
     defaults.headers = defaultHeaders
   }
@@ -68,8 +73,8 @@ const uploadFile = async () => {
     </Button>
     <span
       class="ml-2"
-      v-if="uploading">
-      Uploading...
+      v-if="status">
+      {{ status }}
     </span>
   </div>
 </template>
