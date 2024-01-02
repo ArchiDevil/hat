@@ -95,6 +95,27 @@ async def xliff_files():
         ]
 
 
+@bp.get("/xliff/<int:doc_id>")
+async def xliff_file(doc_id: int):
+    with get_session() as session:
+        doc = session.query(XliffDocument).filter(XliffDocument.id == doc_id).first()
+        if not doc:
+            abort(404)
+
+        return {
+            "id": doc.id,
+            "name": doc.name,
+            "records": [
+                {
+                    "id": record.id,
+                    "source": record.source,
+                    "target": record.target,
+                }
+                for record in doc.records
+            ],
+        }
+
+
 @bp.post("/xliff/<int:doc_id>/delete")
 async def delete_xliff(doc_id: int):
     with get_session() as session:
