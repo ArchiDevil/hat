@@ -1,4 +1,4 @@
-from quart import Blueprint, abort, request
+from quart import Blueprint, abort, request, send_file
 from sqlalchemy import select
 
 from app.schema import TmxDocument, TmxRecord, XliffDocument, XliffRecord
@@ -163,3 +163,26 @@ async def upload():
         session.commit()
 
     return {"result": "ok"}
+
+
+@bp.get("/xliff/<int:doc_id>/download")
+async def download(doc_id: int):
+    # TODO: this is an extremely slow solution, but it works for now, fine for PoC
+    with get_session() as session:
+        doc = session.query(XliffDocument).filter_by(id=doc_id).first()
+
+        if not doc:
+            abort(404)
+
+        original_document = doc.original_document.encode("utf-8")
+        processed_document = extract_xliff_content(original_document)
+
+        for segment in processed_document.segments:
+            record = session.query(TmxRecord).filter_by(source=segment.original).first()
+            if record:
+                segment.translation = record.target
+
+        processed_document.commit()
+        file = processed_document.write()
+
+    return await send_file(file, mimetype="application/xliff+xml")

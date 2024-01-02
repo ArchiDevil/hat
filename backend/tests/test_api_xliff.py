@@ -128,3 +128,30 @@ async def test_upload_process_xliff_file(client: QuartClient):
 async def test_upload_no_file(client: QuartClient):
     response = await client.post("/api/xliff/upload", files={})
     assert response.status_code == 400
+
+
+async def test_download_xliff(client: QuartClient):
+    async with client.app.app_context():
+        with get_session() as session:
+            tmx_records = [
+                TmxRecord(source="Regional Effects", target="RegEffectsTranslation")
+            ]
+            session.add(TmxDocument(name="test", records=tmx_records))
+            session.commit()
+
+    with open("tests/small.xliff", "rb") as fp:
+        response = await client.post(
+            "/api/xliff/upload", files={"file": FileStorage(stream=fp)}
+        )
+
+    response = await client.get("/api/xliff/1/download")
+    assert response.status_code == 200
+
+    data = (await response.data).decode("utf-8")
+    assert data.startswith("<?xml version=")
+    assert "RegEffectsTranslation" in data
+
+
+async def test_download_shows_404_for_unknown_xliff(client: QuartClient):
+    response = await client.get("/api/xliff/1/download")
+    assert response.status_code == 404
