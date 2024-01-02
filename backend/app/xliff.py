@@ -142,8 +142,8 @@ def extract_xliff_content(content: bytes) -> XliffData:
             XliffSegment(
                 segment_id,
                 approved,
-                src_segment.text if src_segment.text else "",
-                tgt_segment.text if tgt_segment.text else "",
+                "".join(src_segment.itertext()),
+                "".join(tgt_segment.itertext()),
                 tgt_segment.attrib.get("state"),
             )
         )

@@ -2,8 +2,7 @@ from lxml import etree
 
 
 def __parse_seg(seg: etree._Element) -> str:
-    text_iter = list(seg.itertext())
-    return "".join(text_iter)
+    return "".join(seg.itertext())
 
 
 def extract_tmx_content(
