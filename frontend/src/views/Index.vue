@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Ref, onMounted, ref} from 'vue'
+import {onMounted, ref} from 'vue'
 import {apiAccessor} from '../api'
 
 import File from '../components/File.vue'
@@ -18,8 +18,8 @@ interface XliffDoc {
 const tmxApi = apiAccessor('/tmx')
 const xliffApi = apiAccessor('/xliff')
 
-const tmxDocs = ref([]) as Ref<TmxDoc[]>
-const xliffDocs = ref([]) as Ref<XliffDoc[]>
+const tmxDocs = ref<TmxDoc[]>([])
+const xliffDocs = ref<XliffDoc[]>([])
 const fileDeleting = ref(false)
 
 const getTmxDocs = async () => {
