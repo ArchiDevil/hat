@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {apiAccessor} from '../api'
+import Link from '../components/Link.vue'
 import DocumentPair from '../components/DocumentPair.vue'
 
 interface Document {
@@ -15,13 +16,18 @@ interface Record {
 }
 
 const document = ref<Document>()
+const downloadLink = computed(() => {
+  if (document.value) {
+    return `/api/xliff/${document.value.id}/download`
+  }
+})
 
 onMounted(async () => {
   const urlParams = new URLSearchParams(window.location.search)
   const fileId = urlParams.get('id')
 
   if (fileId) {
-    const api = apiAccessor(`/tmx/${fileId}`)
+    const api = apiAccessor(`/xliff/${fileId}`)
     document.value = await api.get<Document>()
   }
 })
@@ -29,10 +35,15 @@ onMounted(async () => {
 
 <template>
   <div>
-    <h1 class="font-bold text-2xl pt-8">TMX file viewer</h1>
+    <h1 class="font-bold text-2xl pt-8">XLIFF file viewer</h1>
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
-    <p class="mb-4">Number of records: {{ document?.records.length }}</p>
+    <p>Number of records: {{ document?.records.length }}</p>
+    <Link
+      :href="downloadLink"
+      class="mb-4 block">
+      Download
+    </Link>
     <div>
       <DocumentPair
         :record="record"
