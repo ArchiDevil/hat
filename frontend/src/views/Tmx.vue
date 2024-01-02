@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
+import {useRoute} from 'vue-router'
+
 import {apiAccessor} from '../api'
 import DocumentPair from '../components/DocumentPair.vue'
 
@@ -17,13 +19,9 @@ interface Record {
 const document = ref<Document>()
 
 onMounted(async () => {
-  const urlParams = new URLSearchParams(window.location.search)
-  const fileId = urlParams.get('id')
-
-  if (fileId) {
-    const api = apiAccessor(`/tmx/${fileId}`)
-    document.value = await api.get<Document>()
-  }
+  const route = useRoute()
+  const api = apiAccessor(`/tmx/${route.params.id}`)
+  document.value = await api.get<Document>()
 })
 </script>
 
@@ -36,7 +34,7 @@ onMounted(async () => {
     <div>
       <DocumentPair
         :record="record"
-        v-for="record in document?.records.slice(0, 50)"
+        v-for="record in document?.records"
         :key="record.source" />
     </div>
   </div>

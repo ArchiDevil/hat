@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import {computed, onMounted, ref} from 'vue'
+import {useRoute} from 'vue-router'
+
 import {apiAccessor} from '../api'
 import Link from '../components/Link.vue'
 import DocumentPair from '../components/DocumentPair.vue'
@@ -23,13 +25,9 @@ const downloadLink = computed(() => {
 })
 
 onMounted(async () => {
-  const urlParams = new URLSearchParams(window.location.search)
-  const fileId = urlParams.get('id')
-
-  if (fileId) {
-    const api = apiAccessor(`/xliff/${fileId}`)
-    document.value = await api.get<Document>()
-  }
+  const route = useRoute()
+  const api = apiAccessor(`/xliff/${route.params.id}`)
+  document.value = await api.get<Document>()
 })
 </script>
 

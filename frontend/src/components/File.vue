@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Button from './Button.vue'
-import Link from './Link.vue'
+import RoutingLink from './RoutingLink.vue'
 
 defineEmits(['delete'])
 defineProps(['file', 'type', 'busy'])
@@ -12,12 +12,12 @@ defineProps(['file', 'type', 'busy'])
     <div class="w-48 text-ellipsis whitespace-nowrap overflow-hidden">
       #{{ file.id }} {{ file.name }}
     </div>
-    <Link
+    <RoutingLink
       :href="`${type}/${file.id}`"
       class="ml-2"
       :disabled="busy">
       Open
-    </Link>
+    </RoutingLink>
     <Button
       class="ml-2"
       @click="$emit('delete')"
