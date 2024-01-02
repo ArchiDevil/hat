@@ -34,6 +34,7 @@ async def xliff_file(doc_id: int):
             "records": [
                 {
                     "id": record.id,
+                    "segment_id": record.segment_id,
                     "source": record.source,
                     "target": record.target,
                 }
@@ -82,7 +83,9 @@ async def upload():
 
             doc.records.append(
                 XliffRecord(
-                    id=segment.id_, source=segment.original, target=segment.translation
+                    segment_id=segment.id_,
+                    source=segment.original,
+                    target=segment.translation,
                 )
             )
 

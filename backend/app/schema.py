@@ -47,6 +47,7 @@ class XliffRecord(Base):
     __tablename__ = "xliff_record"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    segment_id: Mapped[int] = mapped_column()
     document_id: Mapped[int] = mapped_column(ForeignKey("xliff_document.id"))
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()

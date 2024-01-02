@@ -30,8 +30,10 @@ async def test_can_get_xliff_file(client: QuartClient):
     async with client.app.app_context():
         with get_session() as session:
             xliff_records = [
-                XliffRecord(source="Regional Effects", target="Translation"),
-                XliffRecord(source="User Interface", target="UI"),
+                XliffRecord(
+                    segment_id=8, source="Regional Effects", target="Translation"
+                ),
+                XliffRecord(segment_id=14, source="User Interface", target="UI"),
             ]
             session.add(
                 XliffDocument(
@@ -50,11 +52,13 @@ async def test_can_get_xliff_file(client: QuartClient):
         "records": [
             {
                 "id": 1,
+                "segment_id": 8,
                 "source": "Regional Effects",
                 "target": "Translation",
             },
             {
                 "id": 2,
+                "segment_id": 14,
                 "source": "User Interface",
                 "target": "UI",
             },
@@ -100,7 +104,8 @@ async def test_upload(client: QuartClient):
             assert doc is not None
             assert doc.name == "tests/small.xliff"
             assert len(doc.records) == 1
-            assert doc.records[0].id == 675606
+            assert doc.records[0].id == 1
+            assert doc.records[0].segment_id == 675606
             assert doc.records[0].document_id == 1
             assert doc.original_document.startswith("<?xml version=")
 
