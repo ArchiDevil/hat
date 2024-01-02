@@ -40,7 +40,7 @@ async def test_download_xliff(client: QuartClient):
 
     with open("tests/small.xliff", "rb") as fp:
         response = await client.post(
-            "/xliff/upload", files={"xliff-file": FileStorage(stream=fp)}
+            "/api/xliff/upload", files={"file": FileStorage(stream=fp)}
         )
 
     response = await client.get("/xliff/1/download")

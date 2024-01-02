@@ -24,6 +24,27 @@ async def tmx_files():
         ]
 
 
+@bp.get("/tmx/<int:doc_id>")
+async def tmx_file(doc_id: int):
+    with get_session() as session:
+        doc = session.query(TmxDocument).filter(TmxDocument.id == doc_id).first()
+        if not doc:
+            abort(404)
+
+        return {
+            "id": doc.id,
+            "name": doc.name,
+            "records": [
+                {
+                    "id": record.id,
+                    "source": record.source,
+                    "target": record.target,
+                }
+                for record in doc.records
+            ],
+        }
+
+
 @bp.post("/tmx/<int:doc_id>/delete")
 async def delete_tmx(doc_id: int):
     with get_session() as session:

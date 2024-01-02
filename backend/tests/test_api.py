@@ -26,6 +26,41 @@ async def test_can_return_list_of_tmx_docs(client: QuartClient):
     ]
 
 
+async def test_can_get_tmx_file(client: QuartClient):
+    async with client.app.app_context():
+        with get_session() as session:
+            tmx_records = [
+                TmxRecord(source="Regional Effects", target="Translation"),
+                TmxRecord(source="User Interface", target="UI"),
+            ]
+            session.add(TmxDocument(name="test_doc.tmx", records=tmx_records))
+            session.commit()
+
+    response = await client.get("/api/tmx/1")
+    assert response.status_code == 200
+    assert await response.json == {
+        "id": 1,
+        "name": "test_doc.tmx",
+        "records": [
+            {
+                "id": 1,
+                "source": "Regional Effects",
+                "target": "Translation",
+            },
+            {
+                "id": 2,
+                "source": "User Interface",
+                "target": "UI",
+            },
+        ],
+    }
+
+
+async def test_returns_404_when_tmx_file_not_found(client: QuartClient):
+    response = await client.get("/api/tmx/1")
+    assert response.status_code == 404
+
+
 async def test_can_delete_tmx_doc(client: QuartClient):
     async with client.app.app_context():
         with get_session() as session:
