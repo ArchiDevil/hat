@@ -45,7 +45,7 @@ onMounted(async () => {
     <div>
       <DocumentPair
         :record="record"
-        v-for="record in document?.records.slice(0, 50)"
+        v-for="record in document?.records"
         :key="record.source" />
     </div>
   </div>
