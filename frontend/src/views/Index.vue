@@ -26,22 +26,8 @@ const getTmxDocs = async () => {
   tmxDocs.value = await tmxApi.get<TmxDoc[]>()
 }
 
-const deleteTmx = async (id: number) => {
-  fileDeleting.value = true
-  await tmxApi.post(`/${id}/delete`)
-  fileDeleting.value = false
-  await getTmxDocs()
-}
-
 const getXliffDocs = async () => {
   xliffDocs.value = await xliffApi.get<XliffDoc[]>()
-}
-
-const deleteXliff = async (id: number) => {
-  fileDeleting.value = true
-  await xliffApi.post(`/${id}/delete`)
-  fileDeleting.value = false
-  await getXliffDocs()
 }
 
 onMounted(async () => {
@@ -65,7 +51,8 @@ onMounted(async () => {
         :file="file"
         :busy="fileDeleting"
         type="tmx"
-        @delete="deleteTmx(file.id)" />
+        @deleting="fileDeleting = true"
+        @delete=";(fileDeleting = false), getTmxDocs()" />
     </div>
 
     <div class="mt-8">
@@ -80,7 +67,8 @@ onMounted(async () => {
         :file="file"
         :busy="fileDeleting"
         type="xliff"
-        @delete="deleteXliff(file.id)" />
+        @deleting="fileDeleting = true"
+        @delete=";(fileDeleting = false), getXliffDocs()" />
     </div>
   </div>
 </template>

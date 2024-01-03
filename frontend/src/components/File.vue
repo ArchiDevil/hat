@@ -1,9 +1,31 @@
 <script setup lang="ts">
+import {ref} from 'vue'
+import {apiAccessor} from '../api'
+
 import Button from './Button.vue'
 import RoutingLink from './RoutingLink.vue'
 
-defineEmits(['delete'])
-defineProps(['file', 'type', 'busy'])
+const emit = defineEmits(['delete'])
+const props = defineProps(['file', 'type'])
+
+const busy = ref(false)
+const status = ref()
+
+const deleteFile = async () => {
+  const api = apiAccessor(`${props.type}/${props.file.id}`)
+  try {
+    busy.value = true
+    status.value = 'Busy...'
+    await api.post('/delete')
+    status.value = undefined
+  } catch (error) {
+    console.log(error)
+    status.value = `Error ${error}`
+  } finally {
+    busy.value = false
+    emit('delete')
+  }
+}
 </script>
 
 <template>
@@ -13,21 +35,21 @@ defineProps(['file', 'type', 'busy'])
       #{{ file.id }} {{ file.name }}
     </div>
     <RoutingLink
-      :href="`${type}/${file.id}`"
       class="ml-2"
+      :href="`${type}/${file.id}`"
       :disabled="busy">
       Open
     </RoutingLink>
     <Button
       class="ml-2"
-      @click="$emit('delete')"
+      @click="deleteFile()"
       :disabled="busy">
       Delete
     </Button>
     <span
       class="ml-2"
-      v-if="busy">
-      Busy...
+      v-if="status">
+      {{ status }}
     </span>
   </div>
 </template>
