@@ -12,7 +12,7 @@ const busy = ref(false)
 const status = ref()
 
 const deleteFile = async () => {
-  const api = apiAccessor(`${props.type}/${props.file.id}`)
+  const api = apiAccessor(`/${props.type}/${props.file.id}`)
   try {
     busy.value = true
     status.value = 'Busy...'
@@ -20,7 +20,7 @@ const deleteFile = async () => {
     status.value = undefined
   } catch (error) {
     console.log(error)
-    status.value = `Error ${error}`
+    status.value = `${error} :(`
   } finally {
     busy.value = false
     emit('delete')
