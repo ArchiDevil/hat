@@ -8,15 +8,21 @@ SessionLocal: sessionmaker | None = None
 
 
 def init_connection(connection_url: str):
-    eng = create_engine(connection_url)
-    maker = sessionmaker(autocommit=False, autoflush=False, bind=eng)
-    return eng, maker
+    global engine, SessionLocal
+    engine = create_engine(connection_url)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def close_connection():
+    global engine
+    if engine:
+        engine.dispose()
+        engine = None
 
 
 def get_db():
-    global engine, SessionLocal
     if not engine:
-        engine, SessionLocal = init_connection(get_settings().database_url)
+        init_connection(get_settings().database_url)
 
     assert SessionLocal
     db: Session = SessionLocal()

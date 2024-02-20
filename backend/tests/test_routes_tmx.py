@@ -5,45 +5,29 @@ import tempfile
 from fastapi.testclient import TestClient
 import pytest
 
-from app import create_fastapi_app, schema
+from app import create_fastapi_app, db_fastapi, schema
 from app.db_fastapi import get_db, init_connection
-
-
-engine, SessionLocal = None, None
-
-
-def db_override():
-    assert engine and SessionLocal
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @contextmanager
 def session():
-    return db_override()
+    return get_db()
 
 
 @pytest.fixture()
 def fastapi_app():
-    global engine, SessionLocal
-
     db_fd, db_path = tempfile.mkstemp()
 
     app = create_fastapi_app()
-    engine, SessionLocal = init_connection(f"sqlite:///{db_path}")
+    init_connection(f"sqlite:///{db_path}")
+    assert db_fastapi.engine and db_fastapi.SessionLocal
 
-    schema.Base.metadata.drop_all(engine)
-    schema.Base.metadata.create_all(engine)
-    app.dependency_overrides[get_db] = db_override
+    schema.Base.metadata.drop_all(db_fastapi.engine)
+    schema.Base.metadata.create_all(db_fastapi.engine)
 
     yield app
 
-    SessionLocal = None
-    engine.dispose()
-    engine = None
+    db_fastapi.close_connection()
 
     os.close(db_fd)
     os.unlink(db_path)
