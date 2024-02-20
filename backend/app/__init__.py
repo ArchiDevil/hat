@@ -1,11 +1,11 @@
 import os
-from quart import Quart
-from quart_cors import cors
-
-from app.bps import api_tmx, api_xliff
 
 
 def create_app(mode="Production", additional_config=None):
+    from quart import Quart
+    from quart_cors import cors
+    from app.bps import api_tmx, api_xliff
+
     app = Quart(__name__)
 
     if app.debug:
@@ -26,5 +26,15 @@ def create_app(mode="Production", additional_config=None):
     app.register_blueprint(
         cors(api_xliff.bp, allow_origin="*") if app.debug else api_xliff.bp
     )
+
+    return app
+
+
+def create_fastapi_app():
+    from fastapi import FastAPI
+    from app.routers import tmx
+
+    app = FastAPI()
+    app.include_router(tmx.router)
 
     return app

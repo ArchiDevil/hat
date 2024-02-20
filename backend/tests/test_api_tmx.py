@@ -98,6 +98,6 @@ async def test_can_upload_tmx(client: QuartClient):
             assert "Handbook" in doc.records[0].source
 
 
-async def test_shows_404_when_no_file_uploaded(client: QuartClient):
+async def test_shows_400_when_no_file_uploaded(client: QuartClient):
     response = await client.post("/api/tmx/upload")
     assert response.status_code == 400
