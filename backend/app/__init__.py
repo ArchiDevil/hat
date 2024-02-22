@@ -33,8 +33,10 @@ def create_app(mode="Production", additional_config=None):
 def create_fastapi_app():
     from fastapi import FastAPI
     from app.routers import tmx
+    from app.routers import xliff
 
     app = FastAPI()
     app.include_router(tmx.router)
+    app.include_router(xliff.router)
 
     return app
