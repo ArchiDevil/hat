@@ -1,11 +1,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db_fastapi import get_db
 from app import schema
+from app.db_fastapi import get_db
 from app.xliff import extract_xliff_content
 from .models import XliffFile, XliffFileWithRecords, XliffFileRecord, StatusMessage
 
@@ -101,6 +102,22 @@ async def create_xliff(
 
 
 @router.get("/{doc_id}/download")
-def download_xliff(doc_id: int):
-    # TODO: implement this
-    pass
+def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
+    doc = db.query(schema.XliffDocument).filter_by(id=doc_id).first()
+
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    original_document = doc.original_document.encode("utf-8")
+    processed_document = extract_xliff_content(original_document)
+
+    for segment in processed_document.segments:
+        record = db.query(schema.TmxRecord).filter_by(source=segment.original).first()
+        if record:
+            segment.translation = record.target
+
+    processed_document.commit()
+    file = processed_document.write()
+    return StreamingResponse(file, media_type="application/xml")
