@@ -120,4 +120,5 @@ def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
 
     processed_document.commit()
     file = processed_document.write()
+    file.seek(0)
     return StreamingResponse(file, media_type="application/xml")
