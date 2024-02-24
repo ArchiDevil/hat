@@ -1,0 +1,21 @@
+{
+  "name": "generator",
+  "version": "1.0.0",
+  "description": "A client generator for OpenAPI",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && rollup -c"
+  },
+  "author": "ArchiDevil",
+  "license": "MIT",
+  "dependencies": {
+    "command-line-args": "^5.2.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@types/command-line-args": "^5.2.3",
+    "rollup": "^4.12.0"
+  }
+}
