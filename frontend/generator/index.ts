@@ -2,15 +2,19 @@ import commandLineArgs from 'command-line-args'
 import {existsSync, mkdirSync, writeFileSync, rmSync} from 'fs'
 import {join} from 'path'
 
-type ItemsDescription =
-  | {
-      $ref: string
+type ItemRefDesc = {
+  $ref: string
+}
+
+type ItemAnyOfDesc = {
+  anyOf: [
+    {
+      type: 'string' | 'integer' | 'boolean'
     }
-  | {
-      anyOf: {
-        type: 'string' | 'integer'
-      }
-    }
+  ]
+}
+
+type ItemsDescription = ItemRefDesc | ItemAnyOfDesc
 
 type PropDescription =
   | {
@@ -87,8 +91,17 @@ function tsType(
     case 'boolean':
       return 'boolean'
     case 'array': {
-      if (items && items['$ref']) {
-        return `${getReferencedType(items['$ref'])}[]`
+      if (items) {
+        if ('$ref' in items) {
+          const ref = items['$ref']
+          return `${getReferencedType(ref)}[]`
+        } else if ('anyOf' in items) {
+          const elems = items['anyOf']
+          return `(${elems.map((val) => tsType(val.type)).join(' | ')})[]`
+        } else {
+          console.warn('Unsupported array items:', items)
+          return 'any[]'
+        }
       } else {
         console.warn('Unsupported array type:', items)
         return 'any[]'
