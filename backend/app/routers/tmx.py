@@ -13,13 +13,13 @@ router = APIRouter(prefix="/tmx", tags=["tmx"])
 
 
 @router.get("/")
-def get_tmxs(db: Session = Depends(get_db)) -> list[TmxFile]:
+def get_tmxs(db: Annotated[Session, Depends(get_db)]) -> list[TmxFile]:
     docs = db.query(schema.TmxDocument).all()
     return [TmxFile(id=doc.id, name=doc.name) for doc in docs]
 
 
 @router.get("/{tmx_id}")
-def get_tmx(tmx_id: int, db: Session = Depends(get_db)) -> TmxFileWithRecords:
+def get_tmx(tmx_id: int, db: Annotated[Session, Depends(get_db)]) -> TmxFileWithRecords:
     doc = db.query(schema.TmxDocument).filter(schema.TmxDocument.id == tmx_id).first()
     if not doc:
         raise HTTPException(
@@ -38,7 +38,7 @@ def get_tmx(tmx_id: int, db: Session = Depends(get_db)) -> TmxFileWithRecords:
 
 @router.post("/")
 async def create_tmx(
-    file: Annotated[UploadFile, File()], db: Session = Depends(get_db)
+    file: Annotated[UploadFile, File()], db: Annotated[Session, Depends(get_db)]
 ) -> TmxFile:
     name = file.filename
     tmx_data = await file.read()
@@ -61,7 +61,7 @@ async def create_tmx(
 
 
 @router.delete("/{tmx_id}")
-def delete_tmx(tmx_id: int, db: Session = Depends(get_db)) -> StatusMessage:
+def delete_tmx(tmx_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
     doc = db.query(schema.TmxDocument).filter(schema.TmxDocument.id == tmx_id).first()
     if not doc:
         raise HTTPException(

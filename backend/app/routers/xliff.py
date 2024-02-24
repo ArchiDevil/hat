@@ -15,13 +15,15 @@ router = APIRouter(prefix="/xliff", tags=["xliff"])
 
 
 @router.get("/")
-def get_xliffs(db: Session = Depends(get_db)) -> list[XliffFile]:
+def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[XliffFile]:
     xliffs = db.query(schema.XliffDocument).all()
     return [XliffFile(id=xliff.id, name=xliff.name) for xliff in xliffs]
 
 
 @router.get("/{doc_id}")
-def get_xliff(doc_id: int, db: Session = Depends(get_db)) -> XliffFileWithRecords:
+def get_xliff(
+    doc_id: int, db: Annotated[Session, Depends(get_db)]
+) -> XliffFileWithRecords:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -46,7 +48,7 @@ def get_xliff(doc_id: int, db: Session = Depends(get_db)) -> XliffFileWithRecord
 
 
 @router.delete("/{doc_id}")
-def delete_xliff(doc_id: int, db: Session = Depends(get_db)) -> StatusMessage:
+def delete_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -62,7 +64,7 @@ def delete_xliff(doc_id: int, db: Session = Depends(get_db)) -> StatusMessage:
 
 @router.post("/")
 async def create_xliff(
-    file: Annotated[UploadFile, File()], db: Session = Depends(get_db)
+    file: Annotated[UploadFile, File()], db: Annotated[Session, Depends(get_db)]
 ) -> XliffFile:
     name = file.filename
     xliff_data = await file.read()
@@ -101,7 +103,7 @@ async def create_xliff(
     return XliffFile(id=new_doc.id, name=new_doc.name)
 
 
-@router.get("/{doc_id}/download")
+@router.get("/{doc_id}/download", response_class=StreamingResponse)
 def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     doc = db.query(schema.XliffDocument).filter_by(id=doc_id).first()
 
@@ -121,4 +123,8 @@ def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     processed_document.commit()
     file = processed_document.write()
     file.seek(0)
-    return StreamingResponse(file, media_type="application/xml")
+    return StreamingResponse(
+        file,
+        media_type="text/xml",
+        headers={"Content-Disposition": f"attachment; filename={doc.name}"},
+    )
