@@ -225,9 +225,13 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
     }
   }
 
-  const genService = (tag: string, methods: ServiceMethod[]) => {
+  const genService = (methods: ServiceMethod[]) => {
     let content = ''
+    const types = new Set<string>()
     for (const method of methods) {
+      if (method.response != 'any') {
+        types.add(method.response)
+      }
       const paramSignature = (param: ParamDesc) =>
         `${param.name}${!param.required ? '?' : ''}: ${tsType(param.schema)}`
 
@@ -246,6 +250,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
 
     let fileContent = `${autogenPrologue}`
     fileContent += `import {mande} from 'mande'\n\n`
+    fileContent += `${getImports(Array.from(types), '../schemas/')}`
     fileContent += `${content}`
     return fileContent
   }
@@ -279,7 +284,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
 
   // generator actual code for every service
   for (const [tag, methods] of servicesByTag) {
-    const fileContent = genService(tag, methods)
+    const fileContent = genService(methods)
     const fileName = `${output}/${serviceNameFromTag(tag)}.ts`
     writeFileSync(fileName, fileContent)
   }
