@@ -16,17 +16,20 @@ type ItemAnyOfDesc = {
 
 type ItemsDescription = ItemRefDesc | ItemAnyOfDesc
 
-type PropDescription =
-  | {
-      type: 'string' | 'integer'
-      title?: string
-      format?: string
-    }
-  | {
-      type: 'array'
-      items: ItemsDescription
-      title?: string
-    }
+type PropTrivialDescription = {
+  type: 'string' | 'integer' // | 'boolean' // check if boolean is possible
+  title?: string
+  format?: string
+}
+
+type PropArrayDescription = {
+  type: 'array'
+  items: ItemsDescription
+  title?: string
+}
+
+// TODO: check if ItemRefDesc is possible here without an array
+type PropDescription = PropTrivialDescription | PropArrayDescription
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete'
 
@@ -38,6 +41,7 @@ interface ParamDesc {
 }
 
 interface ApiDescription {
+  openapi: string
   info: {
     title: string
     version: string
@@ -53,8 +57,10 @@ interface ApiDescription {
         responses: {
           [status: string]: {
             description: string
-            content: {
-              [contentType: string]: PropDescription
+            content?: {
+              [contentType: string]: {
+                schema: ItemRefDesc // TODO: it is likely not always correct
+              }
             }
           }
         }
@@ -83,18 +89,24 @@ function getReferencedType(ref: string): string {
   return ref.split('/').pop()
 }
 
-function getUsedTypes(
-  properties: ApiDescription['components']['schemas'][string]['properties']
-): string {
+function getUsedTypes(properties: {[name: string]: PropDescription}): string[] {
   const imports = new Set<string>()
   for (const propName in properties) {
     const prop = properties[propName]
     if (prop.type === 'array' && prop.items && '$ref' in prop.items) {
       const type = getReferencedType(prop.items['$ref'])
-      imports.add(`import {${type}} from './${type}'`)
+      imports.add(type)
     }
   }
-  return `${Array.from(imports).join('\n')}` + (imports.size > 0 ? '\n\n' : '')
+  return Array.from(imports)
+}
+
+function getImports(types: string[], schemasPath: string): string {
+  const imports: string[] = []
+  for (const type of types) {
+    imports.push(`import {${type}} from '${schemasPath}${type}'`)
+  }
+  return `${imports.join('\n')}` + (imports.length > 0 ? '\n\n' : '')
 }
 
 function tsType(prop: PropDescription): string {
@@ -143,15 +155,14 @@ function genSchemas(
     for (const propName in props) {
       const prop = props[propName]
       const required = requiredProps.find((val) => propName == val) ? '' : '?'
-      const items = prop.type === 'array' ? prop.items : undefined
-
       content += `  ${propName}${required}: ${tsType(prop)}\n`
     }
     return content
   }
 
   const genSchema = (schema: string) => {
-    const imports = `${getUsedTypes(schemas[schema].properties)}`
+    const types = getUsedTypes(schemas[schema].properties)
+    const imports = `${getImports(types, './')}`
     const props = genProps(
       schemas[schema].properties,
       schemas[schema].required || []
@@ -193,6 +204,27 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
     return `${lowered.charAt(0).toUpperCase()}${lowered.slice(1)}Service`
   }
 
+  const responseType = (
+    response: ApiDescription['paths'][string][HttpMethod]['responses'][string]
+  ) => {
+    if (!response.content) {
+      console.warn('Unsupported response content:', response.content)
+      return 'any'
+    }
+    if (!('application/json' in response.content)) {
+      console.warn('Unsupported response content:', response.content)
+      return 'any'
+    }
+
+    const schema = response.content['application/json'].schema
+    if ('$ref' in schema) {
+      return getReferencedType(schema['$ref'])
+    } else {
+      console.warn('Unsupported response schema:', schema)
+      return 'any'
+    }
+  }
+
   const genService = (tag: string, methods: ServiceMethod[]) => {
     let content = ''
     for (const method of methods) {
@@ -206,15 +238,15 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
       // replace all OpenAPI path parameters with JS template literals
       const interpolatedPath = method.path.replace(/\{(.*)?\}/g, '${$1}')
 
-      content += `  async ${method.name}(${requestParams}): Promise<${method.response}> {\n`
-      content += `    const api = mande(\`${interpolatedPath}\`)\n`
-      content += `    return await api.${method.httpMethod}('')\n`
-      content += `  }\n`
+      content += `export const ${method.name} = async (${requestParams}): Promise<${method.response}> => {\n`
+      content += `  const api = mande(\`${interpolatedPath}\`)\n`
+      content += `  return await api.${method.httpMethod}<${method.response}>('')\n`
+      content += `}\n`
     }
 
     let fileContent = `${autogenPrologue}`
     fileContent += `import {mande} from 'mande'\n\n`
-    fileContent += `export class ${serviceNameFromTag(tag)} {\n${content}}\n`
+    fileContent += `${content}`
     return fileContent
   }
 
@@ -238,7 +270,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
           name: convertServiceName(methodDesc.summary),
           path: path,
           parameters: methodDesc.parameters ?? [],
-          response: 'any', // TODO: implement
+          response: responseType(methodDesc.responses['200']), // TODO: it is better to search for suitable response, not for a default
           httpMethod: method as HttpMethod,
         })
       }
