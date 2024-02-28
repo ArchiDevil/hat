@@ -2,11 +2,11 @@ import commandLineArgs from 'command-line-args'
 import {existsSync, mkdirSync, writeFileSync, rmSync} from 'fs'
 import {join} from 'path'
 
-type ItemRefDesc = {
+type RefDesc = {
   $ref: string
 }
 
-type ItemAnyOfDesc = {
+type AnyOfDesc = {
   anyOf: [
     {
       type: 'string' | 'integer' // | 'boolean' // check if boolean is possible
@@ -14,22 +14,20 @@ type ItemAnyOfDesc = {
   ]
 }
 
-type ItemsDescription = ItemRefDesc | ItemAnyOfDesc
-
-type PropTrivialDescription = {
+type TrivialDesc = {
   type: 'string' | 'integer' // | 'boolean' // check if boolean is possible
   title?: string
   format?: string
 }
 
-type PropArrayDescription = {
+type ArrayDesc = {
   type: 'array'
-  items: ItemsDescription
+  items: RefDesc | AnyOfDesc
   title?: string
 }
 
-// TODO: check if ItemRefDesc is possible here without an array
-type PropDescription = PropTrivialDescription | PropArrayDescription
+// TODO: check if AnyOfDesc is possible here without an array
+type PropDescription = TrivialDesc | ArrayDesc | RefDesc
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete'
 
@@ -59,7 +57,7 @@ interface ApiDescription {
             description: string
             content?: {
               [contentType: string]: {
-                schema: ItemRefDesc // TODO: it is likely not always correct
+                schema: PropDescription
               }
             }
           }
@@ -93,15 +91,21 @@ function getUsedTypes(properties: {[name: string]: PropDescription}): string[] {
   const imports = new Set<string>()
   for (const propName in properties) {
     const prop = properties[propName]
-    if (prop.type === 'array' && prop.items && '$ref' in prop.items) {
-      const type = getReferencedType(prop.items['$ref'])
+    if ('$ref' in prop) {
+      const type = getReferencedType(prop['$ref'])
       imports.add(type)
+    } else {
+      // TODO: make it smarter
+      if (prop.type === 'array' && prop.items && '$ref' in prop.items) {
+        const type = getReferencedType(prop.items['$ref'])
+        imports.add(type)
+      }
     }
   }
   return Array.from(imports)
 }
 
-function getImports(types: string[], schemasPath: string): string {
+function getImports(types: Iterable<string>, schemasPath: string): string {
   const imports: string[] = []
   for (const type of types) {
     imports.push(`import {${type}} from '${schemasPath}${type}'`)
@@ -110,6 +114,10 @@ function getImports(types: string[], schemasPath: string): string {
 }
 
 function tsType(prop: PropDescription): string {
+  if ('$ref' in prop) {
+    return getReferencedType(prop['$ref'])
+  }
+
   switch (prop.type) {
     case 'string':
       return 'string'
@@ -120,6 +128,7 @@ function tsType(prop: PropDescription): string {
     //   return 'boolean'
     case 'array': {
       if (prop.items) {
+        // TODO: call tsType recursively?
         if ('$ref' in prop.items) {
           const ref = prop.items['$ref']
           return `${getReferencedType(ref)}[]`
@@ -138,7 +147,7 @@ function tsType(prop: PropDescription): string {
       }
     }
     default:
-      console.warn('Unsupported type:', (prop as PropDescription).type)
+      console.warn('Unsupported type:', (prop as TrivialDesc | ArrayDesc).type)
       return 'any'
   }
 }
@@ -209,7 +218,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
   ) => {
     if (!response.content) {
       console.warn('Unsupported response content:', response.content)
-      return 'any'
+      return 'undefined'
     }
     if (!('application/json' in response.content)) {
       console.warn('Unsupported response content:', response.content)
@@ -217,19 +226,20 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
     }
 
     const schema = response.content['application/json'].schema
-    if ('$ref' in schema) {
-      return getReferencedType(schema['$ref'])
-    } else {
-      console.warn('Unsupported response schema:', schema)
-      return 'any'
-    }
+    return tsType(schema)
   }
 
   const genService = (methods: ServiceMethod[]) => {
     let content = ''
     const types = new Set<string>()
     for (const method of methods) {
-      if (method.response != 'any') {
+      // TODO: this should be done in a more smarter way
+      if (
+        method.response != 'any' &&
+        !method.response.endsWith('[]') &&
+        method.response != 'null' &&
+        method.response != 'undefined'
+      ) {
         types.add(method.response)
       }
       const paramSignature = (param: ParamDesc) =>
@@ -242,15 +252,23 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
       // replace all OpenAPI path parameters with JS template literals
       const interpolatedPath = method.path.replace(/\{(.*)?\}/g, '${$1}')
 
-      content += `export const ${method.name} = async (${requestParams}): Promise<${method.response}> => {\n`
+      const funcSignature =
+        method.response != 'undefined'
+          ? `async (${requestParams}): Promise<${method.response}>`
+          : `async (${requestParams}): Promise<void>`
+
+      const mandeType =
+        method.response != 'undefined' ? `<${method.response}>` : ''
+
+      content += `export const ${method.name} = ${funcSignature} => {\n`
       content += `  const api = mande(\`${interpolatedPath}\`)\n`
-      content += `  return await api.${method.httpMethod}<${method.response}>('')\n`
+      content += `  return await api.${method.httpMethod}${mandeType}('')\n`
       content += `}\n`
     }
 
     let fileContent = `${autogenPrologue}`
     fileContent += `import {mande} from 'mande'\n\n`
-    fileContent += `${getImports(Array.from(types), '../schemas/')}`
+    fileContent += `${getImports(types, '../schemas/')}`
     fileContent += `${content}`
     return fileContent
   }
