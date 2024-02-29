@@ -38,6 +38,24 @@ interface ParamDesc {
   schema: PropDescription
 }
 
+interface MethodDesc {
+  tags: string[]
+  summary: string
+  operationId: string
+  parameters?: ParamDesc[]
+  requestBody?: any // TODO: describe
+  responses: {
+    [status: string]: {
+      description: string
+      content?: {
+        [contentType: string]: {
+          schema: PropDescription
+        }
+      }
+    }
+  }
+}
+
 interface ApiDescription {
   openapi: string
   info: {
@@ -46,23 +64,7 @@ interface ApiDescription {
   }
   paths: {
     [path: string]: {
-      [method in HttpMethod]: {
-        tags: string[]
-        summary: string
-        operationId: string
-        parameters?: ParamDesc[]
-        requestBody?: any // TODO: describe
-        responses: {
-          [status: string]: {
-            description: string
-            content?: {
-              [contentType: string]: {
-                schema: PropDescription
-              }
-            }
-          }
-        }
-      }
+      [method in HttpMethod]: MethodDesc
     }
   }
   components: {
@@ -87,24 +89,6 @@ function getReferencedType(ref: string): string {
   return ref.split('/').pop()
 }
 
-function getUsedTypes(properties: {[name: string]: PropDescription}): string[] {
-  const imports = new Set<string>()
-  for (const propName in properties) {
-    const prop = properties[propName]
-    if ('$ref' in prop) {
-      const type = getReferencedType(prop['$ref'])
-      imports.add(type)
-    } else {
-      // TODO: make it smarter
-      if (prop.type === 'array' && prop.items && '$ref' in prop.items) {
-        const type = getReferencedType(prop.items['$ref'])
-        imports.add(type)
-      }
-    }
-  }
-  return Array.from(imports)
-}
-
 function getImports(types: Iterable<string>, schemasPath: string): string {
   const imports: string[] = []
   for (const type of types) {
@@ -119,8 +103,13 @@ function tsType(prop: PropDescription): string {
   }
 
   switch (prop.type) {
-    case 'string':
+    case 'string': {
+      if ('format' in prop && prop['format'] == 'binary') {
+        return 'Blob'
+      }
+
       return 'string'
+    }
     case 'integer':
       return 'number'
     // TODO: check if it possible to have boolean
@@ -157,7 +146,7 @@ function genSchemas(
   schemas: ApiDescription['components']['schemas']
 ): void {
   const genProps = (
-    props: ApiDescription['components']['schemas'][string]['properties'],
+    props: {[name: string]: PropDescription},
     requiredProps: string[]
   ) => {
     let content = ''
@@ -167,6 +156,26 @@ function genSchemas(
       content += `  ${propName}${required}: ${tsType(prop)}\n`
     }
     return content
+  }
+
+  const getUsedTypes = (properties: {
+    [name: string]: PropDescription
+  }): string[] => {
+    const imports = new Set<string>()
+    for (const propName in properties) {
+      const prop = properties[propName]
+      if ('$ref' in prop) {
+        const type = getReferencedType(prop['$ref'])
+        imports.add(type)
+      } else {
+        // TODO: make it smarter
+        if (prop.type === 'array' && prop.items && '$ref' in prop.items) {
+          const type = getReferencedType(prop.items['$ref'])
+          imports.add(type)
+        }
+      }
+    }
+    return Array.from(imports)
   }
 
   const genSchema = (schema: string) => {
@@ -193,11 +202,9 @@ function genSchemas(
 
 function genServices(output: string, paths: ApiDescription['paths']): void {
   interface ServiceMethod {
-    name: string
     path: string
-    parameters: ParamDesc[]
-    response: string
     httpMethod: HttpMethod
+    description: MethodDesc
   }
 
   const convertServiceName = (name: string) => {
@@ -217,7 +224,6 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
     response: ApiDescription['paths'][string][HttpMethod]['responses'][string]
   ) => {
     if (!response.content) {
-      console.warn('Unsupported response content:', response.content)
       return 'undefined'
     }
     if (!('application/json' in response.content)) {
@@ -233,19 +239,22 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
     let content = ''
     const types = new Set<string>()
     for (const method of methods) {
+      // TODO: it is better to search for suitable response, not for a default
+      const response = responseType(method.description.responses['200'])
+
       // TODO: this should be done in a more smarter way
       if (
-        method.response != 'any' &&
-        !method.response.endsWith('[]') &&
-        method.response != 'null' &&
-        method.response != 'undefined'
+        response != 'any' &&
+        !response.endsWith('[]') &&
+        response != 'null' &&
+        response != 'undefined'
       ) {
-        types.add(method.response)
+        types.add(response)
       }
       const paramSignature = (param: ParamDesc) =>
         `${param.name}${!param.required ? '?' : ''}: ${tsType(param.schema)}`
 
-      const requestParams = method.parameters
+      const requestParams = (method.description.parameters ?? [])
         .map((param) => `${paramSignature(param)}`)
         .join(', ')
 
@@ -253,14 +262,14 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
       const interpolatedPath = method.path.replace(/\{(.*)?\}/g, '${$1}')
 
       const funcSignature =
-        method.response != 'undefined'
-          ? `async (${requestParams}): Promise<${method.response}>`
+        response != 'undefined'
+          ? `async (${requestParams}): Promise<${response}>`
           : `async (${requestParams}): Promise<void>`
 
-      const mandeType =
-        method.response != 'undefined' ? `<${method.response}>` : ''
+      const mandeType = response != 'undefined' ? `<${response}>` : ''
+      const methodName = convertServiceName(method.description.summary)
 
-      content += `export const ${method.name} = ${funcSignature} => {\n`
+      content += `export const ${methodName} = ${funcSignature} => {\n`
       content += `  const api = mande(\`${interpolatedPath}\`)\n`
       content += `  return await api.${method.httpMethod}${mandeType}('')\n`
       content += `}\n`
@@ -290,11 +299,9 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
           servicesByTag.set(tag, [])
         }
         servicesByTag.get(tag).push({
-          name: convertServiceName(methodDesc.summary),
           path: path,
-          parameters: methodDesc.parameters ?? [],
-          response: responseType(methodDesc.responses['200']), // TODO: it is better to search for suitable response, not for a default
           httpMethod: method as HttpMethod,
+          description: methodDesc,
         })
       }
     }
