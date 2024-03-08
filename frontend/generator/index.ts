@@ -130,7 +130,11 @@ function genSchemas(
   }
 }
 
-function genServices(output: string, paths: ApiDescription['paths']): void {
+function genServices(
+  output: string,
+  paths: ApiDescription['paths'],
+  apiPrefix: string
+): void {
   interface ServiceMethod {
     path: string
     httpMethod: HttpMethod
@@ -228,7 +232,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
         // TODO: Remove WA when mande 2.0.9+ is released
         functionBody += `  const defaultHeaders = defaults.headers\n`
         functionBody += `  try {\n`
-        functionBody += `    const api = mande(\`${interpolatedPath}\`)\n`
+        functionBody += `    const api = mande(\`${apiPrefix}${interpolatedPath}\`)\n`
         functionBody += `    defaults.headers = {}\n`
         functionBody += `    return await api.${method.httpMethod}${mandeType}('', formData)\n`
         functionBody += `  } catch (error: any) {\n`
@@ -237,7 +241,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
         functionBody += `    defaults.headers = defaultHeaders\n`
         functionBody += `  }\n`
       } else {
-        functionBody += `  const api = mande(\`${interpolatedPath}\`)\n`
+        functionBody += `  const api = mande(\`${apiPrefix}${interpolatedPath}\`)\n`
         functionBody += `  return await api.${method.httpMethod}${mandeType}('')\n`
       }
 
@@ -293,6 +297,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
 function main() {
   const options = commandLineArgs([
     {name: 'input', alias: 'i', type: String},
+    {name: 'prefix', alias: 'p', type: String, defaultValue: ''},
     {name: 'output', alias: 'o', type: String},
   ])
 
@@ -305,7 +310,11 @@ function main() {
         mkdirSync(options.output, {recursive: true})
 
         genSchemas(join(options.output, 'schemas'), data.components.schemas)
-        genServices(join(options.output, 'services'), data.paths)
+        genServices(
+          join(options.output, 'services'),
+          data.paths,
+          options.prefix
+        )
       })
     })
     .catch((error) => {
