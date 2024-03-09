@@ -71,6 +71,21 @@ function tsType(prop: PropDescription): string {
   }
 }
 
+function genDefaults(output: string, apiPrefix: string): void {
+  let content = ''
+  content += `${autogenPrologue}`
+  content += `export const getApiBase = () => {\n`
+  content += `  if (import.meta.env.DEV) {\n`
+  content += `    return 'http://localhost:8000/api'\n`
+  content += `  } else {\n`
+  content += `    return '${apiPrefix}'\n`
+  content += `  }\n`
+  content += `}\n`
+
+  const fileName = `${output}/defaults.ts`
+  writeFileSync(fileName, content)
+}
+
 function genSchemas(
   output: string,
   schemas: ApiDescription['components']['schemas']
@@ -130,11 +145,7 @@ function genSchemas(
   }
 }
 
-function genServices(
-  output: string,
-  paths: ApiDescription['paths'],
-  apiPrefix: string
-): void {
+function genServices(output: string, paths: ApiDescription['paths']): void {
   interface ServiceMethod {
     path: string
     httpMethod: HttpMethod
@@ -232,7 +243,7 @@ function genServices(
         // TODO: Remove WA when mande 2.0.9+ is released
         functionBody += `  const defaultHeaders = defaults.headers\n`
         functionBody += `  try {\n`
-        functionBody += `    const api = mande(\`${apiPrefix}${interpolatedPath}\`)\n`
+        functionBody += `    const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
         functionBody += `    defaults.headers = {}\n`
         functionBody += `    return await api.${method.httpMethod}${mandeType}('', formData)\n`
         functionBody += `  } catch (error: any) {\n`
@@ -241,7 +252,7 @@ function genServices(
         functionBody += `    defaults.headers = defaultHeaders\n`
         functionBody += `  }\n`
       } else {
-        functionBody += `  const api = mande(\`${apiPrefix}${interpolatedPath}\`)\n`
+        functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
         functionBody += `  return await api.${method.httpMethod}${mandeType}('')\n`
       }
 
@@ -256,6 +267,7 @@ function genServices(
     } else {
       fileContent += `import {mande} from 'mande'\n\n`
     }
+    fileContent += `import {getApiBase} from '../defaults'\n\n`
     fileContent += `${getImports(types, '../schemas/')}`
     fileContent += `${content}`
     return fileContent
@@ -309,12 +321,9 @@ function main() {
         }
         mkdirSync(options.output, {recursive: true})
 
+        genDefaults(options.output, options.prefix)
         genSchemas(join(options.output, 'schemas'), data.components.schemas)
-        genServices(
-          join(options.output, 'services'),
-          data.paths,
-          options.prefix
-        )
+        genServices(join(options.output, 'services'), data.paths)
       })
     })
     .catch((error) => {
