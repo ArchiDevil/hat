@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 
 from app import schema
-from app.db_fastapi import get_db
+from app.db import get_db
 from app.tmx import extract_tmx_content
 from .models import TmxFile, TmxFileWithRecords, TmxFileRecord, StatusMessage
 

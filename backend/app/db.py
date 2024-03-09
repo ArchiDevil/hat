@@ -1,40 +1,32 @@
-from contextlib import contextmanager
-
 from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session, Session
+from sqlalchemy.orm import sessionmaker, Session
 
-from quart import current_app, g
+from .settings import get_settings
 
-from app import schema
+engine: Engine | None = None
+SessionLocal: sessionmaker | None = None
 
 
-def init_connection():
-    engine = create_engine(current_app.config["DATABASE"])
-    g.engine = engine
-    session_factory = sessionmaker(bind=engine)
-    g.sessionmaker = scoped_session(session_factory)
+def init_connection(connection_url: str):
+    global engine, SessionLocal
+    engine = create_engine(connection_url)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def close_connection():
-    g.pop("sessionmaker", None)
-    engine: Engine | None = g.pop("engine", None)
-    if engine is not None:
+    global engine
+    if engine:
         engine.dispose()
+        engine = None
 
 
-def reinit_schema():
-    init_connection()
-    schema.Base.metadata.drop_all(g.engine)
-    schema.Base.metadata.create_all(g.engine)
-    close_connection()
+def get_db():
+    if not engine:
+        init_connection(get_settings().database_url)
 
-
-@contextmanager
-def get_session():
-    if "engine" not in g:
-        init_connection()
+    assert SessionLocal
+    db: Session = SessionLocal()
     try:
-        session: Session = g.sessionmaker()
-        yield session
+        yield db
     finally:
-        session.close()
+        db.close()

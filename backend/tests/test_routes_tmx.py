@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from fastapi.testclient import TestClient
 
 from app import schema
-from app.db_fastapi import get_db
+from app.db import get_db
 
 
 @contextmanager

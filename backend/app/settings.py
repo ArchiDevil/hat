@@ -1,17 +1,13 @@
-class Config:
-    DEBUG = False
-    TESTING = False
-    SECRET_KEY = "secret"
-    MAX_CONTENT_LENGTH = 96 * 1024 * 1024
+from functools import lru_cache
+from pydantic_settings import BaseSettings
 
 
-class Development(Config):
-    DEBUG = True
+class Settings(BaseSettings):
+    # Not to forget: these settings are loaded from environment variables based
+    # on the class attribute names.
+    database_url: str = "postgresql://postgres:postgres@localhost/postgres"
 
 
-class Testing(Config):
-    TESTING = True
-
-
-class Production(Config):
-    SECRET_KEY = "REAL SECRET KEY"
+@lru_cache
+def get_settings():
+    return Settings()

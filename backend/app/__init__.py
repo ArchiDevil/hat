@@ -1,43 +1,13 @@
-import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.routers import tmx
+from app.routers import xliff
 
 
-def create_app(mode="Production", additional_config=None):
-    from quart import Quart
-    from quart_cors import cors
-    from app.bps import api_tmx, api_xliff
-
-    app = Quart(__name__)
-
-    if app.debug:
-        app = cors(app, allow_origin="*")
-
-    app.config.from_object(f"app.settings.{mode}")
-    app.config.update(additional_config or {})
-
-    if app.config.get("DATABASE") is None:
-        db_url = os.environ.get(
-            "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres"
-        )
-        app.config["DATABASE"] = db_url
-
-    app.register_blueprint(
-        cors(api_tmx.bp, allow_origin="*") if app.debug else api_tmx.bp
-    )
-    app.register_blueprint(
-        cors(api_xliff.bp, allow_origin="*") if app.debug else api_xliff.bp
-    )
-
-    return app
-
-
-def create_fastapi_app():
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
-    from app.routers import tmx
-    from app.routers import xliff
-
+def create_app():
     app = FastAPI()
 
+    # TODO: it would be nice to make it debug-only
     origins = [
         "http://localhost:5173",
     ]

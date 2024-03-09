@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import schema
-from app.db_fastapi import get_db
+from app.db import get_db
 from app.xliff import extract_xliff_content
 from .models import XliffFile, XliffFileWithRecords, XliffFileRecord, StatusMessage
 
