@@ -32,10 +32,23 @@ def create_app(mode="Production", additional_config=None):
 
 def create_fastapi_app():
     from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
     from app.routers import tmx
     from app.routers import xliff
 
     app = FastAPI()
+
+    origins = [
+        "http://localhost:5173",
+    ]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     app.include_router(tmx.router)
     app.include_router(xliff.router)
 
