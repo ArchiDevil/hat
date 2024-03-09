@@ -1,5 +1,14 @@
 <script setup lang="ts">
-defineProps(['record'])
+import {PropType} from 'vue'
+import {TmxFileRecord} from '../client/schemas/TmxFileRecord'
+import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
+
+defineProps({
+  record: {
+    type: Object as PropType<TmxFileRecord | XliffFileRecord>,
+    required: true,
+  },
+})
 </script>
 
 <template>

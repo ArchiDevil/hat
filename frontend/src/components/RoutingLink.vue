@@ -1,5 +1,10 @@
 <script setup lang="ts">
-defineProps(['href'])
+defineProps({
+  href: {
+    type: String,
+    required: true,
+  },
+})
 </script>
 
 <template>

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-defineEmits(['click'])
+defineEmits<{
+  click: [Event]
+}>()
 </script>
 
 <template>
