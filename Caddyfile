@@ -1,8 +1,10 @@
 :6916 {
     root * /usr/share/caddy
     file_server
+    encode gzip
 
     handle /api/* {
+        uri strip_prefix /api
         reverse_proxy backend:8000
     }
 
