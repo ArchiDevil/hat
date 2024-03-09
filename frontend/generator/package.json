@@ -1,11 +1,10 @@
 {
   "name": "generator",
   "version": "1.0.0",
+  "type": "module",
   "description": "A client generator for OpenAPI",
-  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && rollup -c",
-    "generate": "npm run build && node dist/bundle.mjs --input http://localhost:8000/openapi.json --prefix /api --output ../src/client"
+    "generate": "tsx ./index.ts --input http://localhost:8000/openapi.json --prefix /api --output ../src/client"
   },
   "author": "ArchiDevil",
   "license": "MIT",
@@ -13,10 +12,8 @@
     "command-line-args": "^5.2.1"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.7",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
     "@types/command-line-args": "^5.2.3",
-    "rollup": "^4.12.0"
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.2"
   }
 }

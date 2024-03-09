@@ -16,7 +16,7 @@ const autogenPrologue =
 
 function getReferencedType(ref: string): string {
   // TODO: it should be done better, not by just splitting the string
-  return ref.split('/').pop()
+  return ref.split('/').pop() ?? ''
 }
 
 function getImports(types: Iterable<string>, schemasPath: string): string {
@@ -289,7 +289,7 @@ function genServices(output: string, paths: ApiDescription['paths']): void {
         if (!servicesByTag.has(tag)) {
           servicesByTag.set(tag, [])
         }
-        servicesByTag.get(tag).push({
+        servicesByTag.get(tag)!.push({
           path: path,
           httpMethod: method as HttpMethod,
           description: methodDesc,
