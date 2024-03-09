@@ -76,7 +76,7 @@ function genDefaults(output: string, apiPrefix: string): void {
   content += `${autogenPrologue}`
   content += `export const getApiBase = () => {\n`
   content += `  if (import.meta.env.DEV) {\n`
-  content += `    return 'http://localhost:8000/api'\n`
+  content += `    return 'http://localhost:8000'\n`
   content += `  } else {\n`
   content += `    return '${apiPrefix}'\n`
   content += `  }\n`
