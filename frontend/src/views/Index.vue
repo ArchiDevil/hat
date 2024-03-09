@@ -1,33 +1,27 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
-import {apiAccessor} from '../api'
+
+import {createTmx, deleteTmx, getTmxs} from '../client/services/TmxService'
+import {
+  createXliff,
+  deleteXliff,
+  getXliffs,
+} from '../client/services/XliffService'
+import {XliffFile} from '../client/schemas/XliffFile'
+import {TmxFile} from '../client/schemas/TmxFile'
 
 import File from '../components/File.vue'
 import UploadingDialog from '../components/UploadingDialog.vue'
 
-interface TmxDoc {
-  id: number
-  name: string
-}
-
-interface XliffDoc {
-  id: number
-  name: string
-}
-
-const tmxApi = apiAccessor('/tmx')
-const xliffApi = apiAccessor('/xliff')
-
-const tmxDocs = ref<TmxDoc[]>([])
-const xliffDocs = ref<XliffDoc[]>([])
-const fileDeleting = ref(false)
+const tmxDocs = ref<TmxFile[]>([])
+const xliffDocs = ref<XliffFile[]>([])
 
 const getTmxDocs = async () => {
-  tmxDocs.value = await tmxApi.get<TmxDoc[]>()
+  tmxDocs.value = await getTmxs()
 }
 
 const getXliffDocs = async () => {
-  xliffDocs.value = await xliffApi.get<XliffDoc[]>()
+  xliffDocs.value = await getXliffs()
 }
 
 onMounted(async () => {
@@ -44,15 +38,15 @@ onMounted(async () => {
       <UploadingDialog
         title="Select a TMX file:"
         extension=".tmx"
-        url="/tmx/upload"
+        url="/api/tmx/upload"
+        :upload-method="(file: File) => createTmx({file})"
         @uploaded="getTmxDocs()" />
       <File
         v-for="file in tmxDocs"
         :file="file"
-        :busy="fileDeleting"
+        :delete-method="deleteTmx"
         type="tmx"
-        @deleting="fileDeleting = true"
-        @delete=";(fileDeleting = false), getTmxDocs()" />
+        @delete="getTmxDocs()" />
     </div>
 
     <div class="mt-8">
@@ -60,15 +54,15 @@ onMounted(async () => {
       <UploadingDialog
         title="Select a XLIFF file:"
         extension=".xliff"
-        url="/xliff/upload"
+        url="/api/xliff/upload"
+        :upload-method="(file: File) => createXliff({file})"
         @uploaded="getXliffDocs()" />
       <File
         v-for="file in xliffDocs"
         :file="file"
-        :busy="fileDeleting"
+        :delete-method="deleteXliff"
         type="xliff"
-        @deleting="fileDeleting = true"
-        @delete=";(fileDeleting = false), getXliffDocs()" />
+        @delete="getXliffDocs()" />
     </div>
   </div>
 </template>

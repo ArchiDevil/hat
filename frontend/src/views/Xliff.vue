@@ -2,32 +2,25 @@
 import {computed, onMounted, ref} from 'vue'
 import {useRoute} from 'vue-router'
 
-import {apiAccessor} from '../api'
+import {getXliff, getDownloadXliffLink} from '../client/services/XliffService'
+import {XliffFileWithRecords} from '../client/schemas/XliffFileWithRecords'
+
 import Link from '../components/Link.vue'
 import DocumentPair from '../components/DocumentPair.vue'
 
-interface Document {
-  id: number
-  name: string
-  records: Record[]
-}
+const documentId = computed(() => {
+  const route = useRoute()
+  return Number(route.params.id)
+})
 
-interface Record {
-  source: string
-  target: string
-}
+const document = ref<XliffFileWithRecords>()
 
-const document = ref<Document>()
 const downloadLink = computed(() => {
-  if (document.value) {
-    return `/api/xliff/${document.value.id}/download`
-  }
+  return getDownloadXliffLink(documentId.value)
 })
 
 onMounted(async () => {
-  const route = useRoute()
-  const api = apiAccessor(`/xliff/${route.params.id}`)
-  document.value = await api.get<Document>()
+  document.value = await getXliff(documentId.value)
 })
 </script>
 

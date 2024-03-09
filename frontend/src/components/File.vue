@@ -1,22 +1,39 @@
 <script setup lang="ts">
-import {ref} from 'vue'
-import {apiAccessor} from '../api'
+import {PropType, ref} from 'vue'
+
+import {XliffFile} from '../client/schemas/XliffFile'
+import {TmxFile} from '../client/schemas/TmxFile'
 
 import Button from './Button.vue'
 import RoutingLink from './RoutingLink.vue'
 
-const emit = defineEmits(['delete'])
-const props = defineProps(['file', 'type'])
+const emit = defineEmits<{
+  delete: []
+}>()
+
+const props = defineProps({
+  file: {
+    type: Object as PropType<XliffFile | TmxFile>,
+    required: true,
+  },
+  type: {
+    type: String as PropType<'xliff' | 'tmx'>,
+    required: true,
+  },
+  deleteMethod: {
+    type: Function as PropType<(id: number) => Promise<any>>,
+    required: true,
+  },
+})
 
 const busy = ref(false)
 const status = ref()
 
 const deleteFile = async () => {
-  const api = apiAccessor(`/${props.type}/${props.file.id}`)
   try {
     busy.value = true
     status.value = 'Busy...'
-    await api.post('/delete')
+    await props.deleteMethod(props.file.id)
     status.value = undefined
   } catch (error) {
     console.log(error)
@@ -53,3 +70,4 @@ const deleteFile = async () => {
     </span>
   </div>
 </template>
+*

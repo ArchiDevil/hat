@@ -1,21 +1,40 @@
 <script setup lang="ts">
-import {Ref, ref, computed} from 'vue'
-import {apiAccessor} from '../api'
-import {defaults} from 'mande'
+import {Ref, ref, computed, PropType} from 'vue'
+
 import Button from './Button.vue'
 
-const emit = defineEmits(['uploaded'])
-const props = defineProps(['title', 'extension', 'url'])
+const emit = defineEmits<{
+  uploaded: []
+}>()
+
+const props = defineProps({
+  title: {
+    type: String,
+    required: true,
+  },
+  extension: {
+    type: String,
+    required: true,
+  },
+  url: {
+    type: String,
+    required: true,
+  },
+  uploadMethod: {
+    type: Function as PropType<(file: File) => Promise<any>>,
+    required: true,
+  },
+})
 
 const file = ref(null) as Ref<File | null>
-const input = ref(null)
+const input = ref<HTMLInputElement | null>(null)
 const uploadAvailable = computed(() => file.value != null)
 const uploading = ref(false)
 const status = ref()
 
 const updateFiles = () => {
   status.value = undefined
-  const element = input.value as unknown as HTMLInputElement
+  const element = input.value as HTMLInputElement
   if (!element.files) {
     return
   }
@@ -27,27 +46,19 @@ const uploadFile = async () => {
     return
   }
 
-  const element = input.value as unknown as HTMLInputElement
+  const element = input.value as HTMLInputElement
   const attachedFile = element.files![0]
 
-  const formData = new FormData()
-  formData.append('file', attachedFile)
-  // this is a workaround for a bug in mande
-  const defaultHeaders = defaults.headers
   try {
-    const api = apiAccessor(props.url)
-    defaults.headers = {}
     uploading.value = true
     status.value = 'Uploading...'
-    const response = await api.post('', formData)
+    await props.uploadMethod(attachedFile)
     uploading.value = false
     status.value = 'Done!'
-    emit('uploaded', response)
+    emit('uploaded')
   } catch (error: any) {
     uploading.value = false
     status.value = `${error.message} :(`
-  } finally {
-    defaults.headers = defaultHeaders
   }
 }
 </script>

@@ -2,26 +2,16 @@
 import {onMounted, ref} from 'vue'
 import {useRoute} from 'vue-router'
 
-import {apiAccessor} from '../api'
+import {getTmx} from '../client/services/TmxService'
+import {TmxFileWithRecords} from '../client/schemas/TmxFileWithRecords'
+
 import DocumentPair from '../components/DocumentPair.vue'
 
-interface Document {
-  id: number
-  name: string
-  records: Record[]
-}
-
-interface Record {
-  source: string
-  target: string
-}
-
-const document = ref<Document>()
+const document = ref<TmxFileWithRecords>()
 
 onMounted(async () => {
   const route = useRoute()
-  const api = apiAccessor(`/tmx/${route.params.id}`)
-  document.value = await api.get<Document>()
+  document.value = await getTmx(Number(route.params.id))
 })
 </script>
 
