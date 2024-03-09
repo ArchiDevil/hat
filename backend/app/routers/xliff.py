@@ -103,7 +103,16 @@ async def create_xliff(
     return XliffFile(id=new_doc.id, name=new_doc.name)
 
 
-@router.get("/{doc_id}/download", response_class=StreamingResponse)
+@router.get(
+    "/{doc_id}/download",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Successful Response",
+            "content": {"application/octet-stream": {"schema": {"type": "string"}}},
+        }
+    },
+)
 def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     doc = db.query(schema.XliffDocument).filter_by(id=doc_id).first()
 
@@ -125,6 +134,6 @@ def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     file.seek(0)
     return StreamingResponse(
         file,
-        media_type="text/xml",
+        media_type="application/octet-stream",
         headers={"Content-Disposition": f"attachment; filename={doc.name}"},
     )
