@@ -5,13 +5,13 @@ export type RefDesc = {
 export type AnyOfDesc = {
   anyOf: [
     {
-      type: 'string' | 'integer' // | 'boolean' // check if boolean is possible
+      type: 'string' | 'integer' // | 'boolean' // TODO: check if boolean is possible
     }
   ]
 }
 
 export type TrivialDesc = {
-  type: 'string' | 'integer' // | 'boolean' // check if boolean is possible
+  type: 'string' | 'integer' // | 'boolean' // TODO: check if boolean is possible
   title?: string
   format?: string
 }
@@ -39,7 +39,14 @@ export interface MethodDesc {
   summary: string
   operationId: string
   parameters?: ParamDesc[]
-  requestBody?: any // TODO: describe
+  requestBody?: {
+    content: {
+      [contentType: string]: {
+        schema: PropDescription
+      }
+    }
+    required: boolean
+  }
   responses: {
     [status: string]: {
       description: string
