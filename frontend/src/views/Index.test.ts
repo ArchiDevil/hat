@@ -1,7 +1,7 @@
 import {beforeEach, expect, it, vi} from 'vitest'
 import {flushPromises, mount} from '@vue/test-utils'
 
-import Index from './Index.vue'
+import Index from './IndexView.vue'
 
 beforeEach(() => {
   // TODO: update to use apiAccessor
@@ -16,7 +16,7 @@ it('mounts', async () => {
       ...original,
       mande: () => {
         return {
-          get: async () => {
+          get: () => {
             return [
               {id: 1, name: 'test1'},
               {id: 2, name: 'test2'},

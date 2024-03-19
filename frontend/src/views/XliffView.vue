@@ -37,9 +37,9 @@ onMounted(async () => {
     </Link>
     <div>
       <DocumentPair
-        :record="record"
         v-for="record in document?.records"
-        :key="record.source" />
+        :key="record.source"
+        :record="record" />
     </div>
   </div>
 </template>

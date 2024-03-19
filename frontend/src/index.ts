@@ -2,14 +2,14 @@ import {createApp} from 'vue'
 import {createRouter, createWebHistory} from 'vue-router'
 
 import App from './App.vue'
-import Index from './views/Index.vue'
-import Tmx from './views/Tmx.vue'
-import Xliff from './views/Xliff.vue'
+import IndexView from './views/IndexView.vue'
+import TmxView from './views/TmxView.vue'
+import XliffView from './views/XliffView.vue'
 
 const routes = [
-  {path: '/', component: Index},
-  {path: '/tmx/:id', component: Tmx},
-  {path: '/xliff/:id', component: Xliff},
+  {path: '/', component: IndexView},
+  {path: '/tmx/:id', component: TmxView},
+  {path: '/xliff/:id', component: XliffView},
 ]
 
 const router = createRouter({
