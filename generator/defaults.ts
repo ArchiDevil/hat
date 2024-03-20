@@ -1,6 +1,4 @@
-import {writeFileSync} from 'fs'
-
-import {autogenPrologue} from './utils'
+import {autogenPrologue, writeWithCorrectEndl} from './utils'
 
 export const genDefaults = (output: string, apiPrefix: string): void => {
   let content = ''
@@ -14,5 +12,5 @@ export const genDefaults = (output: string, apiPrefix: string): void => {
   content += `}\n`
 
   const fileName = `${output}/defaults.ts`
-  writeFileSync(fileName, content)
+  writeWithCorrectEndl(fileName, content)
 }

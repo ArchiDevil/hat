@@ -1,4 +1,4 @@
-import {existsSync, mkdirSync, writeFileSync, rmSync} from 'fs'
+import {existsSync, mkdirSync, rmSync} from 'fs'
 
 import {
   ApiDescription,
@@ -6,7 +6,12 @@ import {
   MethodDesc,
   PropDescription,
 } from './interfaces'
-import {autogenPrologue, getImports, tsType} from './utils'
+import {
+  autogenPrologue,
+  getImports,
+  tsType,
+  writeWithCorrectEndl,
+} from './utils'
 
 interface ServiceMethod {
   path: string
@@ -193,6 +198,6 @@ export const genServices = (
   for (const [tag, methods] of servicesByTag) {
     const fileContent = genService(methods)
     const fileName = `${output}/${serviceNameFromTag(tag)}.ts`
-    writeFileSync(fileName, fileContent)
+    writeWithCorrectEndl(fileName, fileContent)
   }
 }

@@ -1,7 +1,13 @@
-import {existsSync, mkdirSync, writeFileSync, rmSync} from 'fs'
+import {existsSync, mkdirSync, rmSync} from 'fs'
 
 import {ApiDescription, PropDescription} from './interfaces'
-import {autogenPrologue, getImports, getReferencedType, tsType} from './utils'
+import {
+  autogenPrologue,
+  getImports,
+  getReferencedType,
+  tsType,
+  writeWithCorrectEndl,
+} from './utils'
 
 export const genSchemas = (
   output: string,
@@ -65,6 +71,6 @@ export const genSchemas = (
   for (const schema in schemas) {
     const fileContent = `${genSchema(schema)}`
     const fileName = `${output}/${schema}.ts`
-    writeFileSync(fileName, fileContent)
+    writeWithCorrectEndl(fileName, fileContent)
   }
 }

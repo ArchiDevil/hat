@@ -1,3 +1,6 @@
+import {writeFileSync} from 'fs'
+import {platform} from 'os'
+
 import {ArrayDesc, PropDescription, TrivialDesc} from './interfaces'
 
 export const getReferencedType = (ref: string): string => {
@@ -58,6 +61,23 @@ export function tsType(prop: PropDescription): string {
       console.warn('Unsupported type:', (prop as TrivialDesc | ArrayDesc).type)
       return 'any'
   }
+}
+
+function getOperatingSystem() {
+  const pltf = platform()
+  if (pltf === 'win32') {
+    return 'Windows'
+  } else if (pltf === 'linux') {
+    return 'Linux'
+  } else {
+    return 'Other'
+  }
+}
+
+export function writeWithCorrectEndl(file: string, content: string): void {
+  const endl = getOperatingSystem() === 'Windows' ? '\r\n' : '\n'
+  const newContent = content.replace(/(\r\n|\r|\n)/g, endl)
+  writeFileSync(file, newContent)
 }
 
 export const autogenPrologue =
