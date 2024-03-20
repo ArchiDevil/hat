@@ -1,8 +1,7 @@
-import {autogenPrologue, writeWithCorrectEndl} from './utils'
+import {writeGeneratedContent} from './utils'
 
 export const genDefaults = (output: string, apiPrefix: string): void => {
   let content = ''
-  content += `${autogenPrologue}`
   content += `export const getApiBase = () => {\n`
   content += `  if (import.meta.env.DEV) {\n`
   content += `    return 'http://localhost:8000'\n`
@@ -12,5 +11,5 @@ export const genDefaults = (output: string, apiPrefix: string): void => {
   content += `}\n`
 
   const fileName = `${output}/defaults.ts`
-  writeWithCorrectEndl(fileName, content)
+  writeGeneratedContent(fileName, content)
 }

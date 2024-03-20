@@ -2,11 +2,10 @@ import {existsSync, mkdirSync, rmSync} from 'fs'
 
 import {ApiDescription, PropDescription} from './interfaces'
 import {
-  autogenPrologue,
   getImports,
   getReferencedType,
   tsType,
-  writeWithCorrectEndl,
+  writeGeneratedContent,
 } from './utils'
 
 export const genSchemas = (
@@ -53,13 +52,13 @@ export const genSchemas = (
       const types = getUsedTypes(schemaProperties)
       const imports = `${getImports(types, './')}`
       const props = genProps(schemaProperties, schemaDesc.required ?? [])
-      return `${autogenPrologue}${imports}export interface ${schema} {\n${props}}\n`
+      return `${imports}export interface ${schema} {\n${props}}\n`
     } else if ('enum' in schemaDesc && schemaDesc.enum) {
       const enumValues = schemaDesc.enum.map((val) => `'${val}'`).join(' | ')
-      return `${autogenPrologue}export type ${schema} = ${enumValues}\n`
+      return `export type ${schema} = ${enumValues}\n`
     } else {
       console.warn('Unsupported schema:', schemaDesc)
-      return `${autogenPrologue}// ERROR`
+      return `// No content`
     }
   }
 
@@ -69,8 +68,7 @@ export const genSchemas = (
   mkdirSync(output, {recursive: true})
 
   for (const schema in schemas) {
-    const fileContent = `${genSchema(schema)}`
     const fileName = `${output}/${schema}.ts`
-    writeWithCorrectEndl(fileName, fileContent)
+    writeGeneratedContent(fileName, genSchema(schema))
   }
 }

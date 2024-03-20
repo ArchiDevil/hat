@@ -6,12 +6,7 @@ import {
   MethodDesc,
   PropDescription,
 } from './interfaces'
-import {
-  autogenPrologue,
-  getImports,
-  tsType,
-  writeWithCorrectEndl,
-} from './utils'
+import {getImports, tsType, writeGeneratedContent} from './utils'
 
 interface ServiceMethod {
   path: string
@@ -153,7 +148,7 @@ const genService = (methods: ServiceMethod[]) => {
     }
   }
 
-  let fileContent = `${autogenPrologue}`
+  let fileContent = ''
   if (mandeWaActive) {
     fileContent += `import {defaults, mande} from 'mande'\n\n`
   } else {
@@ -198,6 +193,6 @@ export const genServices = (
   for (const [tag, methods] of servicesByTag) {
     const fileContent = genService(methods)
     const fileName = `${output}/${serviceNameFromTag(tag)}.ts`
-    writeWithCorrectEndl(fileName, fileContent)
+    writeGeneratedContent(fileName, fileContent)
   }
 }
