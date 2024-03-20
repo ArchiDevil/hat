@@ -27,12 +27,12 @@ export const genSchemas = (
     for (const propName in properties) {
       const prop = properties[propName]
       if ('$ref' in prop) {
-        const type = getReferencedType(prop['$ref'])
+        const type = getReferencedType(prop.$ref)
         imports.add(type)
       } else {
         // TODO: make it smarter
         if (prop.type === 'array' && prop.items && '$ref' in prop.items) {
-          const type = getReferencedType(prop.items['$ref'])
+          const type = getReferencedType(prop.items.$ref)
           imports.add(type)
         }
       }
@@ -45,7 +45,7 @@ export const genSchemas = (
     const imports = `${getImports(types, './')}`
     const props = genProps(
       schemas[schema].properties,
-      schemas[schema].required || []
+      schemas[schema].required ?? []
     )
     return `${autogenPrologue}${imports}export interface ${schema} {\n${props}}\n`
   }

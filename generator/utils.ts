@@ -18,12 +18,12 @@ export const getImports = (
 
 export function tsType(prop: PropDescription): string {
   if ('$ref' in prop) {
-    return getReferencedType(prop['$ref'])
+    return getReferencedType(prop.$ref)
   }
 
   switch (prop.type) {
     case 'string': {
-      if ('format' in prop && prop['format'] == 'binary') {
+      if ('format' in prop && prop.format == 'binary') {
         return 'Blob'
       }
 
@@ -38,10 +38,10 @@ export function tsType(prop: PropDescription): string {
       if (prop.items) {
         // TODO: call tsType recursively?
         if ('$ref' in prop.items) {
-          const ref = prop.items['$ref']
+          const ref = prop.items.$ref
           return `${getReferencedType(ref)}[]`
         } else if ('anyOf' in prop.items) {
-          const elems = prop.items['anyOf']
+          const elems = prop.items.anyOf
           return `(${elems
             .map((val) => tsType({type: val.type}))
             .join(' | ')})[]`

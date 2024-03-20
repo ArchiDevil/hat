@@ -14,19 +14,23 @@ function main() {
     {name: 'output', alias: 'o', type: String},
   ])
 
-  fetch(options.input)
+  const input = options.input as string
+  const output = options.output as string
+  const prefix = options.prefix as string
+
+  fetch(input)
     .then((response) => {
       response
         .json()
         .then((data: ApiDescription) => {
-          if (existsSync(options.output)) {
-            rmSync(options.output, {recursive: true})
+          if (existsSync(output)) {
+            rmSync(output, {recursive: true})
           }
-          mkdirSync(options.output, {recursive: true})
+          mkdirSync(output, {recursive: true})
 
-          genDefaults(options.output, options.prefix)
-          genSchemas(join(options.output, 'schemas'), data.components.schemas)
-          genServices(join(options.output, 'services'), data.paths)
+          genDefaults(output, prefix)
+          genSchemas(join(output, 'schemas'), data.components.schemas)
+          genServices(join(output, 'services'), data.paths)
         })
         .catch((error) => {
           console.error('Failure:', error)

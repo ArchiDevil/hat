@@ -1,8 +1,8 @@
-export type RefDesc = {
+export interface RefDesc {
   $ref: string
 }
 
-export type AnyOfDesc = {
+export interface AnyOfDesc {
   anyOf: [
     {
       type: 'string' | 'integer' // | 'boolean' // TODO: check if boolean is possible
@@ -10,13 +10,13 @@ export type AnyOfDesc = {
   ]
 }
 
-export type TrivialDesc = {
+export interface TrivialDesc {
   type: 'string' | 'integer' // | 'boolean' // TODO: check if boolean is possible
   title?: string
   format?: string
 }
 
-export type ArrayDesc = {
+export interface ArrayDesc {
   type: 'array'
   items: RefDesc | AnyOfDesc
   title?: string
