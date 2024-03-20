@@ -59,6 +59,16 @@ export interface MethodDesc {
   }
 }
 
+export interface SchemaDesc {
+  type: string
+  title: string
+  required?: string[]
+  properties?: {
+    [name: string]: PropDescription
+  }
+  enum?: string[]
+}
+
 export interface ApiDescription {
   openapi: string
   info: {
@@ -72,14 +82,7 @@ export interface ApiDescription {
   }
   components: {
     schemas: {
-      [name: string]: {
-        type: string
-        title: string
-        required?: string[]
-        properties: {
-          [name: string]: PropDescription
-        }
-      }
+      [name: string]: SchemaDesc
     }
   }
 }

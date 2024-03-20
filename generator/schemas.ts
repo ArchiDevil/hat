@@ -41,13 +41,20 @@ export const genSchemas = (
   }
 
   const genSchema = (schema: string) => {
-    const types = getUsedTypes(schemas[schema].properties)
-    const imports = `${getImports(types, './')}`
-    const props = genProps(
-      schemas[schema].properties,
-      schemas[schema].required ?? []
-    )
-    return `${autogenPrologue}${imports}export interface ${schema} {\n${props}}\n`
+    const schemaDesc = schemas[schema]
+    if ('properties' in schemaDesc && schemaDesc.properties) {
+      const schemaProperties = schemaDesc.properties
+      const types = getUsedTypes(schemaProperties)
+      const imports = `${getImports(types, './')}`
+      const props = genProps(schemaProperties, schemaDesc.required ?? [])
+      return `${autogenPrologue}${imports}export interface ${schema} {\n${props}}\n`
+    } else if ('enum' in schemaDesc && schemaDesc.enum) {
+      const enumValues = schemaDesc.enum.map((val) => `'${val}'`).join(' | ')
+      return `${autogenPrologue}export type ${schema} = ${enumValues}\n`
+    } else {
+      console.warn('Unsupported schema:', schemaDesc)
+      return `${autogenPrologue}// ERROR`
+    }
   }
 
   if (existsSync(output)) {
