@@ -20,9 +20,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "xliff_document", sa.Column("processing_status", sa.String(), nullable=False)
-    )
+    op.add_column("xliff_document", sa.Column("processing_status", sa.String()))
+    update = sa.update(
+        sa.table("xliff_document", sa.Column("processing_status"))
+    ).values(processing_status="done")
+    op.execute(update)
+    op.alter_column("xliff_document", "processing_status", nullable=False)
 
 
 def downgrade() -> None:
