@@ -13,21 +13,25 @@ def session():
 
 def test_can_get_list_of_xliff_docs(fastapi_client: TestClient):
     with session() as s:
-        s.add(schema.XliffDocument(name="first_doc.tmx", original_document=""))
-        s.add(schema.XliffDocument(name="another_doc.tmx", original_document=""))
+        s.add(
+            schema.XliffDocument(
+                name="first_doc.tmx", original_document="", processing_status="pending"
+            )
+        )
+        s.add(
+            schema.XliffDocument(
+                name="another_doc.tmx",
+                original_document="",
+                processing_status="in_progress",
+            )
+        )
         s.commit()
 
     response = fastapi_client.get("/xliff")
     assert response.status_code == 200
     assert response.json() == [
-        {
-            "id": 1,
-            "name": "first_doc.tmx",
-        },
-        {
-            "id": 2,
-            "name": "another_doc.tmx",
-        },
+        {"id": 1, "name": "first_doc.tmx", "status": "pending"},
+        {"id": 2, "name": "another_doc.tmx", "status": "in_progress"},
     ]
 
 
@@ -44,6 +48,7 @@ def test_can_get_xliff_file(fastapi_client: TestClient):
                 name="test_doc.xliff",
                 original_document="Something",
                 records=xliff_records,
+                processing_status="pending",
             )
         )
         s.commit()
@@ -53,6 +58,7 @@ def test_can_get_xliff_file(fastapi_client: TestClient):
     assert response.json() == {
         "id": 1,
         "name": "test_doc.xliff",
+        "status": "pending",
         "records": [
             {
                 "id": 1,
@@ -77,7 +83,11 @@ async def test_returns_404_when_xliff_file_not_found(fastapi_client: TestClient)
 
 def test_can_delete_xliff_doc(fastapi_client: TestClient):
     with session() as s:
-        s.add(schema.XliffDocument(name="first_doc.tmx", original_document=""))
+        s.add(
+            schema.XliffDocument(
+                name="first_doc.tmx", original_document="", processing_status="waiting"
+            )
+        )
         s.commit()
 
     response = fastapi_client.delete("/xliff/1")
@@ -102,6 +112,7 @@ def test_upload(fastapi_client: TestClient):
         doc = s.query(schema.XliffDocument).filter_by(id=1).first()
         assert doc is not None
         assert doc.name == "small.xliff"
+        assert doc.processing_status == "pending"
         assert len(doc.records) == 1
         assert doc.records[0].id == 1
         assert doc.records[0].segment_id == 675606

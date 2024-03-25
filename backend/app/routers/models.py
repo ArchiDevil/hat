@@ -1,4 +1,13 @@
+from enum import Enum
 from pydantic import BaseModel
+
+
+class DocumentStatus(Enum):
+    UPLOADED = "uploaded"
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    DONE = "done"
+    ERROR = "error"
 
 
 class TmxFile(BaseModel):
@@ -19,6 +28,7 @@ class TmxFileWithRecords(TmxFile):
 class XliffFile(BaseModel):
     id: int
     name: str
+    status: DocumentStatus
 
 
 class XliffFileRecord(BaseModel):

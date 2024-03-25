@@ -8,7 +8,13 @@ from sqlalchemy.orm import Session
 from app import schema
 from app.db import get_db
 from app.xliff import extract_xliff_content
-from .models import XliffFile, XliffFileWithRecords, XliffFileRecord, StatusMessage
+from .models import (
+    XliffFile,
+    XliffFileWithRecords,
+    XliffFileRecord,
+    StatusMessage,
+    DocumentStatus,
+)
 
 
 router = APIRouter(prefix="/xliff", tags=["xliff"])
@@ -17,7 +23,12 @@ router = APIRouter(prefix="/xliff", tags=["xliff"])
 @router.get("/")
 def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[XliffFile]:
     xliffs = db.query(schema.XliffDocument).all()
-    return [XliffFile(id=xliff.id, name=xliff.name) for xliff in xliffs]
+    return [
+        XliffFile(
+            id=xliff.id, name=xliff.name, status=DocumentStatus(xliff.processing_status)
+        )
+        for xliff in xliffs
+    ]
 
 
 @router.get("/{doc_id}")
@@ -35,6 +46,7 @@ def get_xliff(
     return XliffFileWithRecords(
         id=doc.id,
         name=doc.name,
+        status=DocumentStatus(doc.processing_status),
         records=[
             XliffFileRecord(
                 id=record.id,
@@ -71,7 +83,11 @@ async def create_xliff(
     original_document = xliff_data.decode("utf-8")
     xliff_data = extract_xliff_content(xliff_data)
 
-    doc = schema.XliffDocument(name=name, original_document=original_document)
+    doc = schema.XliffDocument(
+        name=name,
+        original_document=original_document,
+        processing_status=DocumentStatus.PENDING.value,
+    )
     db.add(doc)
 
     for segment in xliff_data.segments:
@@ -99,8 +115,11 @@ async def create_xliff(
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc.id).first()
     )
     assert new_doc
-
-    return XliffFile(id=new_doc.id, name=new_doc.name)
+    return XliffFile(
+        id=new_doc.id,
+        name=new_doc.name,
+        status=DocumentStatus(new_doc.processing_status),
+    )
 
 
 @router.get(

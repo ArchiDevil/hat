@@ -1,8 +1,6 @@
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped
+from sqlalchemy.orm import mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -37,6 +35,7 @@ class XliffDocument(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
     original_document: Mapped[str] = mapped_column()
+    processing_status: Mapped[str] = mapped_column()
 
     records: Mapped[list["XliffRecord"]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
