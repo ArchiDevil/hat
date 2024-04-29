@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import json
 
 from fastapi.testclient import TestClient
 
@@ -118,6 +119,18 @@ def test_upload(fastapi_client: TestClient):
         assert doc.records[0].segment_id == 675606
         assert doc.records[0].document_id == 1
         assert doc.original_document.startswith("<?xml version=")
+
+
+def test_upload_creates_task(fastapi_client: TestClient):
+    with open("tests/small.xliff", "rb") as fp:
+        response = fastapi_client.post("/xliff", files={"file": fp})
+    assert response.status_code == 200
+
+    with session() as s:
+        task = s.query(schema.DocumentTask).filter_by(id=1).first()
+        assert task is not None
+        assert task.document_id == 1
+        assert json.loads(task.data) == {}
 
 
 def test_upload_process_xliff_file(fastapi_client: TestClient):

@@ -1,3 +1,4 @@
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
@@ -115,6 +116,11 @@ async def create_xliff(
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc.id).first()
     )
     assert new_doc
+
+    settings = {}
+    db.add(schema.DocumentTask(document_id=new_doc.id, data=json.dumps(settings)))
+    db.commit()
+
     return XliffFile(
         id=new_doc.id,
         name=new_doc.name,
