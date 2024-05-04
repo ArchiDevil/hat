@@ -1,4 +1,5 @@
-import json
+from datetime import datetime
+# import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
@@ -16,6 +17,11 @@ from .models import (
     StatusMessage,
     DocumentStatus,
 )
+
+# TODO: remove if it was not processed in some time (1 day)
+# TODO: add settings for UI when processing
+# TODO: add XLIFF segments statuses according to the specification
+# TODO: do not even parse XLIFF when it is uploaded, put it to the queue
 
 
 router = APIRouter(prefix="/xliff", tags=["xliff"])
@@ -82,17 +88,46 @@ async def create_xliff(
     name = file.filename
     xliff_data = await file.read()
     original_document = xliff_data.decode("utf-8")
-    xliff_data = extract_xliff_content(xliff_data)
 
     doc = schema.XliffDocument(
         name=name,
         original_document=original_document,
         processing_status=DocumentStatus.PENDING.value,
+        upload_time=datetime.now(),
     )
     db.add(doc)
+    db.commit()
 
+    new_doc = (
+        db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc.id).one()
+    )
+    return XliffFile(
+        id=new_doc.id,
+        name=new_doc.name,
+        status=DocumentStatus(new_doc.processing_status),
+    )
+
+
+@router.post("/{doc_id}/process")
+def process_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
+    doc = db.query(schema.XliffDocument).filter_by(id=doc_id).first()
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    # TODO: it should be done when worker is here
+    # doc.processing_status = DocumentStatus.PENDING.value
+    # db.commit()
+
+    # TODO: move it to worker
+    doc.processing_status = DocumentStatus.PROCESSING.value
+    db.commit()
+
+    xliff_data = extract_xliff_content(doc.original_document.encode())
     for segment in xliff_data.segments:
         if not segment.approved:
+            # TODO: this is slow, try to optimize it somehow
             tmx_data = db.execute(
                 select(schema.TmxRecord.source, schema.TmxRecord.target)
                 .where(schema.TmxRecord.source == segment.original)
@@ -100,7 +135,6 @@ async def create_xliff(
             ).first()
             if tmx_data:
                 segment.translation = tmx_data.target
-                segment.approved = True
 
         doc.records.append(
             schema.XliffRecord(
@@ -110,22 +144,12 @@ async def create_xliff(
             )
         )
 
+    doc.processing_status = DocumentStatus.DONE.value
     db.commit()
 
-    new_doc = (
-        db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc.id).first()
-    )
-    assert new_doc
-
-    settings = {}
-    db.add(schema.DocumentTask(document_id=new_doc.id, data=json.dumps(settings)))
-    db.commit()
-
-    return XliffFile(
-        id=new_doc.id,
-        name=new_doc.name,
-        status=DocumentStatus(new_doc.processing_status),
-    )
+    # settings = {}
+    # db.add(schema.DocumentTask(document_id=new_doc.id, data=json.dumps(settings)))
+    # db.commit()
 
 
 @router.get(

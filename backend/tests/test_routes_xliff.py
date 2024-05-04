@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-import json
 
 from fastapi.testclient import TestClient
 
@@ -114,26 +113,16 @@ def test_upload(fastapi_client: TestClient):
         assert doc is not None
         assert doc.name == "small.xliff"
         assert doc.processing_status == "pending"
-        assert len(doc.records) == 1
-        assert doc.records[0].id == 1
-        assert doc.records[0].segment_id == 675606
-        assert doc.records[0].document_id == 1
         assert doc.original_document.startswith("<?xml version=")
+        assert not doc.records
 
 
-def test_upload_creates_task(fastapi_client: TestClient):
-    with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff", files={"file": fp})
-    assert response.status_code == 200
-
-    with session() as s:
-        task = s.query(schema.DocumentTask).filter_by(id=1).first()
-        assert task is not None
-        assert task.document_id == 1
-        assert json.loads(task.data) == {}
+def test_upload_no_file(fastapi_client: TestClient):
+    response = fastapi_client.post("/xliff/", files={})
+    assert response.status_code == 422
 
 
-def test_upload_process_xliff_file(fastapi_client: TestClient):
+def test_process_sets_records(fastapi_client: TestClient):
     with session() as s:
         tmx_records = [
             schema.TmxRecord(source="Regional Effects", target="Translation")
@@ -142,18 +131,32 @@ def test_upload_process_xliff_file(fastapi_client: TestClient):
         s.commit()
 
     with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff", files={"file": fp})
+        fastapi_client.post("/xliff", files={"file": fp})
+
+    response = fastapi_client.post("/xliff/1/process")
     assert response.status_code == 200
 
     with session() as s:
-        doc = s.query(schema.XliffDocument).filter_by(id=1).first()
-        assert doc is not None
+        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        assert doc.processing_status == "done"
+        assert len(doc.records) == 3
+        assert doc.records[0].id == 1
+        assert doc.records[0].segment_id == 675606
+        assert doc.records[0].document_id == 1
+        # It provides text for matching TMX record
+        assert doc.records[0].source == "Regional Effects"
         assert doc.records[0].target == "Translation"
+        # It does not provide text for missing TMX record
+        assert doc.records[1].source == "Other Effects"
+        assert doc.records[1].target == ""
+        # It does not touch approved record
+        assert doc.records[2].source == "Regional Effects"
+        assert doc.records[2].target == "Региональные эффекты"
 
 
-def test_upload_no_file(fastapi_client: TestClient):
-    response = fastapi_client.post("/xliff/", files={})
-    assert response.status_code == 422
+def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestClient):
+    response = fastapi_client.post("/xliff/1/process")
+    assert response.status_code == 404
 
 
 def test_download_xliff(fastapi_client: TestClient):

@@ -7,9 +7,17 @@
             <tool tool-name="Smartcat.ai" tool-id="40c7d5b2-da26-4b36-84f1-8305b3aadb03" tool-version="1.0.11.0" />
         </header>
         <body>
-            <trans-unit id="675606" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.711Z" sc:last-modified-user="Aleksandr Fedorov">
+            <trans-unit id="675606" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.711Z" sc:last-modified-user="Person 1">
                 <source xml:space="preserve">Regional Effects</source>
                 <target state="needs-translation" xml:space="preserve" />
+            </trans-unit>
+            <trans-unit id="675607" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.911Z" sc:last-modified-user="Person 2">
+                <source xml:space="preserve">Other Effects</source>
+                <target state="needs-translation" xml:space="preserve" />
+            </trans-unit>
+            <trans-unit id="675608" approved="yes" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.967Z" sc:last-modified-user="Person 3">
+                <source xml:space="preserve">Regional Effects</source>
+                <target state="translated" xml:space="preserve">Региональные эффекты</target>
             </trans-unit>
         </body>
     </file>
