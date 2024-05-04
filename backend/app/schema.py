@@ -1,3 +1,4 @@
+from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped
 from sqlalchemy.orm import mapped_column, relationship
@@ -36,6 +37,7 @@ class XliffDocument(Base):
     name: Mapped[str] = mapped_column()
     original_document: Mapped[str] = mapped_column()
     processing_status: Mapped[str] = mapped_column()
+    upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
 
     records: Mapped[list["XliffRecord"]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
