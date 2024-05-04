@@ -5,7 +5,7 @@ from pydantic import BaseModel
 class DocumentStatus(Enum):
     UPLOADED = "uploaded"
     PENDING = "pending"
-    IN_PROGRESS = "in_progress"
+    PROCESSING = "processing"
     DONE = "done"
     ERROR = "error"
 

@@ -23,7 +23,7 @@ def test_can_get_list_of_xliff_docs(fastapi_client: TestClient):
             schema.XliffDocument(
                 name="another_doc.tmx",
                 original_document="",
-                processing_status="in_progress",
+                processing_status="processing",
             )
         )
         s.commit()
@@ -32,7 +32,7 @@ def test_can_get_list_of_xliff_docs(fastapi_client: TestClient):
     assert response.status_code == 200
     assert response.json() == [
         {"id": 1, "name": "first_doc.tmx", "status": "pending"},
-        {"id": 2, "name": "another_doc.tmx", "status": "in_progress"},
+        {"id": 2, "name": "another_doc.tmx", "status": "processing"},
     ]
 
 
