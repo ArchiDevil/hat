@@ -35,6 +35,10 @@ export const deleteXliff = async (doc_id: number): Promise<StatusMessage> => {
   const api = mande(getApiBase() + `/xliff/${doc_id}`)
   return await api.delete<StatusMessage>('')
 }
+export const processXliff = async (doc_id: number): Promise<StatusMessage> => {
+  const api = mande(getApiBase() + `/xliff/${doc_id}/process`)
+  return await api.post<StatusMessage>('')
+}
 export const getDownloadXliffLink = (doc_id: number): string => {
   return getApiBase() + `/xliff/${doc_id}/download`
 }
