@@ -15,7 +15,9 @@ class TmxDocument(Base):
     name: Mapped[str] = mapped_column()
 
     records: Mapped[list["TmxRecord"]] = relationship(
-        back_populates="document", cascade="all, delete-orphan"
+        back_populates="document",
+        cascade="all, delete-orphan",
+        order_by="TmxRecord.id"
     )
 
 
@@ -40,7 +42,9 @@ class XliffDocument(Base):
     upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
 
     records: Mapped[list["XliffRecord"]] = relationship(
-        back_populates="document", cascade="all, delete-orphan"
+        back_populates="document",
+        cascade="all, delete-orphan",
+        order_by="XliffRecord.id",
     )
 
 
