@@ -112,7 +112,7 @@ def test_upload(fastapi_client: TestClient):
         doc = s.query(schema.XliffDocument).filter_by(id=1).first()
         assert doc is not None
         assert doc.name == "small.xliff"
-        assert doc.processing_status == "pending"
+        assert doc.processing_status == "uploaded"
         assert doc.original_document.startswith("<?xml version=")
         assert not doc.records
 
@@ -140,16 +140,22 @@ def test_process_sets_records(fastapi_client: TestClient):
         doc = s.query(schema.XliffDocument).filter_by(id=1).one()
         assert doc.processing_status == "done"
         assert len(doc.records) == 3
+        # It provides text for matching TMX record
         assert doc.records[0].id == 1
         assert doc.records[0].segment_id == 675606
         assert doc.records[0].document_id == 1
-        # It provides text for matching TMX record
         assert doc.records[0].source == "Regional Effects"
         assert doc.records[0].target == "Translation"
         # It does not provide text for missing TMX record
+        assert doc.records[1].id == 2
+        assert doc.records[1].segment_id == 675607
+        assert doc.records[1].document_id == 1
         assert doc.records[1].source == "Other Effects"
         assert doc.records[1].target == ""
         # It does not touch approved record
+        assert doc.records[2].id == 3
+        assert doc.records[2].segment_id == 675608
+        assert doc.records[2].document_id == 1
         assert doc.records[2].source == "Regional Effects"
         assert doc.records[2].target == "Региональные эффекты"
 
