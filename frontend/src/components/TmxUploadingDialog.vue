@@ -1,39 +1,30 @@
 <script setup lang="ts">
-import {Ref, ref, computed, PropType} from 'vue'
+import {Ref, ref, computed} from 'vue'
+import {MandeError} from 'mande'
 
 import Button from './Button.vue'
+import {createTmx} from '../client/services/TmxService'
 
 const emit = defineEmits<{
   uploaded: []
 }>()
 
-const props = defineProps({
+defineProps({
   title: {
     type: String,
-    required: true,
-  },
-  extension: {
-    type: String,
-    required: true,
-  },
-  url: {
-    type: String,
-    required: true,
-  },
-  uploadMethod: {
-    type: Function as PropType<(file: File) => Promise<any>>,
     required: true,
   },
 })
 
 const file = ref(null) as Ref<File | null>
 const input = ref<HTMLInputElement | null>(null)
-const uploadAvailable = computed(() => file.value != null)
 const uploading = ref(false)
-const status = ref()
+const status = ref('')
+
+const uploadAvailable = computed(() => file.value != null)
 
 const updateFiles = () => {
-  status.value = undefined
+  status.value = ''
   const element = input.value as HTMLInputElement
   if (!element.files) {
     return
@@ -42,7 +33,7 @@ const updateFiles = () => {
 }
 
 const uploadFile = async () => {
-  if (!uploadAvailable) {
+  if (!uploadAvailable.value) {
     return
   }
 
@@ -52,13 +43,13 @@ const uploadFile = async () => {
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    await props.uploadMethod(attachedFile)
+    await createTmx({file: attachedFile})
     uploading.value = false
     status.value = 'Done!'
     emit('uploaded')
-  } catch (error: any) {
+  } catch (error: unknown) {
     uploading.value = false
-    status.value = `${error.message} :(`
+    status.value = `${(error as MandeError).message} :(`
   }
 }
 </script>
@@ -67,24 +58,28 @@ const uploadFile = async () => {
   <div class="p-2 min-w-96 border border-slate-500">
     <label
       for="file"
-      class="font-semibold mr-2">
+      class="font-semibold mr-2"
+    >
       {{ title }}
     </label>
     <input
       id="file-input"
-      type="file"
       ref="input"
+      type="file"
+      accept=".tmx"
       @change="updateFiles"
-      :accept="extension" />
+    >
     <Button
       class="ml-2"
+      :disabled="!uploadAvailable || uploading"
       @click="uploadFile"
-      :disabled="!uploadAvailable || uploading">
+    >
       Upload
     </Button>
     <span
+      v-if="status"
       class="ml-2"
-      v-if="status">
+    >
       {{ status }}
     </span>
   </div>
