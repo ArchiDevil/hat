@@ -29,7 +29,11 @@ router = APIRouter(prefix="/xliff", tags=["xliff"])
 
 @router.get("/")
 def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[XliffFile]:
-    xliffs = db.query(schema.XliffDocument).all()
+    xliffs = (
+        db.query(schema.XliffDocument)
+        .filter(schema.XliffDocument.processing_status != "uploaded")
+        .all()
+    )
     return [
         XliffFile(
             id=xliff.id, name=xliff.name, status=DocumentStatus(xliff.processing_status)
@@ -92,7 +96,7 @@ async def create_xliff(
     doc = schema.XliffDocument(
         name=name,
         original_document=original_document,
-        processing_status=DocumentStatus.PENDING.value,
+        processing_status=DocumentStatus.UPLOADED.value,
         upload_time=datetime.now(),
     )
     db.add(doc)
@@ -109,7 +113,9 @@ async def create_xliff(
 
 
 @router.post("/{doc_id}/process")
-def process_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
+def process_xliff(
+    doc_id: int, db: Annotated[Session, Depends(get_db)]
+) -> StatusMessage:
     doc = db.query(schema.XliffDocument).filter_by(id=doc_id).first()
     if not doc:
         raise HTTPException(
@@ -150,6 +156,7 @@ def process_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     # settings = {}
     # db.add(schema.DocumentTask(document_id=new_doc.id, data=json.dumps(settings)))
     # db.commit()
+    return StatusMessage(message="Ok")
 
 
 @router.get(
