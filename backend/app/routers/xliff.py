@@ -32,6 +32,7 @@ def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[XliffFile]:
     xliffs = (
         db.query(schema.XliffDocument)
         .filter(schema.XliffDocument.processing_status != "uploaded")
+        .order_by(schema.XliffDocument.id)
         .all()
     )
     return [

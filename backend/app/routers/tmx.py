@@ -14,7 +14,7 @@ router = APIRouter(prefix="/tmx", tags=["tmx"])
 
 @router.get("/")
 def get_tmxs(db: Annotated[Session, Depends(get_db)]) -> list[TmxFile]:
-    docs = db.query(schema.TmxDocument).all()
+    docs = db.query(schema.TmxDocument).order_by(schema.TmxDocument.id).all()
     return [TmxFile(id=doc.id, name=doc.name) for doc in docs]
 
 
