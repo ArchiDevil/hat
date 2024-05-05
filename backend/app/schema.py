@@ -64,7 +64,4 @@ class DocumentTask(Base):
     __tablename__ = "document_task"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    document_id: Mapped[int] = mapped_column(ForeignKey("xliff_document.id"))
     data: Mapped[str] = mapped_column()
-
-    document: Mapped["XliffDocument"] = relationship()

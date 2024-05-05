@@ -23,12 +23,7 @@ def upgrade() -> None:
     op.create_table(
         "document_task",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("document_id", sa.Integer(), nullable=False),
         sa.Column("data", sa.String(), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["document_id"],
-            ["xliff_document.id"],
-        ),
         sa.PrimaryKeyConstraint("id"),
     )
 
