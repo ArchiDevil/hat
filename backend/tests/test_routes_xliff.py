@@ -133,7 +133,9 @@ def test_process_sets_records(fastapi_client: TestClient):
     with open("tests/small.xliff", "rb") as fp:
         fastapi_client.post("/xliff", files={"file": fp})
 
-    response = fastapi_client.post("/xliff/1/process")
+    response = fastapi_client.post(
+        "/xliff/1/process", json={"substitute_numbers": False}
+    )
     assert response.status_code == 200
 
     with session() as s:
@@ -161,7 +163,9 @@ def test_process_sets_records(fastapi_client: TestClient):
 
 
 def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestClient):
-    response = fastapi_client.post("/xliff/1/process")
+    response = fastapi_client.post(
+        "/xliff/1/process", json={"substitute_numbers": False}
+    )
     assert response.status_code == 404
 
 
