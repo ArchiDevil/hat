@@ -11,7 +11,7 @@ export interface AnyOfDesc {
 }
 
 export interface TrivialDesc {
-  type: 'string' | 'integer' // | 'boolean' // TODO: check if boolean is possible
+  type: 'string' | 'integer' | 'boolean'
   title?: string
   format?: string
 }

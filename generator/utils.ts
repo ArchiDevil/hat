@@ -34,9 +34,8 @@ export function tsType(prop: PropDescription): string {
     }
     case 'integer':
       return 'number'
-    // TODO: check if it possible to have boolean
-    // case 'boolean':
-    //   return 'boolean'
+    case 'boolean':
+      return 'boolean'
     case 'array': {
       if (prop.items) {
         // TODO: call tsType recursively?

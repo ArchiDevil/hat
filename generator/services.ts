@@ -97,13 +97,37 @@ const genService = (methods: ServiceMethod[]) => {
         (param) => `${paramSig(param.name, param.required, param.schema)}`
       )
 
+      const isFormData = (content: {
+        [contentType: string]: {
+          schema: PropDescription
+        }
+      }): content is {'multipart/form-data': {schema: PropDescription}} => {
+        return 'multipart/form-data' in content
+      }
+
+      const isJsonData = (content: {
+        [contentType: string]: {
+          schema: PropDescription
+        }
+      }): content is {'application/json': {schema: PropDescription}} => {
+        return 'application/json' in content
+      }
+
       if (method.description.requestBody) {
         // TODO: check it smarter, not hardcoded 'multipart/form-data'
-        const schema =
-          method.description.requestBody.content['multipart/form-data'].schema
-        const type = tsType(schema)
-        types.add(type)
-        paramsList.push(`data: ${type}`)
+        if (isFormData(method.description.requestBody.content)) {
+          const schema =
+            method.description.requestBody.content['multipart/form-data'].schema
+          const type = tsType(schema)
+          types.add(type)
+          paramsList.push(`data: ${type}`)
+        } else if (isJsonData(method.description.requestBody.content)) {
+          const schema =
+            method.description.requestBody.content['application/json'].schema
+          const type = tsType(schema)
+          types.add(type)
+          paramsList.push(`content: ${type}`)
+        }
       }
 
       const requestParams = paramsList.join(', ')
@@ -119,24 +143,29 @@ const genService = (methods: ServiceMethod[]) => {
 
       let functionBody = ''
       if (method.description.requestBody) {
-        mandeWaActive = true
-        // TODO: it should be done smarter, not just hardcoded 'file'
-        const fileParamName = 'file'
-        const fileParam = `data.${fileParamName}`
+        if (isFormData(method.description.requestBody.content)) {
+          mandeWaActive = true
+          // TODO: it should be done smarter, not just hardcoded 'file'
+          const fileParamName = 'file'
+          const fileParam = `data.${fileParamName}`
 
-        functionBody += `  const formData = new FormData()\n`
-        functionBody += `  formData.append('file', ${fileParam})\n`
-        // TODO: Remove WA when mande 2.0.9+ is released
-        functionBody += `  const defaultHeaders = defaults.headers\n`
-        functionBody += `  try {\n`
-        functionBody += `    const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
-        functionBody += `    defaults.headers = {}\n`
-        functionBody += `    return await api.${method.httpMethod}${mandeType}('', formData)\n`
-        functionBody += `  } catch (error: any) {\n`
-        functionBody += `    throw error\n`
-        functionBody += `  } finally {\n`
-        functionBody += `    defaults.headers = defaultHeaders\n`
-        functionBody += `  }\n`
+          functionBody += `  const formData = new FormData()\n`
+          functionBody += `  formData.append('file', ${fileParam})\n`
+          // TODO: Remove WA when mande 2.0.9+ is released
+          functionBody += `  const defaultHeaders = defaults.headers\n`
+          functionBody += `  try {\n`
+          functionBody += `    const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
+          functionBody += `    defaults.headers = {}\n`
+          functionBody += `    return await api.${method.httpMethod}${mandeType}('', formData)\n`
+          functionBody += `  } catch (error: any) {\n`
+          functionBody += `    throw error\n`
+          functionBody += `  } finally {\n`
+          functionBody += `    defaults.headers = defaultHeaders\n`
+          functionBody += `  }\n`
+        } else if (isJsonData(method.description.requestBody.content)) {
+          functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
+          functionBody += `  return await api.${method.httpMethod}${mandeType}(content)\n`
+        }
       } else {
         functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
         functionBody += `  return await api.${method.httpMethod}${mandeType}('')\n`
