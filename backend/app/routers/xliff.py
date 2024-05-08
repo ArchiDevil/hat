@@ -1,4 +1,5 @@
 from datetime import datetime
+
 # import json
 from typing import Annotated
 
@@ -9,19 +10,19 @@ from sqlalchemy.orm import Session
 
 from app import schema
 from app.db import get_db
-from app.xliff import extract_xliff_content
+from app.xliff import XliffSegment, extract_xliff_content
 from .models import (
     XliffFile,
     XliffFileWithRecords,
     XliffFileRecord,
     StatusMessage,
     DocumentStatus,
+    XliffProcessingSettings,
 )
 
 # TODO: remove if it was not processed in some time (1 day)
 # TODO: add settings for UI when processing
 # TODO: add XLIFF segments statuses according to the specification
-# TODO: do not even parse XLIFF when it is uploaded, put it to the queue
 
 
 router = APIRouter(prefix="/xliff", tags=["xliff"])
@@ -113,9 +114,31 @@ async def create_xliff(
     )
 
 
+def get_segment_translation(
+    segment: XliffSegment,
+    settings: XliffProcessingSettings,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # TODO: this is slow, it needs to be optimized
+    tmx_data = db.execute(
+        select(schema.TmxRecord.source, schema.TmxRecord.target)
+        .where(schema.TmxRecord.source == segment.original)
+        .limit(1)
+    ).first()
+
+    if tmx_data:
+        return tmx_data.target
+    elif settings.substitute_numbers and segment.original.isdigit():
+        return segment.original
+
+    return ""
+
+
 @router.post("/{doc_id}/process")
 def process_xliff(
-    doc_id: int, db: Annotated[Session, Depends(get_db)]
+    doc_id: int,
+    settings: XliffProcessingSettings,
+    db: Annotated[Session, Depends(get_db)],
 ) -> StatusMessage:
     doc = db.query(schema.XliffDocument).filter_by(id=doc_id).first()
     if not doc:
@@ -134,14 +157,7 @@ def process_xliff(
     xliff_data = extract_xliff_content(doc.original_document.encode())
     for segment in xliff_data.segments:
         if not segment.approved:
-            # TODO: this is slow, try to optimize it somehow
-            tmx_data = db.execute(
-                select(schema.TmxRecord.source, schema.TmxRecord.target)
-                .where(schema.TmxRecord.source == segment.original)
-                .limit(1)
-            ).first()
-            if tmx_data:
-                segment.translation = tmx_data.target
+            segment.translation = get_segment_translation(segment, settings, db)
 
         doc.records.append(
             schema.XliffRecord(
@@ -154,6 +170,7 @@ def process_xliff(
     doc.processing_status = DocumentStatus.DONE.value
     db.commit()
 
+    # TODO: it should be done when worker is here
     # settings = {}
     # db.add(schema.DocumentTask(document_id=new_doc.id, data=json.dumps(settings)))
     # db.commit()

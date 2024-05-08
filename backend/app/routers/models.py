@@ -42,5 +42,9 @@ class XliffFileWithRecords(XliffFile):
     records: list[XliffFileRecord]
 
 
+class XliffProcessingSettings(BaseModel):
+    substitute_numbers: bool
+
+
 class StatusMessage(BaseModel):
     message: str
