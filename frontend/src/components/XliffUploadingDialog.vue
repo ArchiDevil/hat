@@ -58,7 +58,7 @@ const startProcessing = async () => {
   try {
     uploading.value = true
     status.value = 'Processing...'
-    await processXliff(uploadedFile.value!.id)
+    await processXliff(uploadedFile.value!.id, {substitute_numbers: false})
     uploading.value = false
     status.value = 'Done!'
     emit('processed')
