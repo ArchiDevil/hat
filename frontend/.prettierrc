@@ -5,7 +5,7 @@
     "htmlWhitespaceSensitivity": "css",
     "insertPragma": false,
     "singleAttributePerLine": true,
-    "bracketSameLine": true,
+    "bracketSameLine": false,
     "jsxBracketSameLine": false,
     "jsxSingleQuote": false,
     "printWidth": 80,
