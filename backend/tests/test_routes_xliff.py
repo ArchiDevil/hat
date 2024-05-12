@@ -141,7 +141,7 @@ def test_process_sets_records(fastapi_client: TestClient):
     with session() as s:
         doc = s.query(schema.XliffDocument).filter_by(id=1).one()
         assert doc.processing_status == "done"
-        assert len(doc.records) == 3
+        assert len(doc.records) == 4
         # It provides text for matching TMX record
         assert doc.records[0].id == 1
         assert doc.records[0].segment_id == 675606
@@ -160,6 +160,38 @@ def test_process_sets_records(fastapi_client: TestClient):
         assert doc.records[2].document_id == 1
         assert doc.records[2].source == "Regional Effects"
         assert doc.records[2].target == "Региональные эффекты"
+        # It does not substitute numbers
+        assert doc.records[3].id == 4
+        assert doc.records[3].segment_id == 675609
+        assert doc.records[3].document_id == 1
+        assert doc.records[3].source == "123456789"
+        assert doc.records[3].target == ""
+
+
+def test_process_substitutes_numbers(fastapi_client: TestClient):
+    with session() as s:
+        tmx_records = []
+        s.add(schema.TmxDocument(name="test", records=tmx_records))
+        s.commit()
+
+    with open("tests/small.xliff", "rb") as fp:
+        fastapi_client.post("/xliff", files={"file": fp})
+
+    response = fastapi_client.post(
+        "/xliff/1/process", json={"substitute_numbers": True}
+    )
+    assert response.status_code == 200
+
+    with session() as s:
+        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        assert doc.processing_status == "done"
+        assert len(doc.records) == 4
+        # It substitutes numbers
+        assert doc.records[3].id == 4
+        assert doc.records[3].segment_id == 675609
+        assert doc.records[3].document_id == 1
+        assert doc.records[3].source == "123456789"
+        assert doc.records[3].target == "123456789"
 
 
 def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestClient):
