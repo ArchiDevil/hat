@@ -50,7 +50,7 @@ onMounted(async () => {
       <h2 class="font-bold text-lg">XLIFF documents list</h2>
       <XliffUploadingDialog
         title="Select a XLIFF file:"
-        @processed="getXliffDocs()"
+        @processed="(fileId) => $router.push(`/xliff/${fileId}`)"
       />
       <File
         v-for="file in xliffDocs"

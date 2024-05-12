@@ -9,7 +9,7 @@ import AppCheckbox from './AppCheckbox.vue'
 
 const emit = defineEmits<{
   uploaded: []
-  processed: []
+  processed: [fileId: number]
 }>()
 
 defineProps({
@@ -65,7 +65,7 @@ const startProcessing = async () => {
     })
     uploading.value = false
     status.value = 'Done!'
-    emit('processed')
+    emit('processed', uploadedFile.value!.id)
   } catch (error: unknown) {
     uploading.value = false
     status.value = `${(error as MandeError).message} :(`
