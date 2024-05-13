@@ -57,8 +57,6 @@ const paramSig = (name: string, required: boolean, schema: PropDescription) => {
 const genService = (methods: ServiceMethod[]) => {
   let content = ''
   const types = new Set<string>()
-  // TODO: Remove WA when mande 2.0.9+ is released
-  let mandeWaActive = false
   for (const method of methods) {
     // TODO: it is better to search for suitable response, not for a default
     const responseData = method.description.responses['200']
@@ -144,24 +142,14 @@ const genService = (methods: ServiceMethod[]) => {
       let functionBody = ''
       if (method.description.requestBody) {
         if (isFormData(method.description.requestBody.content)) {
-          mandeWaActive = true
           // TODO: it should be done smarter, not just hardcoded 'file'
           const fileParamName = 'file'
           const fileParam = `data.${fileParamName}`
 
           functionBody += `  const formData = new FormData()\n`
           functionBody += `  formData.append('file', ${fileParam})\n`
-          // TODO: Remove WA when mande 2.0.9+ is released
-          functionBody += `  const defaultHeaders = defaults.headers\n`
-          functionBody += `  try {\n`
-          functionBody += `    const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
-          functionBody += `    defaults.headers = {}\n`
-          functionBody += `    return await api.${method.httpMethod}${mandeType}('', formData)\n`
-          functionBody += `  } catch (error: any) {\n`
-          functionBody += `    throw error\n`
-          functionBody += `  } finally {\n`
-          functionBody += `    defaults.headers = defaultHeaders\n`
-          functionBody += `  }\n`
+          functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
+          functionBody += `  return await api.${method.httpMethod}${mandeType}('', formData)\n`
         } else if (isJsonData(method.description.requestBody.content)) {
           functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
           functionBody += `  return await api.${method.httpMethod}${mandeType}(content)\n`
@@ -178,11 +166,7 @@ const genService = (methods: ServiceMethod[]) => {
   }
 
   let fileContent = ''
-  if (mandeWaActive) {
-    fileContent += `import {defaults, mande} from 'mande'\n\n`
-  } else {
-    fileContent += `import {mande} from 'mande'\n\n`
-  }
+  fileContent += `import {mande} from 'mande'\n\n`
   fileContent += `import {getApiBase} from '../defaults'\n\n`
   fileContent += `${getImports(types, '../schemas/')}`
   fileContent += `${content}`
