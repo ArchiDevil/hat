@@ -89,6 +89,8 @@ const genService = (methods: ServiceMethod[]) => {
         !respType.endsWith('[]')
       ) {
         types.add(respType)
+      } else if (respType.endsWith('[]')) {
+        types.add(respType.slice(0, -2))
       }
 
       const paramsList = (method.description.parameters ?? []).map(
@@ -125,6 +127,8 @@ const genService = (methods: ServiceMethod[]) => {
           const type = tsType(schema)
           types.add(type)
           paramsList.push(`content: ${type}`)
+        } else {
+          console.warn('Unknown request body:', method.description.requestBody)
         }
       }
 
