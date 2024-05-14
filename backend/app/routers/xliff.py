@@ -13,7 +13,6 @@ from app.db import get_db
 from app.xliff import XliffSegment, extract_xliff_content
 from .models import (
     XliffFile,
-    XliffFileWithRecords,
     XliffFileRecord,
     StatusMessage,
     DocumentStatus,
@@ -45,9 +44,7 @@ def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[XliffFile]:
 
 
 @router.get("/{doc_id}")
-def get_xliff(
-    doc_id: int, db: Annotated[Session, Depends(get_db)]
-) -> XliffFileWithRecords:
+def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> XliffFile:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -56,20 +53,34 @@ def get_xliff(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
-    return XliffFileWithRecords(
+    return XliffFile(
         id=doc.id,
         name=doc.name,
         status=DocumentStatus(doc.processing_status),
-        records=[
-            XliffFileRecord(
-                id=record.id,
-                segment_id=record.segment_id,
-                source=record.source,
-                target=record.target,
-            )
-            for record in doc.records
-        ],
     )
+
+
+@router.get("/{doc_id}/records")
+def get_xliff_records(
+    doc_id: int, db: Annotated[Session, Depends(get_db)]
+) -> list[XliffFileRecord]:
+    doc = (
+        db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
+    )
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    return [
+        XliffFileRecord(
+            id=record.id,
+            segment_id=record.segment_id,
+            source=record.source,
+            target=record.target,
+        )
+        for record in doc.records
+    ]
 
 
 @router.delete("/{doc_id}")

@@ -6,8 +6,8 @@ import {getApiBase} from '../defaults'
 
 import {XliffFile} from '../schemas/XliffFile'
 import {Body_create_xliff_xliff__post} from '../schemas/Body_create_xliff_xliff__post'
-import {XliffFileWithRecords} from '../schemas/XliffFileWithRecords'
 import {StatusMessage} from '../schemas/StatusMessage'
+import {XliffFileRecord} from '../schemas/XliffFileRecord'
 import {XliffProcessingSettings} from '../schemas/XliffProcessingSettings'
 
 export const getXliffs = async (): Promise<XliffFile[]> => {
@@ -20,13 +20,17 @@ export const createXliff = async (data: Body_create_xliff_xliff__post): Promise<
   const api = mande(getApiBase() + `/xliff/`)
   return await api.post<XliffFile>('', formData)
 }
-export const getXliff = async (doc_id: number): Promise<XliffFileWithRecords> => {
+export const getXliff = async (doc_id: number): Promise<XliffFile> => {
   const api = mande(getApiBase() + `/xliff/${doc_id}`)
-  return await api.get<XliffFileWithRecords>('')
+  return await api.get<XliffFile>('')
 }
 export const deleteXliff = async (doc_id: number): Promise<StatusMessage> => {
   const api = mande(getApiBase() + `/xliff/${doc_id}`)
   return await api.delete<StatusMessage>('')
+}
+export const getXliffRecords = async (doc_id: number): Promise<XliffFileRecord[]> => {
+  const api = mande(getApiBase() + `/xliff/${doc_id}/records`)
+  return await api.get<XliffFileRecord[]>('')
 }
 export const processXliff = async (doc_id: number, content: XliffProcessingSettings): Promise<StatusMessage> => {
   const api = mande(getApiBase() + `/xliff/${doc_id}/process`)

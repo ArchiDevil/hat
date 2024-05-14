@@ -59,21 +59,43 @@ def test_can_get_xliff_file(fastapi_client: TestClient):
         "id": 1,
         "name": "test_doc.xliff",
         "status": "pending",
-        "records": [
-            {
-                "id": 1,
-                "segment_id": 8,
-                "source": "Regional Effects",
-                "target": "Translation",
-            },
-            {
-                "id": 2,
-                "segment_id": 14,
-                "source": "User Interface",
-                "target": "UI",
-            },
-        ],
     }
+
+
+def test_can_get_xliff_records(fastapi_client: TestClient):
+    with session() as s:
+        xliff_records = [
+            schema.XliffRecord(
+                segment_id=8, source="Regional Effects", target="Translation"
+            ),
+            schema.XliffRecord(segment_id=14, source="User Interface", target="UI"),
+        ]
+        s.add(
+            schema.XliffDocument(
+                name="test_doc.xliff",
+                original_document="Something",
+                records=xliff_records,
+                processing_status="pending",
+            )
+        )
+        s.commit()
+
+    response = fastapi_client.get("/xliff/1/records")
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": 1,
+            "segment_id": 8,
+            "source": "Regional Effects",
+            "target": "Translation",
+        },
+        {
+            "id": 2,
+            "segment_id": 14,
+            "source": "User Interface",
+            "target": "UI",
+        },
+    ]
 
 
 async def test_returns_404_when_xliff_file_not_found(fastapi_client: TestClient):
