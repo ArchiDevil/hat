@@ -1,9 +1,11 @@
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
 
 from app import schema
 from app.db import get_db
+from app.routers.models import DocumentStatus
 
 
 @contextmanager
@@ -142,6 +144,58 @@ def test_upload(fastapi_client: TestClient):
 def test_upload_no_file(fastapi_client: TestClient):
     response = fastapi_client.post("/xliff/", files={})
     assert response.status_code == 422
+
+
+def test_upload_removes_old_files(fastapi_client: TestClient):
+    with session() as s:
+        s.add(
+            schema.XliffDocument(
+                name="some_doc.xliff",
+                original_document="",
+                processing_status=DocumentStatus.UPLOADED.value,
+                upload_time=(datetime.now() - timedelta(days=2)),
+            )
+        )
+        s.commit()
+
+    with open("tests/small.xliff", "rb") as fp:
+        response = fastapi_client.post("/xliff/", files={"file": fp})
+    assert response.status_code == 200
+
+    with session() as s:
+        doc = s.query(schema.XliffDocument).filter_by(name="some_doc.xliff").first()
+        assert not doc
+
+
+def test_upload_removes_only_uploaded_documents(fastapi_client: TestClient):
+    with session() as s:
+        s.add(
+            schema.XliffDocument(
+                name="uploaded_doc.xliff",
+                original_document="",
+                processing_status=DocumentStatus.UPLOADED.value,
+                upload_time=(datetime.now() - timedelta(days=2)),
+            )
+        )
+        s.add(
+            schema.XliffDocument(
+                name="processed_doc.xliff",
+                original_document="",
+                processing_status=DocumentStatus.DONE.value,
+                upload_time=(datetime.now() - timedelta(days=2)),
+            )
+        )
+        s.commit()
+
+    with open("tests/small.xliff", "rb") as fp:
+        response = fastapi_client.post("/xliff/", files={"file": fp})
+    assert response.status_code == 200
+
+    with session() as s:
+        doc = s.query(schema.XliffDocument).filter_by(name="uploaded_doc.xliff").first()
+        assert not doc
+        doc = s.query(schema.XliffDocument).filter_by(name="processed_doc.xliff").first()
+        assert doc
 
 
 def test_process_sets_records(fastapi_client: TestClient):
