@@ -12,12 +12,9 @@ const emit = defineEmits<{
   processed: [fileId: number]
 }>()
 
-defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-})
+defineProps<{
+  title: string
+}>()
 
 const input = ref<HTMLInputElement | null>(null)
 const file = ref(null) as Ref<File | null>

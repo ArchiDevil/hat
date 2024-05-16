@@ -9,12 +9,9 @@ const emit = defineEmits<{
   uploaded: []
 }>()
 
-defineProps({
-  title: {
-    type: String,
-    required: true,
-  },
-})
+defineProps<{
+  title: string
+}>()
 
 const file = ref(null) as Ref<File | null>
 const input = ref<HTMLInputElement | null>(null)

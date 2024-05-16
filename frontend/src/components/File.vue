@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {PropType, ref} from 'vue'
+import {ref} from 'vue'
 
 import {XliffFile} from '../client/schemas/XliffFile'
 import {TmxFile} from '../client/schemas/TmxFile'
@@ -11,20 +11,11 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const props = defineProps({
-  file: {
-    type: Object as PropType<XliffFile | TmxFile>,
-    required: true,
-  },
-  type: {
-    type: String as PropType<'xliff' | 'tmx'>,
-    required: true,
-  },
-  deleteMethod: {
-    type: Function as PropType<(id: number) => Promise<any>>,
-    required: true,
-  },
-})
+const props = defineProps<{
+  file: XliffFile | TmxFile;
+  type: 'xliff' | 'tmx';
+  deleteMethod: (id: number) => Promise<any>;
+}>()
 
 const busy = ref(false)
 const status = ref()
