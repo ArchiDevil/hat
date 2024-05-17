@@ -19,8 +19,10 @@ from .models import (
     XliffProcessingSettings,
 )
 
-# TODO: add settings for UI when processing
 # TODO: add XLIFF segments statuses according to the specification
+# TODO: split processing into a separate worker process
+# TODO: understand how to create docker image for the worker process
+# TODO: understand how to debug everything as a whole system
 
 
 router = APIRouter(prefix="/xliff", tags=["xliff"])
@@ -100,15 +102,15 @@ def delete_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> Status
 @router.post("/")
 async def create_xliff(
     file: Annotated[UploadFile, File()], db: Annotated[Session, Depends(get_db)]
-)  -> XliffFile:
+) -> XliffFile:
     cutoff_date = datetime.now() - timedelta(days=1)
 
     # Remove outdated XLIFF files when adding a new one.
     outdated_docs = (
         db.query(schema.XliffDocument)
-         .filter(schema.XliffDocument.upload_time < cutoff_date)
-         .filter(schema.XliffDocument.processing_status == "uploaded")
-         .all()
+        .filter(schema.XliffDocument.upload_time < cutoff_date)
+        .filter(schema.XliffDocument.processing_status == "uploaded")
+        .all()
     )
     for doc in outdated_docs:
         db.delete(doc)
