@@ -59,7 +59,7 @@ def process_xliff(
     session.commit()
 
 
-def process_task(session: Session, task: schema.DocumentTask):
+def process_task(session: Session, task: schema.DocumentTask) -> bool:
     logging.info("New task found: %s", task.id)
 
     task.status = models.TaskStatus.PROCESSING.value
@@ -68,11 +68,11 @@ def process_task(session: Session, task: schema.DocumentTask):
     task_data: dict = json.loads(task.data)
     if "type" not in task_data:
         logging.error("Task data is missing 'type' field")
-        return
+        return False
 
     if task_data["type"] != "xliff":
         logging.error("Task data 'type' field is not 'xliff'")
-        return
+        return False
 
     document_id = task_data["doc_id"]
     doc = (
@@ -83,20 +83,22 @@ def process_task(session: Session, task: schema.DocumentTask):
 
     if not doc or doc.processing_status != models.DocumentStatus.PENDING.value:
         logging.error("Document not found or already processed")
-        return
+        return False
 
     if "settings" not in task_data or not task_data["settings"]:
         logging.error("Task data is missing 'settings' field")
-        return
+        return False
 
     settings = models.XliffProcessingSettings.model_construct(
-        None, **task_data["settings"]
+        None, **json.loads(task_data["settings"])
     )
     process_xliff(doc, settings, session)
 
     logging.info("Task completed: %s, removing...", task.id)
     session.delete(task)
     session.commit()
+
+    return True
 
 
 def main():

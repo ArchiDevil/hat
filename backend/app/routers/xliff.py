@@ -1,19 +1,16 @@
 from datetime import datetime, timedelta
-
-# import json
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import schema, models
 from app.db import get_db
-from app.xliff import XliffSegment, extract_xliff_content
+from app.xliff import extract_xliff_content
 
 # TODO: add XLIFF segments statuses according to the specification
-# TODO: split processing into a separate worker process
 # TODO: understand how to create docker image for the worker process
 # TODO: understand how to debug everything as a whole system
 
@@ -80,7 +77,9 @@ def get_xliff_records(
 
 
 @router.delete("/{doc_id}")
-def delete_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> models.StatusMessage:
+def delete_xliff(
+    doc_id: int, db: Annotated[Session, Depends(get_db)]
+) -> models.StatusMessage:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -134,26 +133,6 @@ async def create_xliff(
     )
 
 
-def get_segment_translation(
-    segment: XliffSegment,
-    settings: models.XliffProcessingSettings,
-    db: Annotated[Session, Depends(get_db)],
-):
-    # TODO: this is slow, it needs to be optimized
-    tmx_data = db.execute(
-        select(schema.TmxRecord.source, schema.TmxRecord.target)
-        .where(schema.TmxRecord.source == segment.original)
-        .limit(1)
-    ).first()
-
-    if tmx_data:
-        return tmx_data.target
-    elif settings.substitute_numbers and segment.original.isdigit():
-        return segment.original
-
-    return ""
-
-
 @router.post("/{doc_id}/process")
 def process_xliff(
     doc_id: int,
@@ -166,34 +145,20 @@ def process_xliff(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
-    # TODO: it should be done when worker is here
-    # doc.processing_status = DocumentStatus.PENDING.value
-    # db.commit()
-
-    # TODO: move it to worker
-    doc.processing_status = models.DocumentStatus.PROCESSING.value
+    doc.processing_status = models.DocumentStatus.PENDING.value
     db.commit()
 
-    xliff_data = extract_xliff_content(doc.original_document.encode())
-    for segment in xliff_data.segments:
-        if not segment.approved:
-            segment.translation = get_segment_translation(segment, settings, db)
-
-        doc.records.append(
-            schema.XliffRecord(
-                segment_id=segment.id_,
-                source=segment.original,
-                target=segment.translation,
-            )
+    task_config = {
+        "type": "xliff",
+        "doc_id": doc_id,
+        "settings": settings.model_dump_json(),
+    }
+    db.add(
+        schema.DocumentTask(
+            data=json.dumps(task_config), status=models.TaskStatus.PENDING.value
         )
-
-    doc.processing_status = models.DocumentStatus.DONE.value
+    )
     db.commit()
-
-    # TODO: it should be done when worker is here
-    # settings = {}
-    # db.add(schema.DocumentTask(document_id=new_doc.id, data=json.dumps(settings)))
-    # db.commit()
     return models.StatusMessage(message="Ok")
 
 
