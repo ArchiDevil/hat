@@ -8,16 +8,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import schema
+from app import schema, models
 from app.db import get_db
 from app.xliff import XliffSegment, extract_xliff_content
-from .models import (
-    XliffFile,
-    XliffFileRecord,
-    StatusMessage,
-    DocumentStatus,
-    XliffProcessingSettings,
-)
 
 # TODO: add XLIFF segments statuses according to the specification
 # TODO: split processing into a separate worker process
@@ -29,7 +22,7 @@ router = APIRouter(prefix="/xliff", tags=["xliff"])
 
 
 @router.get("/")
-def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[XliffFile]:
+def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[models.XliffFile]:
     xliffs = (
         db.query(schema.XliffDocument)
         .filter(schema.XliffDocument.processing_status != "uploaded")
@@ -37,15 +30,17 @@ def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[XliffFile]:
         .all()
     )
     return [
-        XliffFile(
-            id=xliff.id, name=xliff.name, status=DocumentStatus(xliff.processing_status)
+        models.XliffFile(
+            id=xliff.id,
+            name=xliff.name,
+            status=models.DocumentStatus(xliff.processing_status),
         )
         for xliff in xliffs
     ]
 
 
 @router.get("/{doc_id}")
-def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> XliffFile:
+def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> models.XliffFile:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -54,17 +49,17 @@ def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> XliffFile
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
-    return XliffFile(
+    return models.XliffFile(
         id=doc.id,
         name=doc.name,
-        status=DocumentStatus(doc.processing_status),
+        status=models.DocumentStatus(doc.processing_status),
     )
 
 
 @router.get("/{doc_id}/records")
 def get_xliff_records(
     doc_id: int, db: Annotated[Session, Depends(get_db)]
-) -> list[XliffFileRecord]:
+) -> list[models.XliffFileRecord]:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -74,7 +69,7 @@ def get_xliff_records(
         )
 
     return [
-        XliffFileRecord(
+        models.XliffFileRecord(
             id=record.id,
             segment_id=record.segment_id,
             source=record.source,
@@ -85,7 +80,7 @@ def get_xliff_records(
 
 
 @router.delete("/{doc_id}")
-def delete_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
+def delete_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> models.StatusMessage:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -96,13 +91,13 @@ def delete_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> Status
 
     db.delete(doc)
     db.commit()
-    return StatusMessage(message="Deleted")
+    return models.StatusMessage(message="Deleted")
 
 
 @router.post("/")
 async def create_xliff(
     file: Annotated[UploadFile, File()], db: Annotated[Session, Depends(get_db)]
-) -> XliffFile:
+) -> models.XliffFile:
     cutoff_date = datetime.now() - timedelta(days=1)
 
     # Remove outdated XLIFF files when adding a new one.
@@ -123,7 +118,7 @@ async def create_xliff(
     doc = schema.XliffDocument(
         name=name,
         original_document=original_document,
-        processing_status=DocumentStatus.UPLOADED.value,
+        processing_status=models.DocumentStatus.UPLOADED.value,
         upload_time=datetime.now(),
     )
     db.add(doc)
@@ -132,16 +127,16 @@ async def create_xliff(
     new_doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc.id).one()
     )
-    return XliffFile(
+    return models.XliffFile(
         id=new_doc.id,
         name=new_doc.name,
-        status=DocumentStatus(new_doc.processing_status),
+        status=models.DocumentStatus(new_doc.processing_status),
     )
 
 
 def get_segment_translation(
     segment: XliffSegment,
-    settings: XliffProcessingSettings,
+    settings: models.XliffProcessingSettings,
     db: Annotated[Session, Depends(get_db)],
 ):
     # TODO: this is slow, it needs to be optimized
@@ -162,9 +157,9 @@ def get_segment_translation(
 @router.post("/{doc_id}/process")
 def process_xliff(
     doc_id: int,
-    settings: XliffProcessingSettings,
+    settings: models.XliffProcessingSettings,
     db: Annotated[Session, Depends(get_db)],
-) -> StatusMessage:
+) -> models.StatusMessage:
     doc = db.query(schema.XliffDocument).filter_by(id=doc_id).first()
     if not doc:
         raise HTTPException(
@@ -176,7 +171,7 @@ def process_xliff(
     # db.commit()
 
     # TODO: move it to worker
-    doc.processing_status = DocumentStatus.PROCESSING.value
+    doc.processing_status = models.DocumentStatus.PROCESSING.value
     db.commit()
 
     xliff_data = extract_xliff_content(doc.original_document.encode())
@@ -192,14 +187,14 @@ def process_xliff(
             )
         )
 
-    doc.processing_status = DocumentStatus.DONE.value
+    doc.processing_status = models.DocumentStatus.DONE.value
     db.commit()
 
     # TODO: it should be done when worker is here
     # settings = {}
     # db.add(schema.DocumentTask(document_id=new_doc.id, data=json.dumps(settings)))
     # db.commit()
-    return StatusMessage(message="Ok")
+    return models.StatusMessage(message="Ok")
 
 
 @router.get(
