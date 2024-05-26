@@ -41,6 +41,30 @@ directory.
 pytest
 ```
 
+## Running the worker
+
+To run the worker navigate to `backend` directory and create virtual environment
+if not yet:
+
+```bash
+python3 -m venv.venv
+source.venv/bin/activate
+```
+
+Then install all dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Then run the worker:
+
+```bash
+python3 worker.py
+```
+
+The worker is being tested by the same test suite as the backend.
+
 ## Running the frontend
 
 To run the frontend you need to install all dependencies first. Navigate to
