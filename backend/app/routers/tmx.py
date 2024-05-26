@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app import schema
 from app.db import get_db
 from app.tmx import extract_tmx_content
-from .models import TmxFile, TmxFileWithRecords, TmxFileRecord, StatusMessage
+from app.models import TmxFile, TmxFileWithRecords, TmxFileRecord, StatusMessage
 
 
 router = APIRouter(prefix="/tmx", tags=["tmx"])

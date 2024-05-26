@@ -10,6 +10,11 @@ class DocumentStatus(Enum):
     ERROR = "error"
 
 
+class TaskStatus(Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+
+
 class TmxFile(BaseModel):
     id: int
     name: str
