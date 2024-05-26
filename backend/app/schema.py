@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped
 from sqlalchemy.orm import mapped_column, relationship
@@ -15,9 +16,7 @@ class TmxDocument(Base):
     name: Mapped[str] = mapped_column()
 
     records: Mapped[list["TmxRecord"]] = relationship(
-        back_populates="document",
-        cascade="all, delete-orphan",
-        order_by="TmxRecord.id"
+        back_populates="document", cascade="all, delete-orphan", order_by="TmxRecord.id"
     )
 
 
@@ -65,3 +64,4 @@ class DocumentTask(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     data: Mapped[str] = mapped_column()
+    status: Mapped[str] = mapped_column()
