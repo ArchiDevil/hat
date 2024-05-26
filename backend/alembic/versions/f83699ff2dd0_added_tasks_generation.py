@@ -24,6 +24,7 @@ def upgrade() -> None:
         "document_task",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("data", sa.String(), nullable=False),
+        sa.Column("status", sa.String(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
 
