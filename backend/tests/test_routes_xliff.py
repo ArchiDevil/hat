@@ -1,11 +1,11 @@
 from contextlib import contextmanager
 from datetime import datetime, timedelta
+import json
 
 from fastapi.testclient import TestClient
 
-from app import schema
+from app import schema, models
 from app.db import get_db
-from app.routers.models import DocumentStatus
 
 
 @contextmanager
@@ -152,7 +152,7 @@ def test_upload_removes_old_files(fastapi_client: TestClient):
             schema.XliffDocument(
                 name="some_doc.xliff",
                 original_document="",
-                processing_status=DocumentStatus.UPLOADED.value,
+                processing_status=models.DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
             )
         )
@@ -173,7 +173,7 @@ def test_upload_removes_only_uploaded_documents(fastapi_client: TestClient):
             schema.XliffDocument(
                 name="uploaded_doc.xliff",
                 original_document="",
-                processing_status=DocumentStatus.UPLOADED.value,
+                processing_status=models.DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
             )
         )
@@ -181,7 +181,7 @@ def test_upload_removes_only_uploaded_documents(fastapi_client: TestClient):
             schema.XliffDocument(
                 name="processed_doc.xliff",
                 original_document="",
-                processing_status=DocumentStatus.DONE.value,
+                processing_status=models.DocumentStatus.DONE.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
             )
         )
@@ -194,80 +194,49 @@ def test_upload_removes_only_uploaded_documents(fastapi_client: TestClient):
     with session() as s:
         doc = s.query(schema.XliffDocument).filter_by(name="uploaded_doc.xliff").first()
         assert not doc
-        doc = s.query(schema.XliffDocument).filter_by(name="processed_doc.xliff").first()
+        doc = (
+            s.query(schema.XliffDocument).filter_by(name="processed_doc.xliff").first()
+        )
         assert doc
 
 
-def test_process_sets_records(fastapi_client: TestClient):
-    with session() as s:
-        tmx_records = [
-            schema.TmxRecord(source="Regional Effects", target="Translation")
-        ]
-        s.add(schema.TmxDocument(name="test", records=tmx_records))
-        s.commit()
-
+def test_process_sets_document_in_pending_stage_and_creates_task(
+    fastapi_client: TestClient,
+):
     with open("tests/small.xliff", "rb") as fp:
-        fastapi_client.post("/xliff", files={"file": fp})
+        response = fastapi_client.post("/xliff/", files={"file": fp})
 
     response = fastapi_client.post(
         "/xliff/1/process", json={"substitute_numbers": False}
     )
+
     assert response.status_code == 200
 
     with session() as s:
         doc = s.query(schema.XliffDocument).filter_by(id=1).one()
-        assert doc.processing_status == "done"
-        assert len(doc.records) == 4
-        # It provides text for matching TMX record
-        assert doc.records[0].id == 1
-        assert doc.records[0].segment_id == 675606
-        assert doc.records[0].document_id == 1
-        assert doc.records[0].source == "Regional Effects"
-        assert doc.records[0].target == "Translation"
-        # It does not provide text for missing TMX record
-        assert doc.records[1].id == 2
-        assert doc.records[1].segment_id == 675607
-        assert doc.records[1].document_id == 1
-        assert doc.records[1].source == "Other Effects"
-        assert doc.records[1].target == ""
-        # It does not touch approved record
-        assert doc.records[2].id == 3
-        assert doc.records[2].segment_id == 675608
-        assert doc.records[2].document_id == 1
-        assert doc.records[2].source == "Regional Effects"
-        assert doc.records[2].target == "Региональные эффекты"
-        # It does not substitute numbers
-        assert doc.records[3].id == 4
-        assert doc.records[3].segment_id == 675609
-        assert doc.records[3].document_id == 1
-        assert doc.records[3].source == "123456789"
-        assert doc.records[3].target == ""
+        assert doc.processing_status == "pending"
 
 
-def test_process_substitutes_numbers(fastapi_client: TestClient):
-    with session() as s:
-        tmx_records = []
-        s.add(schema.TmxDocument(name="test", records=tmx_records))
-        s.commit()
-
+def test_process_creates_task(fastapi_client: TestClient):
     with open("tests/small.xliff", "rb") as fp:
-        fastapi_client.post("/xliff", files={"file": fp})
+        response = fastapi_client.post("/xliff/", files={"file": fp})
 
     response = fastapi_client.post(
-        "/xliff/1/process", json={"substitute_numbers": True}
+        "/xliff/1/process", json={"substitute_numbers": False}
     )
+
     assert response.status_code == 200
 
     with session() as s:
-        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
-        assert doc.processing_status == "done"
-        assert len(doc.records) == 4
-        # It substitutes numbers
-        assert doc.records[3].id == 4
-        assert doc.records[3].segment_id == 675609
-        assert doc.records[3].document_id == 1
-        assert doc.records[3].source == "123456789"
-        assert doc.records[3].target == "123456789"
+        task = s.query(schema.DocumentTask).filter_by(id=1).one()
+        assert task.status == "pending"
+        loaded_data = json.loads(task.data)
+        loaded_data["settings"] = json.loads(loaded_data["settings"])
+        assert loaded_data == {
+            "type": "xliff",
+            "doc_id": 1,
+            "settings": {"substitute_numbers": False},
+        }
 
 
 def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestClient):
