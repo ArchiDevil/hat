@@ -204,7 +204,7 @@ def test_process_sets_document_in_pending_stage_and_creates_task(
     fastapi_client: TestClient,
 ):
     with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff/", files={"file": fp})
+        fastapi_client.post("/xliff/", files={"file": fp})
 
     response = fastapi_client.post(
         "/xliff/1/process", json={"substitute_numbers": False}
@@ -219,7 +219,7 @@ def test_process_sets_document_in_pending_stage_and_creates_task(
 
 def test_process_creates_task(fastapi_client: TestClient):
     with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff/", files={"file": fp})
+        fastapi_client.post("/xliff/", files={"file": fp})
 
     response = fastapi_client.post(
         "/xliff/1/process", json={"substitute_numbers": False}
@@ -255,7 +255,7 @@ def test_download_xliff(fastapi_client: TestClient):
         s.commit()
 
     with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff", files={"file": fp})
+        fastapi_client.post("/xliff", files={"file": fp})
 
     response = fastapi_client.get("/xliff/1/download")
     assert response.status_code == 200
