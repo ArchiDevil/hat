@@ -11,8 +11,6 @@ from app.db import get_db
 from app.xliff import extract_xliff_content
 
 # TODO: add XLIFF segments statuses according to the specification
-# TODO: understand how to create docker image for the worker process
-# TODO: understand how to debug everything as a whole system
 
 
 router = APIRouter(prefix="/xliff", tags=["xliff"])
