@@ -1,4 +1,6 @@
 from enum import Enum
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -47,8 +49,18 @@ class XliffFileWithRecords(XliffFile):
     records: list[XliffFileRecord]
 
 
+class MachineTranslationSettings(BaseModel):
+    # Yandex only for now
+    # source_language: str
+    # target_language: str
+    folder_id: str
+    oauth_token: str
+
+
 class XliffProcessingSettings(BaseModel):
     substitute_numbers: bool
+    use_machine_translation: bool
+    machine_translation_settings: Optional[MachineTranslationSettings]
 
 
 class StatusMessage(BaseModel):

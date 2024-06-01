@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app import db, models, schema
 from app.xliff import extract_xliff_content, XliffSegment
+from app.translators import yandex
 
 
 def get_segment_translation(
@@ -31,7 +32,7 @@ def get_segment_translation(
     if settings.substitute_numbers and segment.original.isdigit():
         return segment.original
 
-    return ""
+    return None
 
 
 def process_xliff(
@@ -43,10 +44,41 @@ def process_xliff(
     session.commit()
 
     xliff_data = extract_xliff_content(doc.original_document.encode())
-    for segment in xliff_data.segments:
+    to_translate: list[int] = []
+    for i, segment in enumerate(xliff_data.segments):
         if not segment.approved:
-            segment.translation = get_segment_translation(segment, settings, session)
+            translation = get_segment_translation(segment, settings, session)
+            if not translation:
+                # we cannot find translation for this segment - save it to translate by Yandex
+                to_translate.append(i)
 
+            segment.translation = translation if translation else ""
+
+    # translate by Yandex if there is a setting to do so enabled
+    if settings.use_machine_translation and len(to_translate) > 0:
+        if (
+            not settings.machine_translation_settings
+            or not settings.machine_translation_settings.folder_id
+            or not settings.machine_translation_settings.oauth_token
+        ):
+            logging.error(
+                "Machine translation settings are not configured, %s", settings
+            )
+            return False
+
+        try:
+            lines = [xliff_data.segments[i].original for i in to_translate]
+            translated = yandex.translate_lines(
+                lines,
+                settings.machine_translation_settings,
+            )
+            for i, translated_line in enumerate(translated):
+                xliff_data.segments[to_translate[i]].translation = translated_line
+        except Exception as e:
+            logging.error("Yandex translation error %s", e)
+            return False
+
+    for segment in xliff_data.segments:
         doc.records.append(
             schema.XliffRecord(
                 segment_id=segment.id_,
@@ -92,7 +124,9 @@ def process_task(session: Session, task: schema.DocumentTask) -> bool:
     settings = models.XliffProcessingSettings.model_construct(
         None, **json.loads(task_data["settings"])
     )
-    process_xliff(doc, settings, session)
+    if not process_xliff(doc, settings, session):
+        logging.error("Processing failed for document %d", doc.id)
+        return False
 
     logging.info("Task completed: %s, removing...", task.id)
     session.delete(task)

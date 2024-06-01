@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     # Not to forget: these settings are loaded from environment variables based
     # on the class attribute names.
     database_url: str = "postgresql://postgres:postgres@localhost/postgres"
+    translation_api: str = "https://iam.api.cloud.yandex.net"
 
 
 @lru_cache
