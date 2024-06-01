@@ -89,6 +89,7 @@ def process_xliff(
 
     doc.processing_status = models.DocumentStatus.DONE.value
     session.commit()
+    return True
 
 
 def process_task(session: Session, task: schema.DocumentTask) -> bool:

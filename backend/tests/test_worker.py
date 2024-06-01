@@ -55,7 +55,9 @@ def test_worker_sets_records():
         task_data = {
             "type": "xliff",
             "doc_id": 1,
-            "settings": json.dumps({"substitute_numbers": False}),
+            "settings": json.dumps(
+                {"substitute_numbers": False, "use_machine_translation": False}
+            ),
         }
         session.add(
             schema.DocumentTask(
@@ -118,7 +120,9 @@ def test_worker_substitutes_numbers():
         task_data = {
             "type": "xliff",
             "doc_id": 1,
-            "settings": json.dumps({"substitute_numbers": True}),
+            "settings": json.dumps(
+                {"substitute_numbers": True, "use_machine_translation": False}
+            ),
         }
         session.add(
             schema.DocumentTask(
