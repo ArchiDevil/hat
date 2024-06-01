@@ -1,5 +1,4 @@
 import json
-import logging
 from typing import Generator
 
 from pydantic import BaseModel, PositiveInt
@@ -43,11 +42,11 @@ def get_iam_token(oauth_token: str):
         timeout=15,
     )
     if response.status_code != 200:
-        logging.error("%s %s", response.status_code, response.text)
-        raise RuntimeError("Failed to get IAM token")
+        raise RuntimeError(
+            f"Failed to get IAM token, status code {response.status_code}, text: {response.text}"
+        )
 
     if not response.json() or "iamToken" not in response.json():
-        logging.error("No IAM token returned")
         raise RuntimeError("No IAM token returned")
 
     return response.json()["iamToken"]
@@ -77,11 +76,13 @@ def translate_batch(lines: list[str], iam_token: str, folder_id: str) -> list[st
     # TODO: it is better to return what we have translated already to
     # avoid losing user's money when the error happens in the middle
     # of the translation process
-    # or try again couple of times
+    # TODO: or try again couple of times?
     if response.status_code != 200:
-        logging.error("%s %s", response.status_code, response.text)
-        raise RuntimeError("Failed to translate line")
+        raise RuntimeError(
+            f"Failed to translate line, status code {response.status_code}, text: {response.text}"
+        )
 
+    # TODO: what if validation fails?
     model_response = YandexTranslatorResponse.model_validate_json(
         json.dumps(response.json())
     )

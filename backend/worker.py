@@ -40,6 +40,7 @@ def process_xliff(
     settings: models.XliffProcessingSettings,
     session: Session,
 ):
+    # TODO: when the exception is fired, the document is forever "processing"
     doc.processing_status = models.DocumentStatus.PROCESSING.value
     session.commit()
 
@@ -55,12 +56,14 @@ def process_xliff(
             segment.translation = translation if translation else ""
 
     # translate by Yandex if there is a setting to do so enabled
+    # TODO: it is better to make solution more translation service agnostic
     if settings.use_machine_translation and len(to_translate) > 0:
         if (
             not settings.machine_translation_settings
             or not settings.machine_translation_settings.folder_id
             or not settings.machine_translation_settings.oauth_token
         ):
+            # TODO: this should never happen, how to check it with Pydantic?
             logging.error(
                 "Machine translation settings are not configured, %s", settings
             )
@@ -74,6 +77,7 @@ def process_xliff(
             )
             for i, translated_line in enumerate(translated):
                 xliff_data.segments[to_translate[i]].translation = translated_line
+        # TODO: handle specific exceptions instead of a generic one
         except Exception as e:
             logging.error("Yandex translation error %s", e)
             return False
@@ -95,6 +99,7 @@ def process_xliff(
 def process_task(session: Session, task: schema.DocumentTask) -> bool:
     logging.info("New task found: %s", task.id)
 
+    # TODO: when something is failed later it will become processing forever
     task.status = models.TaskStatus.PROCESSING.value
     session.commit()
 
@@ -114,15 +119,19 @@ def process_task(session: Session, task: schema.DocumentTask) -> bool:
         .first()
     )
 
+    # TODO: what if the doc processing was started and then failed?
     if not doc or doc.processing_status != models.DocumentStatus.PENDING.value:
         logging.error("Document not found or already processed")
         return False
 
+    # TODO: This looks like a logic error and must never happen. Fail fast?
     if "settings" not in task_data or not task_data["settings"]:
         logging.error("Task data is missing 'settings' field")
         return False
 
+    # TODO: This looks like a logic error and must never happen. Fail fast?
     settings = models.XliffProcessingSettings.model_validate_json(task_data["settings"])
+
     if not process_xliff(doc, settings, session):
         doc.processing_status = models.DocumentStatus.ERROR.value
         session.commit()
@@ -142,7 +151,7 @@ def main():
 
     logging.info("Starting document processing")
 
-    # TODO: check for processing tasks and process them immediately
+    # TODO: check for "processing" tasks and fire them immediately
     while True:
         task = session.query(schema.DocumentTask).first()
         if not task:
