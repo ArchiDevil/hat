@@ -56,7 +56,11 @@ def test_worker_sets_records():
             "type": "xliff",
             "doc_id": 1,
             "settings": json.dumps(
-                {"substitute_numbers": False, "use_machine_translation": False}
+                {
+                    "substitute_numbers": False,
+                    "use_machine_translation": False,
+                    "machine_translation_settings": None,
+                }
             ),
         }
         session.add(
@@ -121,7 +125,11 @@ def test_worker_substitutes_numbers():
             "type": "xliff",
             "doc_id": 1,
             "settings": json.dumps(
-                {"substitute_numbers": True, "use_machine_translation": False}
+                {
+                    "substitute_numbers": True,
+                    "use_machine_translation": False,
+                    "machine_translation_settings": None,
+                }
             ),
         }
         session.add(

@@ -122,14 +122,13 @@ def process_task(session: Session, task: schema.DocumentTask) -> bool:
         logging.error("Task data is missing 'settings' field")
         return False
 
-    settings = models.XliffProcessingSettings.model_construct(
-        None, **json.loads(task_data["settings"])
-    )
+    settings = models.XliffProcessingSettings.model_validate_json(task_data["settings"])
     if not process_xliff(doc, settings, session):
+        doc.processing_status = models.DocumentStatus.ERROR.value
+        session.commit()
         logging.error("Processing failed for document %d", doc.id)
-        return False
 
-    logging.info("Task completed: %s, removing...", task.id)
+    logging.info("Task finished: %s, removing...", task.id)
     session.delete(task)
     session.commit()
 
@@ -143,13 +142,15 @@ def main():
 
     logging.info("Starting document processing")
 
+    # TODO: check for processing tasks and process them immediately
     while True:
         task = session.query(schema.DocumentTask).first()
         if not task:
             time.sleep(10)
             continue
 
-        process_task(session, task)
+        if not process_task(session, task):
+            logging.warning("Task processing failed")
 
 
 if __name__ == "__main__":
