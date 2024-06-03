@@ -32,7 +32,7 @@ def get_session() -> Session:
     return next(get_db())
 
 
-def test_worker_sets_records():
+def test_process_task_sets_records():
     with open("tests/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
 
@@ -103,7 +103,7 @@ def test_worker_sets_records():
         assert doc.records[3].target == ""
 
 
-def test_worker_substitutes_numbers():
+def test_process_task_substitutes_numbers():
     with open("tests/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
 
@@ -152,3 +152,112 @@ def test_worker_substitutes_numbers():
         assert doc.records[3].document_id == 1
         assert doc.records[3].source == "123456789"
         assert doc.records[3].target == "123456789"
+
+
+def test_process_task_checks_task_data_attributes():
+    with get_session() as session:
+        datas = [
+            {
+                "doc_id": 1,
+                "settings": json.dumps(
+                    {
+                        "substitute_numbers": False,
+                        "use_machine_translation": False,
+                        "machine_translation_settings": None,
+                    }
+                ),
+            },
+            {
+                "type": "xliff",
+                "settings": json.dumps(
+                    {
+                        "substitute_numbers": False,
+                        "use_machine_translation": False,
+                        "machine_translation_settings": None,
+                    }
+                ),
+            },
+            {
+                "type": "xliff",
+                "doc_id": 1,
+            },
+            {
+                "type": "broken",
+                "doc_id": 1,
+                "settings": json.dumps(
+                    {
+                        "substitute_numbers": False,
+                        "use_machine_translation": False,
+                        "machine_translation_settings": None,
+                    }
+                ),
+            },
+        ]
+
+        for data in datas:
+            session.add(schema.DocumentTask(data=json.dumps(data), status="pending"))
+        session.commit()
+
+        tasks = session.query(schema.DocumentTask).all()
+        for task in tasks:
+            assert not process_task(session, task)
+
+
+def test_process_task_deletes_task_after_processing():
+    with get_session() as session:
+        task = schema.DocumentTask(data=json.dumps({"doc_id": 1}), status="pending")
+        session.add(task)
+        session.commit()
+
+        process_task(session, task)
+        assert not session.query(schema.DocumentTask).first()
+
+
+def test_process_task_puts_doc_in_error_state(monkeypatch):
+    with open("tests/small.xliff", "r", encoding="utf-8") as fp:
+        file_data = fp.read()
+
+    with get_session() as session:
+        session.add(
+            schema.XliffDocument(
+                name="uploaded_doc.xliff",
+                original_document=file_data,
+                processing_status=models.DocumentStatus.PENDING.value,
+                upload_time=(datetime.now() - timedelta(days=2)),
+            )
+        )
+
+        task_data = {
+            "type": "xliff",
+            "doc_id": 1,
+            "settings": json.dumps(
+                {
+                    "substitute_numbers": False,
+                    "use_machine_translation": True,
+                    "machine_translation_settings": {
+                        "folder_id": "12345",
+                        "oauth_token": "fake",
+                    },
+                }
+            ),
+        }
+        session.add(
+            schema.DocumentTask(
+                data=json.dumps(task_data),
+                status="pending",
+            )
+        )
+        session.commit()
+
+        def fake_translate(*args, **kwargs):
+            raise RuntimeError()
+
+        monkeypatch.setattr("app.translators.yandex.translate_lines", fake_translate)
+
+        try:
+            process_task(session, session.query(schema.DocumentTask).one())
+        except AttributeError:
+            pass
+
+        doc = session.query(schema.XliffDocument).filter_by(id=1).one()
+        assert doc.processing_status == "error"

@@ -40,17 +40,14 @@ def process_xliff(
     settings: models.XliffProcessingSettings,
     session: Session,
 ):
-    # TODO: when the exception is fired, the document is forever "processing"
-    doc.processing_status = models.DocumentStatus.PROCESSING.value
-    session.commit()
-
     xliff_data = extract_xliff_content(doc.original_document.encode())
     to_translate: list[int] = []
     for i, segment in enumerate(xliff_data.segments):
         if not segment.approved:
             translation = get_segment_translation(segment, settings, session)
             if not translation:
-                # we cannot find translation for this segment - save it to translate by Yandex
+                # we cannot find translation for this segment
+                # save it to translate by Yandex
                 to_translate.append(i)
 
             segment.translation = translation if translation else ""
@@ -91,75 +88,82 @@ def process_xliff(
             )
         )
 
-    doc.processing_status = models.DocumentStatus.DONE.value
-    session.commit()
     return True
 
 
 def process_task(session: Session, task: schema.DocumentTask) -> bool:
-    logging.info("New task found: %s", task.id)
-
-    # TODO: when something is failed later it will become processing forever
-    task.status = models.TaskStatus.PROCESSING.value
-    session.commit()
-
-    task_data: dict = json.loads(task.data)
-    if "type" not in task_data:
-        logging.error("Task data is missing 'type' field")
-        return False
-
-    if task_data["type"] != "xliff":
-        logging.error("Task data 'type' field is not 'xliff'")
-        return False
-
-    document_id = task_data["doc_id"]
-    doc = (
-        session.query(schema.XliffDocument)
-        .filter(schema.XliffDocument.id == document_id)
-        .first()
-    )
-
-    # TODO: what if the doc processing was started and then failed?
-    if not doc or doc.processing_status != models.DocumentStatus.PENDING.value:
-        logging.error("Document not found or already processed")
-        return False
-
-    # TODO: This looks like a logic error and must never happen. Fail fast?
-    if "settings" not in task_data or not task_data["settings"]:
-        logging.error("Task data is missing 'settings' field")
-        return False
-
-    # TODO: This looks like a logic error and must never happen. Fail fast?
-    settings = models.XliffProcessingSettings.model_validate_json(task_data["settings"])
-
-    if not process_xliff(doc, settings, session):
-        doc.processing_status = models.DocumentStatus.ERROR.value
+    try:
+        task.status = models.TaskStatus.PROCESSING.value
         session.commit()
-        logging.error("Processing failed for document %d", doc.id)
 
-    logging.info("Task finished: %s, removing...", task.id)
-    session.delete(task)
-    session.commit()
+        logging.info("New task found: %s", task.id)
 
-    return True
+        task_data: dict = json.loads(task.data)
+        if "type" not in task_data:
+            logging.error("Task data is missing 'type' field")
+            raise AttributeError("Task data 'type' field")
+
+        if task_data["type"] != "xliff":
+            logging.error("Task data 'type' field is not 'xliff'")
+            raise AttributeError("Task data 'type' field is not 'xliff'")
+
+        if "doc_id" not in task_data:
+            logging.error("Task data is missing 'doc_id' field")
+            raise AttributeError("Task data 'doc_id' field")
+
+        if "settings" not in task_data or not task_data["settings"]:
+            logging.error("Task data is missing 'settings' field")
+            raise AttributeError("Task data is missing 'settings' field")
+
+        document_id = task_data["doc_id"]
+        doc = (
+            session.query(schema.XliffDocument)
+            .filter(schema.XliffDocument.id == document_id)
+            .first()
+        )
+
+        # TODO: what if the doc processing was started and left in a processing state?
+        if not doc or doc.processing_status != models.DocumentStatus.PENDING.value:
+            logging.error("Document not found or not in a pending state")
+            return False
+
+        settings = models.XliffProcessingSettings.model_validate_json(
+            task_data["settings"]
+        )
+
+        doc.processing_status = models.DocumentStatus.PROCESSING.value
+        session.commit()
+
+        if not process_xliff(doc, settings, session):
+            doc.processing_status = models.DocumentStatus.ERROR.value
+            session.commit()
+            logging.error("Processing failed for document %d", doc.id)
+            return False
+
+        doc.processing_status = models.DocumentStatus.DONE.value
+        session.commit()
+        return True
+    except Exception as e:
+        logging.error("Task processing failed: %s", str(e))
+        return False
+    finally:
+        logging.info("Task finished %s, removing...", task.id)
+        session.delete(task)
+        session.commit()
 
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-    session = next(db.get_db())
-
     logging.info("Starting document processing")
 
-    # TODO: check for "processing" tasks and fire them immediately
+    session = next(db.get_db())
     while True:
         task = session.query(schema.DocumentTask).first()
         if not task:
             time.sleep(10)
             continue
 
-        if not process_task(session, task):
-            logging.warning("Task processing failed")
+        process_task(session, task)
 
 
 if __name__ == "__main__":
