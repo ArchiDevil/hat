@@ -11,8 +11,11 @@ const value = defineModel<boolean>('value')
     <input
       v-model="value"
       type="checkbox"
+    />
+    <label
+      class="ml-2"
+      @click="value = !value"
     >
-    <label class="ml-2">
       {{ title }}
     </label>
   </div>
