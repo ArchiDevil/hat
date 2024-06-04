@@ -4,7 +4,7 @@ import {ref} from 'vue'
 import {XliffFile} from '../client/schemas/XliffFile'
 import {TmxFile} from '../client/schemas/TmxFile'
 
-import Button from './Button.vue'
+import AppButton from './AppButton.vue'
 import RoutingLink from './RoutingLink.vue'
 
 const emit = defineEmits<{
@@ -48,12 +48,12 @@ const deleteFile = async () => {
       :disabled="busy">
       Open
     </RoutingLink>
-    <Button
+    <AppButton
       class="ml-2"
       @click="deleteFile()"
       :disabled="busy">
       Delete
-    </Button>
+    </AppButton>
     <span
       class="ml-2"
       v-if="status">
@@ -61,4 +61,3 @@ const deleteFile = async () => {
     </span>
   </div>
 </template>
-*

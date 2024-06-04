@@ -2,7 +2,7 @@
 import {Ref, ref, computed} from 'vue'
 import {MandeError} from 'mande'
 
-import Button from './Button.vue'
+import AppButton from './AppButton.vue'
 import {createTmx} from '../client/services/TmxService'
 
 const emit = defineEmits<{
@@ -66,13 +66,13 @@ const uploadFile = async () => {
       accept=".tmx"
       @change="updateFiles"
     >
-    <Button
+    <AppButton
       class="ml-2"
       :disabled="!uploadAvailable || uploading"
       @click="uploadFile"
     >
       Upload
-    </Button>
+    </AppButton>
     <span
       v-if="status"
       class="ml-2"
