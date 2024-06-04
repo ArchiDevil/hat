@@ -4,8 +4,11 @@ import {MandeError} from 'mande'
 
 import {createXliff, processXliff} from '../client/services/XliffService'
 import {XliffFile} from '../client/schemas/XliffFile'
-import Button from './Button.vue'
+import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSettings'
+
+import AppButton from './AppButton.vue'
 import AppCheckbox from './AppCheckbox.vue'
+import LabeledTextInput from './LabeledTextInput.vue'
 
 const emit = defineEmits<{
   uploaded: []
@@ -22,6 +25,11 @@ const uploadedFile = ref(null) as Ref<XliffFile | null>
 const uploading = ref(false)
 const status = ref('')
 const substituteNumbers = ref(false)
+const useMachineTranslation = ref(false)
+const machineTranslationSettings = ref<MachineTranslationSettings>({
+  folder_id: '',
+  oauth_token: '',
+})
 
 const processingAvailable = computed(() => uploadedFile.value != null)
 
@@ -59,6 +67,10 @@ const startProcessing = async () => {
     status.value = 'Processing...'
     await processXliff(uploadedFile.value!.id, {
       substitute_numbers: substituteNumbers.value,
+      use_machine_translation: useMachineTranslation.value,
+      machine_translation_settings: useMachineTranslation.value
+        ? machineTranslationSettings.value
+        : null,
     })
     uploading.value = false
     status.value = 'Done!'
@@ -72,7 +84,7 @@ const startProcessing = async () => {
 
 <template>
   <div class="border border-slate-500 p-2 min-w-96">
-    <div class=" ">
+    <div>
       <label
         for="file"
         class="font-semibold mr-2"
@@ -99,25 +111,48 @@ const startProcessing = async () => {
       v-if="processingAvailable"
       class="mt-3"
     >
-      <p class="font-semibold">
-        Processing options
-      </p>
+      <p class="font-semibold">Processing options</p>
       <AppCheckbox
         v-model:value="substituteNumbers"
         title="Substitute segments with numbers only"
       />
+      <AppCheckbox
+        v-model:value="useMachineTranslation"
+        title="Use Yandex machine translation"
+      />
+      <div v-if="useMachineTranslation">
+        <p class="font-semibold mt-3 mb-1">
+          Yandex translator options
+          <a
+            href="https://yandex.cloud/ru/docs/translate/api-ref/authentication"
+            class="font-normal underline decoration-1 hover:decoration-2"
+            target="_blank"
+          >
+            (Where to get credentials?)
+          </a>
+        </p>
+        <LabeledTextInput
+          class="mb-2"
+          v-model="machineTranslationSettings.folder_id"
+          title="Folder ID"
+        />
+        <LabeledTextInput
+          v-model="machineTranslationSettings.oauth_token"
+          title="OAuth token"
+        />
+      </div>
     </div>
 
     <div
       v-if="processingAvailable"
       class="mt-5"
     >
-      <Button
+      <AppButton
         :disabled="!processingAvailable || uploading"
         @click="startProcessing"
       >
         Start processing
-      </Button>
+      </AppButton>
     </div>
   </div>
 </template>
