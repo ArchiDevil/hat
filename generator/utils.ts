@@ -24,6 +24,10 @@ export function tsType(prop: PropDescription): string {
     return getReferencedType(prop.$ref)
   }
 
+  if ('anyOf' in prop) {
+    return prop.anyOf.map((p) => tsType(p)).join(' | ')
+  }
+
   switch (prop.type) {
     case 'string': {
       if ('format' in prop && prop.format == 'binary') {
@@ -36,6 +40,8 @@ export function tsType(prop: PropDescription): string {
       return 'number'
     case 'boolean':
       return 'boolean'
+    case 'null':
+      return 'null'
     case 'array': {
       if (prop.items) {
         // TODO: call tsType recursively?
@@ -44,9 +50,8 @@ export function tsType(prop: PropDescription): string {
           return `${getReferencedType(ref)}[]`
         } else if ('anyOf' in prop.items) {
           const elems = prop.items.anyOf
-          return `(${elems
-            .map((val) => tsType({type: val.type}))
-            .join(' | ')})[]`
+          const elemTypes = elems.map((val) => tsType(val)).join(' | ')
+          return `(${elemTypes})[]`
         } else {
           console.warn('Unsupported array items:', prop.items)
           return 'any[]'

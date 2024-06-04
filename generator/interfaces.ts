@@ -1,17 +1,20 @@
+export type TrivialType = 'string' | 'integer' | 'boolean' | 'null'
+
 export interface RefDesc {
   $ref: string
 }
 
 export interface AnyOfDesc {
   anyOf: [
-    {
-      type: 'string' | 'integer' // | 'boolean' // TODO: check if boolean is possible
-    }
+    | {
+        type: TrivialType
+      }
+    | RefDesc
   ]
 }
 
 export interface TrivialDesc {
-  type: 'string' | 'integer' | 'boolean'
+  type: TrivialType
   title?: string
   format?: string
 }
@@ -22,8 +25,7 @@ export interface ArrayDesc {
   title?: string
 }
 
-// TODO: check if AnyOfDesc is possible here without an array
-export type PropDescription = TrivialDesc | ArrayDesc | RefDesc
+export type PropDescription = TrivialDesc | ArrayDesc | RefDesc | AnyOfDesc
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'delete'
 

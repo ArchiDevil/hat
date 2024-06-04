@@ -31,9 +31,16 @@ export const genSchemas = (
     const imports = new Set<string>()
     for (const propName in properties) {
       const prop = properties[propName]
+      // TODO: this all thing should be refactored as it on limits of supporting complex schemas
       if ('$ref' in prop) {
         const type = getReferencedType(prop.$ref)
         imports.add(type)
+      } else if ('anyOf' in prop) {
+        prop.anyOf.map((val) => {
+          if ('$ref' in val) {
+            imports.add(getReferencedType(val.$ref))
+          }
+        })
       } else {
         // TODO: make it smarter
         if (prop.type === 'array' && prop.items && '$ref' in prop.items) {
