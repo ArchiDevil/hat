@@ -4,21 +4,26 @@ from app.translators import yandex
 
 
 def test_can_iterate_batches():
-    lines = [f"line{i}" for i in range(1024)]
+    lines = [f"line{i}" for i in range(2048)]
 
-    data = next(yandex.iterate_batches(lines, 256))
-    assert len(data) == 256
-    for i in range(256):
-        assert f"line{i}" == data[i]
+    last_idx = 0
+    for batch in yandex.iterate_batches(lines):
+        assert len(batch) > 0
+        for line in batch:
+            assert line == f"line{last_idx}"
+            last_idx += 1
+
+    assert last_idx == 2048
 
 
-def test_batches_can_be_smaller():
-    lines = [f"line{i}" for i in range(10)]
-
-    data = next(yandex.iterate_batches(lines, 3))
-    assert len(data) == 3
-    for i in range(3):
-        assert f"line{i}" == data[i]
+def test_batch_never_exceeds_10000_symbols():
+    lines = [f"line{i}" for i in range(2048)]
+    data = next(yandex.iterate_batches(lines))
+    # measure the sum of all strings of the first batch
+    total_len = 0
+    for line in data:
+        total_len += len(line)
+    assert total_len <= 10000
 
 
 def test_translator_gets_iam_token(monkeypatch):

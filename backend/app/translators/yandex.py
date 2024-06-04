@@ -20,10 +20,23 @@ class YandexTranslatorResponse(BaseModel):
 
 
 def iterate_batches(
-    lines: list[str], batch_size: PositiveInt = 256
+    lines: list[str], max_batch_size: PositiveInt = 10000
 ) -> Generator[list[str], None, None]:
-    for i in range(0, len(lines), batch_size):
-        yield lines[i : min(len(lines), i + batch_size)]
+    output = []
+    last_len = 0
+    i = 0
+    while i < len(lines):
+        if last_len + len(lines[i]) > max_batch_size:
+            yield output
+            last_len = 0
+            output = []
+        else:
+            last_len += len(lines[i])
+            output.append(lines[i])
+            i += 1
+
+    if output:
+        yield output
 
 
 def get_iam_token(oauth_token: str):
