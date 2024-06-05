@@ -1,6 +1,40 @@
-from typing import Optional
+from enum import Enum
 from io import BytesIO
+from typing import Optional
+
 from lxml import etree
+
+
+class SegmentState(Enum):
+    # Indicates the terminating state.
+    FINAL = "final"
+
+    # Indicates only non-textual information needs adaptation.
+    NEEDS_ADAPTATION = "needs-adaptation"
+
+    # Indicates both text and non-textual information needs adaptation.
+    NEEDS_L10N = "needs-l10n"
+
+    # Indicates only non-textual information needs review.
+    NEEDS_REVIEW_ADAPTATION = "needs-review-adaptation"
+
+    # Indicates both text and non-textual information needs review.
+    NEEDS_REVIEW_L10N = "needs-review-l10n"
+
+    # Indicates that only the text of the item needs to be reviewed.
+    NEEDS_REVIEW_TRANSLATION = "needs-review-translation"
+
+    # Indicates that the item needs to be translated.
+    NEEDS_TRANSLATION = "needs-translation"
+
+    # Indicates that the item is new. For example, translation units that were not in a previous version of the document.
+    NEW = "new"
+
+    # Indicates that changes are reviewed and approved.
+    SIGNED_OFF = "signed-off"
+
+    # Indicates that the item has been translated.
+    TRANSLATED = "translated"
 
 
 class XliffSegment:
@@ -17,7 +51,7 @@ class XliffSegment:
         self.__source = source
         self.__target = target
         self.__dirty = False
-        self.__state = state
+        self.__state = SegmentState(state) if state else SegmentState.NEW
 
     @property
     def id_(self) -> int:
@@ -37,7 +71,7 @@ class XliffSegment:
 
     @property
     def state(self) -> Optional[str]:
-        return self.__state
+        return self.__state.value
 
     @property
     def dirty(self) -> bool:
@@ -46,7 +80,7 @@ class XliffSegment:
     @translation.setter
     def translation(self, value: str) -> None:
         self.__target = value
-        self.__state = "translated"
+        self.__state = SegmentState.TRANSLATED
         self.__dirty = True
 
     @approved.setter
@@ -91,6 +125,9 @@ class XliffData:
 
             target_node = trans_unit.find(".//target", namespaces=self.__root.nsmap)
             assert target_node is not None, "Unable to find target node"
+
+            for child in target_node.getchildren():
+                target_node.remove(child)
 
             target_node.text = segment.translation
             target_node.attrib["state"] = segment.state
