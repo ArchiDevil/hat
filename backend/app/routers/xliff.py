@@ -182,8 +182,12 @@ def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     processed_document = extract_xliff_content(original_document)
 
     for segment in processed_document.segments:
-        record = db.query(schema.TmxRecord).filter_by(source=segment.original).first()
-        if record:
+        record = (
+            db.query(schema.XliffRecord)
+            .filter_by(segment_id=segment.id_)
+            .first()
+        )
+        if record and not segment.approved:
             segment.translation = record.target
 
     processed_document.commit()

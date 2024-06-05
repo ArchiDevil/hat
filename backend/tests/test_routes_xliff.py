@@ -266,22 +266,46 @@ def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestC
 
 
 def test_download_xliff(fastapi_client: TestClient):
-    with session() as s:
-        tmx_records = [
-            schema.TmxRecord(source="Regional Effects", target="RegEffectsTranslation")
-        ]
-        s.add(schema.TmxDocument(name="test", records=tmx_records))
-        s.commit()
-
     with open("tests/small.xliff", "rb") as fp:
         fastapi_client.post("/xliff", files={"file": fp})
+
+    with session() as s:
+        xliff_records = [
+            schema.XliffRecord(
+                segment_id=675606,
+                document_id=1,
+                source="Regional Effects",
+                target="Some",
+            ),
+            schema.XliffRecord(
+                segment_id=675607,
+                document_id=1,
+                source="Other Effects",
+                target="",
+            ),
+            schema.XliffRecord(
+                segment_id=675608,
+                document_id=1,
+                source="Regional Effects",
+                target="Региональные эффекты",
+            ),
+            schema.XliffRecord(
+                segment_id=675609,
+                document_id=1,
+                source="123456789",
+                target="",
+            ),
+        ]
+        s.add_all(xliff_records)
+        s.commit()
 
     response = fastapi_client.get("/xliff/1/download")
     assert response.status_code == 200
 
     data = response.read().decode("utf-8")
     assert data.startswith("<?xml version=")
-    assert "RegEffectsTranslation" in data
+    assert "Regional Effects" in data
+    assert "Региональные эффекты" in data
 
 
 def test_download_shows_404_for_unknown_xliff(fastapi_client: TestClient):
