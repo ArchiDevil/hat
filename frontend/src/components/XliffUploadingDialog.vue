@@ -9,6 +9,7 @@ import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSe
 import AppButton from './AppButton.vue'
 import AppCheckbox from './AppCheckbox.vue'
 import LabeledTextInput from './LabeledTextInput.vue'
+import TmxFilesModal from './TmxFilesModal.vue'
 
 const emit = defineEmits<{
   uploaded: []
@@ -32,6 +33,11 @@ const machineTranslationSettings = ref<MachineTranslationSettings>({
 })
 
 const processingAvailable = computed(() => uploadedFile.value != null)
+
+const modalOpen = ref(false)
+const toggleModal = async () => {
+  modalOpen.value = !modalOpen.value
+}
 
 const preProcessFile = async () => {
   status.value = ''
@@ -112,6 +118,7 @@ const startProcessing = async () => {
       class="mt-3"
     >
       <p class="font-semibold">Processing options</p>
+      <button @click="toggleModal">Adjust TMX for substitution</button>
       <AppCheckbox
         v-model:value="substituteNumbers"
         title="Substitute segments with numbers only"
@@ -155,4 +162,9 @@ const startProcessing = async () => {
       </AppButton>
     </div>
   </div>
+
+  <TmxFilesModal
+    :open="modalOpen"
+    @close="toggleModal"
+  />
 </template>
