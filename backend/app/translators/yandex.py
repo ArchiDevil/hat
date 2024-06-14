@@ -1,7 +1,9 @@
 import json
+import logging
+import time
 from typing import Generator
 
-from pydantic import BaseModel, PositiveInt
+from pydantic import BaseModel, PositiveInt, ValidationError
 import requests
 
 from app.models import MachineTranslationSettings
@@ -19,6 +21,13 @@ class YandexTranslatorResponse(BaseModel):
     translations: list[dict[str, str]]
 
 
+class TranslationError(Exception):
+    """
+    An error raised when Yandex Translator API returns an error.
+    """
+
+
+# Currently Yandex rejects requests larger than 10k symbols.
 def iterate_batches(
     lines: list[str], max_batch_size: PositiveInt = 10000
 ) -> Generator[list[str], None, None]:
@@ -86,16 +95,12 @@ def translate_batch(lines: list[str], iam_token: str, folder_id: str) -> list[st
         timeout=15,
     )
 
-    # TODO: it is better to return what we have translated already to
-    # avoid losing user's money when the error happens in the middle
-    # of the translation process
-    # TODO: or try again couple of times?
     if response.status_code != 200:
-        raise RuntimeError(
+        raise TranslationError(
             f"Failed to translate line, status code {response.status_code}, text: {response.text}"
         )
 
-    # TODO: what if validation fails?
+    # Throws ValidationError when it fails
     model_response = YandexTranslatorResponse.model_validate_json(
         json.dumps(response.json())
     )
@@ -124,6 +129,16 @@ def translate_lines(
     # translate lines
     output: list[str] = []
     for batch in iterate_batches(lines):
-        output += translate_batch(batch, iam_token, settings.folder_id)
+        try:
+            # TODO: make it in a smarter way, currently Yandex rejects
+            # requests that are too frequent
+            time.sleep(1.0 / 20.0)
+            output += translate_batch(batch, iam_token, settings.folder_id)
+        except TranslationError as e:
+            logging.error("Translation error: %s", str(e))
+            return output
+        except ValidationError as e:
+            logging.error("Validation error: %s", str(e))
+            return output
 
     return output
