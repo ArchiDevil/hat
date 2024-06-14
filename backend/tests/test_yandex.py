@@ -170,7 +170,7 @@ def test_translator_translates_everything(monkeypatch):
         assert False
 
     monkeypatch.setattr(requests, "post", fake_post)
-    assert ["line1-translation"], False == yandex.translate_lines(
+    assert (["line1-translation"], False) == yandex.translate_lines(
         ["line1"],
         settings=MachineTranslationSettings(
             folder_id="folder-id", oauth_token="<PASSWORD>"
@@ -239,7 +239,7 @@ def test_translator_returns_partial_when_fails(monkeypatch):
     monkeypatch.setattr(requests, "post", fake_post)
 
     # it fails and returns only a first part
-    assert ["x" * 9900 + "-translation"], True == yandex.translate_lines(
+    assert (["x" * 9900 + "-translation"], True) == yandex.translate_lines(
         ["x" * 9900, "y" * 9900],
         settings=MachineTranslationSettings(
             folder_id="folder-id", oauth_token="<PASSWORD>"
