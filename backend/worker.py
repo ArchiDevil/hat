@@ -54,6 +54,7 @@ def process_xliff(
 
     # translate by Yandex if there is a setting to do so enabled
     # TODO: it is better to make solution more translation service agnostic
+    machine_translation_failed = False
     if settings.use_machine_translation and len(to_translate) > 0:
         if (
             not settings.machine_translation_settings
@@ -68,10 +69,11 @@ def process_xliff(
 
         try:
             lines = [xliff_data.segments[i].original for i in to_translate]
-            translated = yandex.translate_lines(
+            translated, failed = yandex.translate_lines(
                 lines,
                 settings.machine_translation_settings,
             )
+            machine_translation_failed = failed
             for i, translated_line in enumerate(translated):
                 xliff_data.segments[to_translate[i]].translation = translated_line
         # TODO: handle specific exceptions instead of a generic one
@@ -88,7 +90,7 @@ def process_xliff(
             )
         )
 
-    return True
+    return not machine_translation_failed
 
 
 def process_task(session: Session, task: schema.DocumentTask) -> bool:

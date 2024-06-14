@@ -112,7 +112,7 @@ def translate_batch(lines: list[str], iam_token: str, folder_id: str) -> list[st
 
 def translate_lines(
     lines: list[str], settings: MachineTranslationSettings
-) -> list[str]:
+) -> tuple[list[str], bool]:
     """
     Translate lines of text using machine translation.
 
@@ -136,9 +136,9 @@ def translate_lines(
             output += translate_batch(batch, iam_token, settings.folder_id)
         except TranslationError as e:
             logging.error("Translation error: %s", str(e))
-            return output
+            return output, True
         except ValidationError as e:
             logging.error("Validation error: %s", str(e))
-            return output
+            return output, True
 
-    return output
+    return output, False
