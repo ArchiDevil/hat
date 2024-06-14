@@ -7,7 +7,7 @@ const value = defineModel<boolean>('value')
 </script>
 
 <template>
-  <div class="flex flex-row">
+  <div class="flex flex-row select-none">
     <input
       v-model="value"
       type="checkbox"
