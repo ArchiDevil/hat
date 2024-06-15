@@ -6,6 +6,8 @@ import {createXliff, processXliff} from '../client/services/XliffService'
 import {XliffFile} from '../client/schemas/XliffFile'
 import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSettings'
 
+import {useTmxStore} from '../stores/tmx'
+
 import AppButton from './AppButton.vue'
 import AppCheckbox from './AppCheckbox.vue'
 import LabeledTextInput from './LabeledTextInput.vue'
@@ -33,13 +35,14 @@ const machineTranslationSettings = ref<MachineTranslationSettings>({
 })
 
 const processingAvailable = computed(() => uploadedFile.value != null)
+const tmxStore = useTmxStore()
 
 const modalOpen = ref(false)
 const toggleModal = async () => {
   modalOpen.value = !modalOpen.value
 }
 
-const preProcessFile = async () => {
+const createFile = async () => {
   status.value = ''
   const inputElement = input.value
   if (!inputElement?.files) {
@@ -103,8 +106,8 @@ const startProcessing = async () => {
         type="file"
         accept=".xliff"
         :disabled="uploading"
-        @change="preProcessFile"
-      >
+        @change="createFile"
+      />
       <span
         v-if="status"
         class="ml-2"
@@ -118,9 +121,11 @@ const startProcessing = async () => {
       class="mt-3"
     >
       <p class="font-semibold">Processing options</p>
-      <button @click="toggleModal">Adjust TMX for substitution</button>
+      <p class="mt-2">Selected TMX files: {{ tmxStore.selectedCount }} / {{ tmxStore.totalCount }}</p>
+      <AppButton @click="toggleModal">Select TMX files to use</AppButton>
       <AppCheckbox
         v-model:value="substituteNumbers"
+        class="mt-2"
         title="Substitute segments with numbers only"
       />
       <AppCheckbox
