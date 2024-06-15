@@ -45,7 +45,22 @@ export function tsType(prop: PropDescription): string {
     case 'array': {
       if (prop.items) {
         // TODO: call tsType recursively?
-        if ('$ref' in prop.items) {
+        if ('type' in prop.items) {
+          switch (prop.items.type) {
+            case 'null':
+              console.warn('Unsupport null array')
+              return 'any[]'
+            case 'integer':
+              return 'number[]'
+            case 'boolean':
+              return 'boolean[]'
+            case 'string':
+              return 'string[]'
+            default:
+              console.warn('Unknown array type', prop, prop.items)
+              return 'any[]'
+          }
+        } else if ('$ref' in prop.items) {
           const ref = prop.items.$ref
           return `${getReferencedType(ref)}[]`
         } else if ('anyOf' in prop.items) {

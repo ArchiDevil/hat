@@ -21,7 +21,7 @@ export interface TrivialDesc {
 
 export interface ArrayDesc {
   type: 'array'
-  items: RefDesc | AnyOfDesc
+  items: RefDesc | AnyOfDesc | TrivialDesc
   title?: string
 }
 
