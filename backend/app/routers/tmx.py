@@ -42,14 +42,16 @@ async def create_tmx(
 ) -> TmxFile:
     name = file.filename
     tmx_data = await file.read()
-    tmx_data = extract_tmx_content(tmx_data)
+    segments = extract_tmx_content(tmx_data)
 
     doc = schema.TmxDocument(name=name)
     db.add(doc)
     db.commit()
 
-    for source, target in tmx_data:
-        doc.records.append(schema.TmxRecord(source=source, target=target))
+    for segment in segments:
+        doc.records.append(
+            schema.TmxRecord(source=segment.original, target=segment.translation)
+        )
     db.commit()
 
     new_doc = (

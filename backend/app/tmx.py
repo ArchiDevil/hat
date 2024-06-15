@@ -1,4 +1,14 @@
+from datetime import datetime
+from typing import NamedTuple
+
 from lxml import etree
+
+
+class TmxSegment(NamedTuple):
+    original: str
+    translation: str
+    creation_date: datetime | None
+    change_date: datetime | None
 
 
 def __parse_seg(seg: etree._Element) -> str:
@@ -7,7 +17,7 @@ def __parse_seg(seg: etree._Element) -> str:
 
 def extract_tmx_content(
     content: bytes, orig_lang="en", tran_lang="ru"
-) -> list[tuple[str, str]]:
+) -> list[TmxSegment]:
     root: etree._Element = etree.fromstring(
         content, parser=etree.XMLParser(recover=True)
     )
@@ -20,8 +30,18 @@ def extract_tmx_content(
         "xml": "http://www.w3.org/XML/1998/namespace",
     }
 
-    segments: list[tuple[str, str]] = []
+    segments: list[TmxSegment] = []
     for tu in root.iter("tu"):
+        creation_date = None
+        if "creationdate" in tu.attrib:
+            creation_date = datetime.strptime(
+                tu.attrib["creationdate"], "%Y%m%dT%H%M%SZ"
+            )
+
+        change_date = None
+        if "changedate" in tu.attrib:
+            change_date = datetime.strptime(tu.attrib["changedate"], "%Y%m%dT%H%M%SZ")
+
         orig_search_string = f".//tuv[@lang='{orig_lang}' or @xml:lang='{orig_lang}']"
         tran_search_string = f".//tuv[@lang='{tran_lang}' or @xml:lang='{tran_lang}']"
         orig_tuv: etree._Element | None = tu.xpath(orig_search_string, namespaces=nsmap)
@@ -55,6 +75,13 @@ def extract_tmx_content(
             )
 
         translation = __parse_seg(seg)
-        segments.append((original, translation))
+        segments.append(
+            TmxSegment(
+                original=original,
+                translation=translation,
+                creation_date=creation_date,
+                change_date=change_date,
+            )
+        )
 
     return segments
