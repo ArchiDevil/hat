@@ -182,13 +182,15 @@ def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     processed_document = extract_xliff_content(original_document)
 
     for segment in processed_document.segments:
-        record = (
-            db.query(schema.XliffRecord)
-            .filter_by(segment_id=segment.id_)
-            .first()
-        )
+        record = db.query(schema.XliffRecord).filter_by(segment_id=segment.id_).first()
         if record and not segment.approved:
             segment.translation = record.target
+
+    def encode_to_latin_1(original: str):
+        output = ""
+        for c in original:
+            output += c if (c.isalnum() or c in "'().[] -") else "_"
+        return output
 
     processed_document.commit()
     file = processed_document.write()
@@ -196,5 +198,7 @@ def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     return StreamingResponse(
         file,
         media_type="application/octet-stream",
-        headers={"Content-Disposition": f"attachment; filename={doc.name}"},
+        headers={
+            "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
+        },
     )
