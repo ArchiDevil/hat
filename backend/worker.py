@@ -20,12 +20,21 @@ def get_segment_translation(
     session: Session,
 ):
     # TODO: this is slow, it needs to be optimized
-    tmx_data = session.execute(
+    selector = (
         select(schema.TmxRecord.source, schema.TmxRecord.target)
         .where(schema.TmxRecord.source == segment.original)
         .where(schema.TmxRecord.id.in_(settings.tmx_file_ids))
-        .limit(1)
-    ).first()
+    )
+    match settings.tmx_usage:
+        case models.TmxUsage.NEWEST:
+            selector = selector.order_by(schema.TmxRecord.change_date.desc())
+        case models.TmxUsage.OLDEST:
+            selector = selector.order_by(schema.TmxRecord.change_date.asc())
+        case _:
+            logging.error("Unknown TMX usage option")
+            return None
+
+    tmx_data = session.execute(selector.limit(1)).first()
 
     if tmx_data:
         return tmx_data.target

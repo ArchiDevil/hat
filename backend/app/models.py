@@ -17,6 +17,11 @@ class TaskStatus(Enum):
     PROCESSING = "processing"
 
 
+class TmxUsage(Enum):
+    NEWEST = "newest"
+    OLDEST = "oldest"
+
+
 class TmxFile(BaseModel):
     id: int
     name: str
@@ -62,6 +67,7 @@ class XliffProcessingSettings(BaseModel):
     use_machine_translation: bool
     machine_translation_settings: Optional[MachineTranslationSettings]
     tmx_file_ids: list[int]
+    tmx_usage: TmxUsage
 
 
 class StatusMessage(BaseModel):
