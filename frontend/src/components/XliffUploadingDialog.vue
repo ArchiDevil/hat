@@ -81,6 +81,7 @@ const startProcessing = async () => {
         ? machineTranslationSettings.value
         : null,
       tmx_file_ids: tmxStore.selectedIds,
+      tmx_usage: tmxStore.tmxMode
     })
     uploading.value = false
     status.value = 'Done!'

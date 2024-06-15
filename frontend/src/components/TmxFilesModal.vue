@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import {onMounted} from 'vue'
 
+import {TmxUsage} from '../client/schemas/TmxUsage'
+import {useTmxStore} from '../stores/tmx'
+
 import AppButton from './AppButton.vue'
 import AppModal from './AppModal.vue'
 import AppCheckbox from './AppCheckbox.vue'
-import {useTmxStore} from '../stores/tmx'
 
 defineEmits<{
   close: []
@@ -13,6 +15,14 @@ defineProps<{open: boolean}>()
 
 const tmxStore = useTmxStore()
 
+const options = [
+  {text: 'Use newest TM', value: 'newest'},
+  {text: 'Use oldest TM', value: 'oldest'},
+] as {
+  text: string
+  value: TmxUsage
+}[]
+
 onMounted(async () => {
   tmxStore.getTmx()
 })
@@ -20,19 +30,33 @@ onMounted(async () => {
 
 <template>
   <AppModal :open="open">
-    <div class="m-2">
-      <p class="mb-2">Select TMX files to use in substitution</p>
+    <div class="m-4">
+      <p class="mb-2 font-semibold">Select TMX files to use in substitution</p>
+      <div class="block mb-4">
+        <label>When segment found in multiple TMXs:</label>
+        <select
+          class="border py-1 px-2 border-slate border-solid rounded"
+          v-model="tmxStore.tmxMode"
+        >
+          <option
+            v-for="option in options"
+            :value="option.value"
+          >
+            {{ option.text }}
+          </option>
+        </select>
+      </div>
       <AppButton
         class="mr-2 mb-2"
         @click="tmxStore.selectAll()"
       >
-        Select All
+        Use all TMXs
       </AppButton>
       <AppButton
         class="ml-2 mb-2"
         @click="tmxStore.selectNone()"
       >
-        Select None
+        Use none of TMXs
       </AppButton>
       <AppCheckbox
         v-for="file in tmxStore.tmxFiles"
@@ -41,7 +65,7 @@ onMounted(async () => {
         :value="file.selected"
       />
       <AppButton
-        class="mt-2"
+        class="mt-2 w-20"
         @click="$emit('close')"
       >
         Close

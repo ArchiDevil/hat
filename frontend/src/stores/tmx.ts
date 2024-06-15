@@ -1,6 +1,7 @@
 import {acceptHMRUpdate, defineStore} from 'pinia'
 
 import {TmxFile} from '../client/schemas/TmxFile'
+import {TmxUsage} from '../client/schemas/TmxUsage'
 import {getTmxs} from '../client/services/TmxService'
 
 interface SelectedTmx extends TmxFile {
@@ -11,6 +12,7 @@ export const useTmxStore = defineStore('tmx', {
   state() {
     return {
       tmxFiles: [] as SelectedTmx[],
+      tmxMode: 'newest' as TmxUsage,
     }
   },
   actions: {

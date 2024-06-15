@@ -11,7 +11,7 @@ const props = defineProps<{open: boolean}>()
       v-if="open"
     ></div>
     <div
-      class="border bg-gray-100 fixed z-50 top-20 left-1/2 w-96 -ml-48"
+      class="border bg-slate-100 fixed z-50 top-20 left-1/2 w-96 -ml-48 rounded"
       v-if="open"
     >
       <slot></slot>
