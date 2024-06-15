@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from datetime import datetime
 
 from fastapi.testclient import TestClient
 
@@ -80,7 +81,7 @@ def test_can_delete_tmx_doc(fastapi_client: TestClient):
 
 
 def test_returns_404_when_deleting_nonexistent_tmx_doc(fastapi_client: TestClient):
-    response = fastapi_client.post("/tmx/1/delete")
+    response = fastapi_client.delete("/tmx/10")
     assert response.status_code == 404
 
 
@@ -98,6 +99,8 @@ def test_can_upload_tmx(fastapi_client: TestClient):
         assert doc.name == "small.tmx"
         assert len(doc.records) == 1
         assert "Handbook" in doc.records[0].source
+        assert doc.records[0].creation_date == datetime(2022, 7, 3, 7, 59, 19)
+        assert doc.records[0].change_date == datetime(2022, 7, 3, 7, 59, 20)
 
 
 def test_shows_422_when_no_file_uploaded(fastapi_client: TestClient):

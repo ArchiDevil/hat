@@ -50,7 +50,12 @@ async def create_tmx(
 
     for segment in segments:
         doc.records.append(
-            schema.TmxRecord(source=segment.original, target=segment.translation)
+            schema.TmxRecord(
+                source=segment.original,
+                target=segment.translation,
+                creation_date=segment.creation_date if segment.creation_date else None,
+                change_date=segment.change_date if segment.change_date else None,
+            )
         )
     db.commit()
 

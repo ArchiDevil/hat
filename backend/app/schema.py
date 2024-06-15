@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped
@@ -27,6 +27,8 @@ class TmxRecord(Base):
     document_id: Mapped[int] = mapped_column(ForeignKey("tmx_document.id"))
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()
+    creation_date: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+    change_date: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
 
     document: Mapped["TmxDocument"] = relationship(back_populates="records")
 
@@ -38,7 +40,7 @@ class XliffDocument(Base):
     name: Mapped[str] = mapped_column()
     original_document: Mapped[str] = mapped_column()
     processing_status: Mapped[str] = mapped_column()
-    upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
+    upload_time: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
 
     records: Mapped[list["XliffRecord"]] = relationship(
         back_populates="document",
