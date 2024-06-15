@@ -61,6 +61,7 @@ class XliffProcessingSettings(BaseModel):
     substitute_numbers: bool
     use_machine_translation: bool
     machine_translation_settings: Optional[MachineTranslationSettings]
+    tmx_file_ids: list[int]
 
 
 class StatusMessage(BaseModel):

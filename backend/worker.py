@@ -23,6 +23,7 @@ def get_segment_translation(
     tmx_data = session.execute(
         select(schema.TmxRecord.source, schema.TmxRecord.target)
         .where(schema.TmxRecord.source == segment.original)
+        .where(schema.TmxRecord.id.in_(settings.tmx_file_ids))
         .limit(1)
     ).first()
 

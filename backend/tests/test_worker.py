@@ -60,6 +60,7 @@ def test_process_task_sets_records():
                     "substitute_numbers": False,
                     "use_machine_translation": False,
                     "machine_translation_settings": None,
+                    "tmx_file_ids": [1],
                 }
             ),
         }
@@ -103,6 +104,64 @@ def test_process_task_sets_records():
         assert doc.records[3].target == ""
 
 
+def test_process_task_uses_correct_tmx_ids():
+    with open("tests/small.xliff", "r", encoding="utf-8") as fp:
+        file_data = fp.read()
+
+    with get_session() as session:
+        tmx_records_1 = [
+            schema.TmxRecord(source="Regional Effects", target="Translation")
+        ]
+        tmx_records_2 = [
+            schema.TmxRecord(source="Regional Effects", target="Another translation")
+        ]
+        session.add(schema.TmxDocument(name="test1", records=tmx_records_1))
+        session.add(schema.TmxDocument(name="test2", records=tmx_records_2))
+        session.commit()
+
+        session.add(
+            schema.XliffDocument(
+                name="uploaded_doc.xliff",
+                original_document=file_data,
+                processing_status=models.DocumentStatus.PENDING.value,
+                upload_time=(datetime.now() - timedelta(days=2)),
+            )
+        )
+
+        task_data = {
+            "type": "xliff",
+            "doc_id": 1,
+            "settings": json.dumps(
+                {
+                    "substitute_numbers": False,
+                    "use_machine_translation": False,
+                    "machine_translation_settings": None,
+                    "tmx_file_ids": [2],
+                }
+            ),
+        }
+        session.add(
+            schema.DocumentTask(
+                data=json.dumps(task_data),
+                status="pending",
+            )
+        )
+        session.commit()
+
+        result = process_task(session, session.query(schema.DocumentTask).one())
+        assert result
+
+        doc = session.query(schema.XliffDocument).filter_by(id=1).one()
+        assert doc.processing_status == "done"
+        assert len(doc.records) == 4
+        # It provides text for matching TMX record
+        assert doc.records[0].id == 1
+        assert doc.records[0].segment_id == 675606
+        assert doc.records[0].document_id == 1
+        assert doc.records[0].source == "Regional Effects"
+        assert doc.records[0].target == "Another translation"
+
+
 def test_process_task_substitutes_numbers():
     with open("tests/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
@@ -129,6 +188,7 @@ def test_process_task_substitutes_numbers():
                     "substitute_numbers": True,
                     "use_machine_translation": False,
                     "machine_translation_settings": None,
+                    "tmx_file_ids": [1],
                 }
             ),
         }
@@ -238,6 +298,7 @@ def test_process_task_puts_doc_in_error_state(monkeypatch):
                         "folder_id": "12345",
                         "oauth_token": "fake",
                     },
+                    "tmx_file_ids": [],
                 }
             ),
         }

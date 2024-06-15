@@ -212,6 +212,7 @@ def test_process_sets_document_in_pending_stage_and_creates_task(
             "substitute_numbers": False,
             "use_machine_translation": False,
             "machine_translation_settings": None,
+            "tmx_file_ids": [],
         },
     )
 
@@ -232,6 +233,7 @@ def test_process_creates_task(fastapi_client: TestClient):
             "substitute_numbers": False,
             "use_machine_translation": False,
             "machine_translation_settings": None,
+            "tmx_file_ids": [],
         },
     )
 
@@ -249,6 +251,7 @@ def test_process_creates_task(fastapi_client: TestClient):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
+                "tmx_file_ids": [],
             },
         }
 
@@ -260,6 +263,7 @@ def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestC
             "substitute_numbers": False,
             "use_machine_translation": False,
             "machine_translation_settings": None,
+            "tmx_file_ids": [],
         },
     )
     assert response.status_code == 404
