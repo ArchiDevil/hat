@@ -23,7 +23,7 @@ def get_segment_translation(
     selector = (
         select(schema.TmxRecord.source, schema.TmxRecord.target)
         .where(schema.TmxRecord.source == segment.original)
-        .where(schema.TmxRecord.id.in_(settings.tmx_file_ids))
+        .where(schema.TmxRecord.document_id.in_(settings.tmx_file_ids))
     )
     match settings.tmx_usage:
         case models.TmxUsage.NEWEST:

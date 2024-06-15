@@ -111,7 +111,8 @@ def test_process_task_uses_correct_tmx_ids():
 
     with get_session() as session:
         tmx_records_1 = [
-            schema.TmxRecord(source="Regional Effects", target="Translation")
+            schema.TmxRecord(source="Regional Effects", target="Translation"),
+            schema.TmxRecord(source="Test", target="Segment")
         ]
         tmx_records_2 = [
             schema.TmxRecord(source="Regional Effects", target="Another translation")
