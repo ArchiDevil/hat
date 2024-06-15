@@ -6,4 +6,5 @@ export interface XliffProcessingSettings {
   substitute_numbers: boolean
   use_machine_translation: boolean
   machine_translation_settings: MachineTranslationSettings | null
+  tmx_file_ids: number[]
 }

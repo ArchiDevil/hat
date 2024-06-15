@@ -80,6 +80,7 @@ const startProcessing = async () => {
       machine_translation_settings: useMachineTranslation.value
         ? machineTranslationSettings.value
         : null,
+      tmx_file_ids: tmxStore.selectedIds,
     })
     uploading.value = false
     status.value = 'Done!'
@@ -121,7 +122,10 @@ const startProcessing = async () => {
       class="mt-3"
     >
       <p class="font-semibold">Processing options</p>
-      <p class="mt-2">Selected TMX files: {{ tmxStore.selectedCount }} / {{ tmxStore.totalCount }}</p>
+      <p class="mt-2">
+        Selected TMX files: {{ tmxStore.selectedCount }} /
+        {{ tmxStore.totalCount }}
+      </p>
       <AppButton @click="toggleModal">Select TMX files to use</AppButton>
       <AppCheckbox
         v-model:value="substituteNumbers"
