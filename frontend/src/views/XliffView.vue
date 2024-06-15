@@ -7,11 +7,12 @@ import {
   getDownloadXliffLink,
   getXliffRecords,
 } from '../client/services/XliffService'
-import {XliffFile} from '../client/schemas/XliffFile'
+import { XliffFile } from '../client/schemas/XliffFile'
+import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
 
 import Link from '../components/Link.vue'
 import DocumentPair from '../components/DocumentPair.vue'
-import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
+import SupportLinks from '../components/SupportLinks.vue'
 
 const documentId = computed(() => {
   const route = useRoute()
@@ -30,7 +31,7 @@ const documentStatus = computed(() => {
 })
 
 const updateRecords = async () => {
-  if (document.value?.status === 'done') {
+  if (document.value?.status === 'done' || document.value?.status == 'error') {
     records.value = await getXliffRecords(documentId.value)
   } else {
     setTimeout(updateRecords, 1000)
@@ -48,14 +49,25 @@ onMounted(async () => {
     <h1 class="font-bold text-2xl pt-8">XLIFF file viewer</h1>
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
-    <template v-if="documentStatus == 'done'">
+    <template v-if="documentStatus == 'done' || documentStatus == 'error'">
+      <template v-if="documentStatus == 'error'">
+        <p class="mt-2 text-red-700">
+          Error while processing the document. We still provide you the document
+          content. It might be processed partially.
+        </p>
+        <p class="mt-2">
+          If this problem persists, use one of these links to report an issue:
+        </p>
+        <SupportLinks class="mb-4"/>
+      </template>
+
       <template v-if="records">
         <p>Number of records: {{ records.length }}</p>
         <Link
           :href="downloadLink"
-          class="mb-4 block"
+          class="mb-4 inline-block"
         >
-          Download
+          Download XLIFF document
         </Link>
         <div>
           <DocumentPair
@@ -69,42 +81,15 @@ onMounted(async () => {
         <p>Loading...</p>
       </template>
     </template>
-    <template v-else-if="documentStatus != 'error'">
+    <template v-else>
       <p class="mt-2">
-        Document is being processed right now. This should not take long.
+        The document is being processed right now. This should not take long.
       </p>
       <p class="mt-2">
-        If file is processed too long (it should take not more than 5-10
+        If the file is processed too long (it not should take more than 5-10
         minutes), use one of these links to report an issue:
       </p>
-      <ul>
-        <li>
-          Telegram: <Link href="https://t.me/archidevil">@archidevil</Link>
-        </li>
-        <li>
-          Github:
-          <Link href="https://github.com/ArchiDevil/hat/issues">
-            Issues page
-          </Link>
-        </li>
-      </ul>
-    </template>
-    <template v-else>
-      <p class="mt-2">Error while processing document :(</p>
-      <p class="mt-2">
-        If this problem persists, use one of these links to report an issue:
-      </p>
-      <ul>
-        <li>
-          Telegram: <Link href="https://t.me/archidevil">@archidevil</Link>
-        </li>
-        <li>
-          Github:
-          <Link href="https://github.com/ArchiDevil/hat/issues">
-            Issues page
-          </Link>
-        </li>
-      </ul>
+      <SupportLinks />
     </template>
   </div>
 </template>
