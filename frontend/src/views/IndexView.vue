@@ -9,6 +9,7 @@ import {TmxFile} from '../client/schemas/TmxFile'
 import File from '../components/File.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 import XliffUploadingDialog from '../components/XliffUploadingDialog.vue'
+import SupportLinks from '../components/SupportLinks.vue'
 
 const tmxDocs = ref<TmxFile[]>([])
 const xliffDocs = ref<XliffFile[]>([])
@@ -29,7 +30,20 @@ onMounted(async () => {
 
 <template>
   <div>
-    <h1 class="font-bold text-2xl pt-8">Process TMX matches</h1>
+    <h1 class="font-bold text-2xl pt-8">Human Assisted Translation project</h1>
+    <div class="w-1/2 border rounded bg-red-50 p-4">
+      <p>
+        The tool is currently in a testing phase. Please, be ready to sudden
+        breakups and unexpected crashes.
+        <span class="text-red-700 font-semibold">
+          Use small portions of data with Yandex first!
+        </span>
+        If you find any bug or have ideas, please report them in any form using
+        these links:
+      </p>
+      <SupportLinks />
+    </div>
+
     <div class="mt-8">
       <h2 class="font-bold text-lg">TMX files list</h2>
       <TmxUploadingDialog
