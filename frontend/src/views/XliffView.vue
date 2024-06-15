@@ -7,7 +7,7 @@ import {
   getDownloadXliffLink,
   getXliffRecords,
 } from '../client/services/XliffService'
-import { XliffFile } from '../client/schemas/XliffFile'
+import {XliffFile} from '../client/schemas/XliffFile'
 import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
 
 import Link from '../components/Link.vue'
@@ -30,17 +30,17 @@ const documentStatus = computed(() => {
   return document.value?.status
 })
 
-const updateRecords = async () => {
+const updateData = async () => {
+  document.value = await getXliff(documentId.value)
   if (document.value?.status === 'done' || document.value?.status == 'error') {
     records.value = await getXliffRecords(documentId.value)
   } else {
-    setTimeout(updateRecords, 1000)
+    setTimeout(updateData, 1000)
   }
 }
 
 onMounted(async () => {
-  document.value = await getXliff(documentId.value)
-  await updateRecords()
+  await updateData()
 })
 </script>
 
@@ -58,7 +58,7 @@ onMounted(async () => {
         <p class="mt-2">
           If this problem persists, use one of these links to report an issue:
         </p>
-        <SupportLinks class="mb-4"/>
+        <SupportLinks class="mb-4" />
       </template>
 
       <template v-if="records">
