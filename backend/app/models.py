@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DocumentStatus(Enum):
@@ -22,13 +22,20 @@ class TmxUsage(Enum):
     OLDEST = "oldest"
 
 
-class TmxFile(BaseModel):
+class UserRole(Enum):
+    USER = "user"
+    ADMIN = "admin"
+
+
+class Identified(BaseModel):
     id: int
+
+
+class TmxFile(Identified):
     name: str
 
 
-class TmxFileRecord(BaseModel):
-    id: int
+class TmxFileRecord(Identified):
     source: str
     target: str
 
@@ -37,14 +44,12 @@ class TmxFileWithRecords(TmxFile):
     records: list[TmxFileRecord]
 
 
-class XliffFile(BaseModel):
-    id: int
+class XliffFile(Identified):
     name: str
     status: DocumentStatus
 
 
-class XliffFileRecord(BaseModel):
-    id: int
+class XliffFileRecord(Identified):
     segment_id: int
     source: str
     target: str
@@ -72,3 +77,18 @@ class XliffProcessingSettings(BaseModel):
 
 class StatusMessage(BaseModel):
     message: str
+
+
+class UserFields(BaseModel):
+    username: str
+    email: str = Field(pattern=r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+    role: UserRole
+    disabled: bool
+
+
+class UserToCreate(UserFields):
+    password: str
+
+
+class User(Identified, UserFields):
+    pass
