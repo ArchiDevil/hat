@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import tmx
-from app.routers import xliff
+
+from app.routers import tmx, xliff, users
 
 
 def create_app():
@@ -21,5 +21,6 @@ def create_app():
 
     app.include_router(tmx.router)
     app.include_router(xliff.router)
+    app.include_router(users.router)
 
     return app
