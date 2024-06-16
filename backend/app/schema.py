@@ -67,3 +67,14 @@ class DocumentTask(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     data: Mapped[str] = mapped_column()
     status: Mapped[str] = mapped_column()
+
+
+class User(Base):
+    __tablename__ = "user"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column()
+    password: Mapped[str] = mapped_column()
+    email: Mapped[str] = mapped_column()
+    role: Mapped[str] = mapped_column(default="user")
+    disabled: Mapped[bool] = mapped_column(default=False)
