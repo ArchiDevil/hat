@@ -31,6 +31,7 @@ def create_user(
     data: models.UserToCreate, db: Annotated[Session, Depends(get_db)]
 ) -> models.User:
     fields = data.model_dump()
+    fields['role'] = fields['role'].value
     fields["password"] = password_hasher.hash(fields["password"])
     new_user = schema.User(**fields)
     db.add(new_user)
