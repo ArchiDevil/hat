@@ -6,6 +6,7 @@ import {getTmx} from '../client/services/TmxService'
 import {TmxFileWithRecords} from '../client/schemas/TmxFileWithRecords'
 
 import DocumentPair from '../components/DocumentPair.vue'
+import PageTitle from '../components/PageTitle.vue'
 
 const document = ref<TmxFileWithRecords>()
 
@@ -17,7 +18,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <h1 class="font-bold text-2xl pt-8">TMX file viewer</h1>
+    <PageTitle title="TMX file viewer" />
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
     <p class="mb-4">Number of records: {{ document?.records.length }}</p>

@@ -12,14 +12,14 @@ defineEmits<{
 
 <style scoped>
 button {
-  @apply py-1 px-2 h-8;
+  @apply py-1 px-2;
   @apply border rounded border-slate-600;
-  @apply bg-slate-400;
+  @apply bg-slate-300;
   @apply transition-colors;
 }
 
 button:hover {
-  @apply bg-slate-600 text-slate-50;
+  @apply bg-slate-500 text-slate-50;
 }
 
 button:disabled {

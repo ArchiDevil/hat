@@ -13,6 +13,7 @@ import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
 import Link from '../components/Link.vue'
 import DocumentPair from '../components/DocumentPair.vue'
 import SupportLinks from '../components/SupportLinks.vue'
+import PageTitle from '../components/PageTitle.vue'
 
 const documentId = computed(() => {
   const route = useRoute()
@@ -46,7 +47,7 @@ onMounted(async () => {
 
 <template>
   <div>
-    <h1 class="font-bold text-2xl pt-8">XLIFF file viewer</h1>
+    <PageTitle title="XLIFF file viewer" />
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
     <template v-if="documentStatus == 'done' || documentStatus == 'error'">
