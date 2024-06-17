@@ -6,6 +6,7 @@ import {getUsers} from '../client/services/UsersService'
 
 import PageTitle from '../components/PageTitle.vue'
 import AppButton from '../components/AppButton.vue'
+import UserAddDialog from '../components/UserAddDialog.vue'
 
 const users = ref<User[]>()
 const mode = ref<'table' | 'add' | 'edit'>('table')
@@ -53,7 +54,12 @@ onMounted(async () => {
         </tbody>
       </table>
     </template>
-    <template v-else-if="mode == 'add'"></template>
+    <template v-else-if="mode == 'add'">
+      <UserAddDialog
+        @created="mode = 'table'"
+        @close="mode = 'table'"
+      />
+    </template>
     <template v-else-if="mode == 'edit'"></template>
   </div>
 </template>
