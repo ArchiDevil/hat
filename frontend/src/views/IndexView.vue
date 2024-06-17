@@ -10,6 +10,8 @@ import File from '../components/File.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 import XliffUploadingDialog from '../components/XliffUploadingDialog.vue'
 import SupportLinks from '../components/SupportLinks.vue'
+import PageTitle from '../components/PageTitle.vue'
+import RoutingLink from '../components/RoutingLink.vue'
 
 const tmxDocs = ref<TmxFile[]>([])
 const xliffDocs = ref<XliffFile[]>([])
@@ -30,7 +32,16 @@ onMounted(async () => {
 
 <template>
   <div>
-    <h1 class="font-bold text-2xl pt-8">Human Assisted Translation project</h1>
+    <div class="flex items-baseline">
+      <PageTitle
+        class="flex-grow"
+        title="Human Assisted Translation project"
+      />
+      <div class="pt-8">
+        <RoutingLink class="mx-2 uppercase font-semibold" href="/">Home</RoutingLink>
+        <RoutingLink class="mx-2 uppercase font-semibold" href="/users/">Users</RoutingLink>
+      </div>
+    </div>
     <div class="w-1/2 border rounded bg-red-50 p-4">
       <p>
         The tool is currently in a testing phase. Please, be ready to sudden
