@@ -2,13 +2,14 @@
 defineProps<{
   title: string
   options: {name: string; value: string}[]
+  disabled?: boolean
 }>()
 </script>
 
 <template>
   <div>
     <label class="min-w-32 inline-block mr-2">{{ title }}</label>
-    <select>
+    <select :disabled="disabled">
       <option
         v-for="opt in options"
         :value="opt.value"
@@ -23,5 +24,6 @@ defineProps<{
 select {
   @apply max-w-32 px-2 py-1 border rounded bg-slate-300 transition-colors;
   @apply hover:cursor-pointer hover:bg-slate-500 hover:text-slate-50;
+  @apply disabled:text-slate-100 disabled:bg-slate-200;
 }
 </style>

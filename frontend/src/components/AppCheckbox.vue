@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   title: string
+  disabled?: boolean
 }>()
 
 const value = defineModel<boolean>('value')
@@ -11,9 +12,10 @@ const value = defineModel<boolean>('value')
     <input
       v-model="value"
       type="checkbox"
+      :disabled="disabled"
     />
     <label
-      class="ml-2"
+      class="ml-2 text-slate-900"
       @click="value = !value"
     >
       {{ title }}
