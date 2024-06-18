@@ -7,12 +7,24 @@ import {getUsers} from '../client/services/UsersService'
 import PageTitle from '../components/PageTitle.vue'
 import AppButton from '../components/AppButton.vue'
 import UserAddDialog from '../components/UserAddDialog.vue'
+import UserEditDialog from '../components/UserEditDialog.vue'
 
 const users = ref<User[]>()
 const mode = ref<'table' | 'add' | 'edit'>('table')
+const currentUser = ref<User>()
+
+const editUser = async (user: User) => {
+  mode.value = 'edit'
+  currentUser.value = {...user}
+}
+
+const updateData = async () => {
+  users.value = await getUsers()
+  mode.value = 'table'
+}
 
 onMounted(async () => {
-  users.value = await getUsers()
+  await updateData()
 })
 </script>
 
@@ -48,6 +60,12 @@ onMounted(async () => {
             <td>
               <div class="flex items-baseline">
                 <div class="flex-grow">{{ user.disabled ? 'Yes' : 'No' }}</div>
+                <AppButton
+                  @click="editUser(user)"
+                  class="ml-2"
+                >
+                  Edit
+                </AppButton>
               </div>
             </td>
           </tr>
@@ -56,11 +74,17 @@ onMounted(async () => {
     </template>
     <template v-else-if="mode == 'add'">
       <UserAddDialog
-        @created="mode = 'table'"
-        @close="mode = 'table'"
+        @created="updateData"
+        @closed="mode = 'table'"
       />
     </template>
-    <template v-else-if="mode == 'edit'"></template>
+    <template v-else-if="mode == 'edit'">
+      <UserEditDialog
+        :user="currentUser!"
+        @finished="updateData"
+        @closed="mode = 'table'"
+      />
+    </template>
   </div>
 </template>
 
