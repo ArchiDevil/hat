@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost/postgres"
     iam_api: str = "https://iam.api.cloud.yandex.net"
     translation_api: str = "https://translate.api.cloud.yandex.net"
+    secret_key: str = "secret-key"
 
 
 @lru_cache

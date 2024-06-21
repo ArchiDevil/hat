@@ -92,3 +92,8 @@ class UserToCreate(UserFields):
 
 class User(Identified, UserFields):
     pass
+
+
+class AuthFields(BaseModel):
+    email: str = Field(pattern=r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+    password: str
