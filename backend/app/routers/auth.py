@@ -18,14 +18,14 @@ def check_logged_in(
     session: Annotated[str | None, Cookie()] = None,
 ):
     if not session:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     serializer = URLSafeTimedSerializer(secret_key=settings.secret_key)
     data = serializer.loads(session)
     if "user_id" in data:
         return
 
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 @router.post("/login")
@@ -43,14 +43,21 @@ def login(
     if not user or not password_hasher.verify(data.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
+    if user.disabled:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+
     serializer = URLSafeTimedSerializer(secret_key=settings.secret_key)
     # TODO: add expiration date to cookie
     # TODO: check that it works properly with a domain name
-    response.set_cookie("session", serializer.dumps({"user_id": user.id}), secure=True)
+    response.set_cookie(
+        "session",
+        serializer.dumps({"user_id": user.id}),
+        secure=bool(settings.domain_name),
+    )
     return models.StatusMessage(message="Logged in")
 
 
-@router.get("/logout", dependencies=[Depends(check_logged_in)])
+@router.post("/logout", dependencies=[Depends(check_logged_in)])
 def logout(response: Response) -> models.StatusMessage:
     response.delete_cookie("session")
     return models.StatusMessage(message="Logged out")
