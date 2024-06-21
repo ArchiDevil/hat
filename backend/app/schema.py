@@ -75,6 +75,6 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column()
     password: Mapped[str] = mapped_column()
-    email: Mapped[str] = mapped_column()
+    email: Mapped[str] = mapped_column(unique=True)
     role: Mapped[str] = mapped_column(default="user")
     disabled: Mapped[bool] = mapped_column(default=False)
