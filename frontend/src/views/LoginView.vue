@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import {ref} from 'vue'
-import {MandeError} from 'mande'
 import {useRouter} from 'vue-router'
+import {MandeError} from 'mande'
 
 import {login} from '../client/services/AuthService'
 
-import AppButton from '../components/AppButton.vue'
-import LabeledTextInput from '../components/LabeledTextInput.vue'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+
 import PageTitle from '../components/PageTitle.vue'
 
 const email = ref('')
@@ -22,7 +24,7 @@ const authenticate = async () => {
       email: email.value,
       password: password.value,
     })
-    const result = await router.replace({
+    await router.replace({
       path: '/',
     })
   } catch (e) {
@@ -46,29 +48,37 @@ const authenticate = async () => {
   <div
     class="max-w-96 flex flex-col gap-2 border-2 shadow-lg rounded px-4 mt-4 pb-8 mx-auto"
   >
-    <PageTitle title="Login" />
-    <LabeledTextInput
-      title="Email"
-      v-model="email"
-      :disabled="loading"
+    <PageTitle
+      title="Login"
+      class="text-center text-color"
     />
-    <LabeledTextInput
-      title="Password"
-      v-model="password"
-      password
-      :disabled="loading"
-    />
-    <AppButton
+    <div class="flex flex-col gap-2">
+      <label class="text-color">Email</label>
+      <InputText
+        v-model="email"
+        :disabled="loading"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-color">Password</label>
+      <Password
+        v-model="password"
+        inputClass="w-full"
+        :disabled="loading"
+        :feedback="false"
+      />
+    </div>
+    <Button
+      class="mt-4"
+      label="Login"
       @click="authenticate"
       :disabled="loading"
-    >
-      Login
-    </AppButton>
-    <p
+    />
+    <small
       v-if="status"
-      class="text-red-700 text-sm"
+      class="text-red-700"
     >
       {{ status }}
-    </p>
+    </small>
   </div>
 </template>
