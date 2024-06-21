@@ -2,8 +2,9 @@
 import {Ref, ref, computed} from 'vue'
 import {MandeError} from 'mande'
 
-import AppButton from './AppButton.vue'
 import {createTmx} from '../client/services/TmxService'
+
+import Button from 'primevue/button'
 
 const emit = defineEmits<{
   uploaded: []
@@ -52,10 +53,10 @@ const uploadFile = async () => {
 </script>
 
 <template>
-  <div class="p-2 min-w-96 border border-slate-500">
+  <div class="p-2 min-w-96 border rounded-border border-surface bg-surface-50">
     <label
-      for="file"
-      class="font-semibold mr-2"
+      for="file-input"
+      class="mr-2"
     >
       {{ title }}
     </label>
@@ -65,14 +66,13 @@ const uploadFile = async () => {
       type="file"
       accept=".tmx"
       @change="updateFiles"
-    >
-    <AppButton
+    />
+    <Button
+      label="Upload"
       class="ml-2"
       :disabled="!uploadAvailable || uploading"
       @click="uploadFile"
-    >
-      Upload
-    </AppButton>
+    />
     <span
       v-if="status"
       class="ml-2"
