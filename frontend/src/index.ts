@@ -4,6 +4,7 @@ import {createRouter, createWebHistory} from 'vue-router'
 
 import App from './App.vue'
 import IndexView from './views/IndexView.vue'
+import LoginView from './views/LoginView.vue'
 import TmxView from './views/TmxView.vue'
 import XliffView from './views/XliffView.vue'
 import UsersView from './views/UsersView.vue'
@@ -15,6 +16,7 @@ const routes = [
   {path: '/tmx/:id', component: TmxView},
   {path: '/xliff/:id', component: XliffView},
   {path: '/users/', component: UsersView},
+  {path: '/login/', component: LoginView},
 ]
 
 const router = createRouter({
