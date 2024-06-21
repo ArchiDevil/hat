@@ -8,7 +8,6 @@ import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSe
 
 import {useTmxStore} from '../stores/tmx'
 
-import AppCheckbox from './AppCheckbox.vue'
 import TmxFilesModal from './TmxFilesModal.vue'
 
 import Button from 'primevue/button'
