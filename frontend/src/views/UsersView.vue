@@ -4,8 +4,11 @@ import {onMounted, ref} from 'vue'
 import {User} from '../client/schemas/User'
 import {getUsers} from '../client/services/UsersService'
 
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+
 import PageTitle from '../components/PageTitle.vue'
-import AppButton from '../components/AppButton.vue'
 import UserAddDialog from '../components/UserAddDialog.vue'
 import UserEditDialog from '../components/UserEditDialog.vue'
 
@@ -32,69 +35,67 @@ onMounted(async () => {
   <div>
     <PageTitle title="Users page" />
     <template v-if="mode == 'table'">
-      <AppButton
+      <Button
+        label="Create new user"
         class="mt-2"
         @click="mode = 'add'"
-        >Create new user</AppButton
+      />
+      <DataTable
+        :value="users"
+        paginator
+        :rows="10"
+        :rows-per-page-options="[10, 25, 50]"
+        tableStyle="w-full mt-4"
       >
-      <table class="mt-4 w-full">
-        <thead>
-          <tr class="text-left">
-            <th>Id</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Disabled?</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="user in users"
-            :key="user.id"
-            class="hover:bg-slate-200"
-          >
-            <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.role }}</td>
-            <td>
-              <div class="flex items-baseline">
-                <div class="flex-grow">{{ user.disabled ? 'Yes' : 'No' }}</div>
-                <AppButton
-                  @click="editUser(user)"
-                  class="ml-2"
-                >
-                  Edit
-                </AppButton>
+        <Column
+          field="id"
+          header="Id"
+        ></Column>
+        <Column
+          field="username"
+          header="Username"
+        ></Column>
+        <Column
+          field="email"
+          header="Email"
+        ></Column>
+        <Column
+          field="role"
+          header="Role"
+        ></Column>
+        <Column
+          field="disabled"
+          header="Disabled?"
+        >
+          <template #body="slotProps">
+            <div class="flex items-baseline">
+              <div class="flex-grow">
+                {{ slotProps.data.disabled ? 'Yes' : 'No' }}
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <Button
+                class="ml-2"
+                label="Edit"
+                severity="secondary"
+                size="small"
+                @click="editUser(slotProps.data)"
+              />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
     </template>
     <template v-else-if="mode == 'add'">
       <UserAddDialog
-        @created="updateData"
-        @closed="mode = 'table'"
+        @create="updateData"
+        @close="mode = 'table'"
       />
     </template>
     <template v-else-if="mode == 'edit'">
       <UserEditDialog
         :user="currentUser!"
-        @finished="updateData"
-        @closed="mode = 'table'"
+        @finish="updateData"
+        @close="mode = 'table'"
       />
     </template>
   </div>
 </template>
-
-<style scoped>
-tr {
-  @apply border-b-2;
-}
-
-td,
-th {
-  @apply px-2 py-1;
-}
-</style>
