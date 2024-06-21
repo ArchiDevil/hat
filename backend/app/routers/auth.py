@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, UTC
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, status
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 def check_logged_in(
     settings: Annotated[Settings, Depends(get_settings)],
-    session: Annotated[str | None, Cookie()] = None,
+    session: Annotated[str | None, Cookie(include_in_schema=False)] = None,
 ):
     if not session:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
@@ -47,12 +48,15 @@ def login(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     serializer = URLSafeTimedSerializer(secret_key=settings.secret_key)
-    # TODO: add expiration date to cookie
+    # TODO: would be nice to have "permanent" option for the session
     # TODO: check that it works properly with a domain name
     response.set_cookie(
         "session",
         serializer.dumps({"user_id": user.id}),
         secure=bool(settings.domain_name),
+        domain=settings.domain_name,
+        httponly=True,
+        expires=datetime.now(UTC) + timedelta(days=14),
     )
     return models.StatusMessage(message="Logged in")
 
