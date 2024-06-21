@@ -5,6 +5,13 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python Debugger: Pytest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "justMyCode": false
+    },
+    {
       "name": "Python Debugger: Worker",
       "type": "debugpy",
       "request": "launch",
