@@ -6,6 +6,8 @@ import {deleteXliff, getXliffs} from '../client/services/XliffService'
 import {XliffFile} from '../client/schemas/XliffFile'
 import {TmxFile} from '../client/schemas/TmxFile'
 
+import Panel from 'primevue/panel'
+
 import File from '../components/File.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 import XliffUploadingDialog from '../components/XliffUploadingDialog.vue'
@@ -38,11 +40,22 @@ onMounted(async () => {
         title="Human Assisted Translation project"
       />
       <div class="pt-8">
-        <RoutingLink class="mx-2 uppercase font-semibold" href="/">Home</RoutingLink>
-        <RoutingLink class="mx-2 uppercase font-semibold" href="/users/">Users</RoutingLink>
+        <RoutingLink
+          class="mx-2 uppercase font-semibold"
+          href="/"
+          >Home</RoutingLink
+        >
+        <RoutingLink
+          class="mx-2 uppercase font-semibold"
+          href="/users/"
+          >Users</RoutingLink
+        >
       </div>
     </div>
-    <div class="w-1/2 border rounded bg-red-50 p-4">
+    <Panel
+      class="w-1/2 border rounded bg-red-50 px-4 mt-4"
+      header="Warning"
+    >
       <p>
         The tool is currently in a testing phase. Please, be ready to sudden
         breakups and unexpected crashes.
@@ -53,10 +66,13 @@ onMounted(async () => {
         these links:
       </p>
       <SupportLinks />
-    </div>
+    </Panel>
 
-    <div class="mt-8">
-      <h2 class="font-bold text-lg">TMX files list</h2>
+    <Panel
+      class="mt-4"
+      header="TMX files list"
+      toggleable
+    >
       <TmxUploadingDialog
         title="Select a TMX file:"
         @uploaded="getTmxDocs()"
@@ -69,10 +85,13 @@ onMounted(async () => {
         type="tmx"
         @delete="getTmxDocs()"
       />
-    </div>
+    </Panel>
 
-    <div class="mt-8">
-      <h2 class="font-bold text-lg">XLIFF documents list</h2>
+    <Panel
+      class="mt-4"
+      header="XLIFF documents list"
+      toggleable
+    >
       <XliffUploadingDialog
         title="Select a XLIFF file:"
         @processed="(fileId) => $router.push(`/xliff/${fileId}`)"
@@ -85,6 +104,6 @@ onMounted(async () => {
         type="xliff"
         @delete="getXliffDocs()"
       />
-    </div>
+    </Panel>
   </div>
 </template>

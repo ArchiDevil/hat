@@ -4,7 +4,7 @@ import {ref} from 'vue'
 import {XliffFile} from '../client/schemas/XliffFile'
 import {TmxFile} from '../client/schemas/TmxFile'
 
-import AppButton from './AppButton.vue'
+import Button from 'primevue/button'
 import RoutingLink from './RoutingLink.vue'
 
 const emit = defineEmits<{
@@ -12,9 +12,9 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  file: XliffFile | TmxFile;
-  type: 'xliff' | 'tmx';
-  deleteMethod: (id: number) => Promise<any>;
+  file: XliffFile | TmxFile
+  type: 'xliff' | 'tmx'
+  deleteMethod: (id: number) => Promise<any>
 }>()
 
 const busy = ref(false)
@@ -38,25 +38,32 @@ const deleteFile = async () => {
 
 <template>
   <div
-    class="bg-slate-200 my-1 py-1 px-2 border-slate-500 border flex items-baseline">
-    <div class="w-48 text-ellipsis whitespace-nowrap overflow-hidden">
+    class="my-1 py-1 px-2 border flex items-baseline rounded-border border-surface bg-surface-50"
+  >
+    <div
+      class="w-60 text-ellipsis whitespace-nowrap overflow-hidden"
+      :title="file.name"
+    >
       #{{ file.id }} {{ file.name }}
     </div>
     <RoutingLink
       class="ml-2"
       :href="`${type}/${file.id}`"
-      :disabled="busy">
+      :disabled="busy"
+    >
       Open
     </RoutingLink>
-    <AppButton
+    <Button
+      label="Delete"
       class="ml-2"
+      severity="secondary"
+      :disabled="busy"
       @click="deleteFile()"
-      :disabled="busy">
-      Delete
-    </AppButton>
+    />
     <span
       class="ml-2"
-      v-if="status">
+      v-if="status"
+    >
       {{ status }}
     </span>
   </div>
