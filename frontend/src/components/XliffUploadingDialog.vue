@@ -8,10 +8,11 @@ import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSe
 
 import {useTmxStore} from '../stores/tmx'
 
-import AppButton from './AppButton.vue'
 import AppCheckbox from './AppCheckbox.vue'
-import LabeledTextInput from './LabeledTextInput.vue'
 import TmxFilesModal from './TmxFilesModal.vue'
+
+import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 
 const emit = defineEmits<{
   uploaded: []
@@ -81,7 +82,7 @@ const startProcessing = async () => {
         ? machineTranslationSettings.value
         : null,
       tmx_file_ids: tmxStore.selectedIds,
-      tmx_usage: tmxStore.tmxMode
+      tmx_usage: tmxStore.tmxMode,
     })
     uploading.value = false
     status.value = 'Done!'
@@ -94,7 +95,7 @@ const startProcessing = async () => {
 </script>
 
 <template>
-  <div class="border border-slate-500 p-2 min-w-96">
+  <div class="border rounded-border border-surface bg-surface-50 p-2 min-w-96">
     <div>
       <label
         for="file"
@@ -127,16 +128,36 @@ const startProcessing = async () => {
         Selected TMX files: {{ tmxStore.selectedCount }} /
         {{ tmxStore.totalCount }}
       </p>
-      <AppButton @click="toggleModal">Select TMX files to use</AppButton>
-      <AppCheckbox
-        v-model:value="substituteNumbers"
-        class="mt-2"
-        title="Substitute segments with numbers only"
+      <Button
+        label="Select TMX files to use"
+        @click="toggleModal"
       />
-      <AppCheckbox
-        v-model:value="useMachineTranslation"
-        title="Use Yandex machine translation"
-      />
+      <div class="flex items-center mt-2">
+        <Checkbox
+          id="sn"
+          v-model="substituteNumbers"
+          :binary="true"
+        />
+        <label
+          for="sn"
+          class="ml-2"
+        >
+          Substitute segments with numbers only
+        </label>
+      </div>
+      <div class="flex items-center">
+        <Checkbox
+          id="umt"
+          v-model="useMachineTranslation"
+          :binary="true"
+        />
+        <label
+          for="umt"
+          class="ml-2"
+        >
+          Use Yandex machine translation
+        </label>
+      </div>
       <div v-if="useMachineTranslation">
         <p class="font-semibold mt-3 mb-1">
           Yandex translator options
@@ -148,15 +169,32 @@ const startProcessing = async () => {
             (Where to get credentials?)
           </a>
         </p>
-        <LabeledTextInput
-          class="mb-2"
-          v-model="machineTranslationSettings.folder_id"
-          title="Folder ID"
-        />
-        <LabeledTextInput
-          v-model="machineTranslationSettings.oauth_token"
-          title="OAuth token"
-        />
+        <div class="flex items-center">
+          <Checkbox
+            id="fid"
+            v-model="machineTranslationSettings.folder_id"
+            :binary="true"
+          />
+          <label
+            for="fid"
+            class="ml-2"
+          >
+            Folder ID
+          </label>
+        </div>
+        <div class="flex items-center">
+          <Checkbox
+            id="oauth"
+            v-model="machineTranslationSettings.oauth_token"
+            :binary="true"
+          />
+          <label
+            for="oauth"
+            class="ml-2"
+          >
+            OAuth token
+          </label>
+        </div>
       </div>
     </div>
 
@@ -164,12 +202,11 @@ const startProcessing = async () => {
       v-if="processingAvailable"
       class="mt-5"
     >
-      <AppButton
+      <Button
+        label="Start processing"
         :disabled="!processingAvailable || uploading"
         @click="startProcessing"
-      >
-        Start processing
-      </AppButton>
+      />
     </div>
   </div>
 
