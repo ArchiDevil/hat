@@ -17,6 +17,7 @@ export interface TrivialDesc {
   type: TrivialType
   title?: string
   format?: string
+  pattern?: string
 }
 
 export interface ArrayDesc {
@@ -31,7 +32,7 @@ export type HttpMethod = 'get' | 'post' | 'put' | 'delete'
 
 export interface ParamDesc {
   name: string
-  in: 'query' | 'path' | 'header'
+  in: 'query' | 'path' | 'header' | 'cookie'
   required: boolean
   schema: PropDescription
 }
