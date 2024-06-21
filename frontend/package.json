@@ -36,8 +36,11 @@
     "vue-tsc": "^2.0.21"
   },
   "dependencies": {
+    "@primevue/themes": "4.0.0-rc.2",
     "mande": "^2.0.9",
     "pinia": "^2.1.7",
+    "primevue": "4.0.0-rc.2",
+    "tailwindcss-primeui": "^0.3.1",
     "vue": "^3.4.29",
     "vue-router": "^4.3.3"
   }

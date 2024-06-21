@@ -8,12 +8,21 @@ importers:
 
   .:
     dependencies:
+      '@primevue/themes':
+        specifier: 4.0.0-rc.2
+        version: 4.0.0-rc.2(@primeuix/styled@0.0.1)
       mande:
         specifier: ^2.0.9
         version: 2.0.9
       pinia:
         specifier: ^2.1.7
         version: 2.1.7(typescript@5.3.3)(vue@3.4.29(typescript@5.3.3))
+      primevue:
+        specifier: 4.0.0-rc.2
+        version: 4.0.0-rc.2(vue@3.4.29(typescript@5.3.3))
+      tailwindcss-primeui:
+        specifier: ^0.3.1
+        version: 0.3.1(tailwindcss@3.4.4)
       vue:
         specifier: ^3.4.29
         version: 3.4.29(typescript@5.3.3)
@@ -254,6 +263,26 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@primeuix/styled@0.0.1':
+    resolution: {integrity: sha512-0psCSZr3906UwC4mTl2ol4aDoLvdbM0ekJFLKvCvC2oQ9z2YZhmUOVZQNNxBW34mChDzZYcAcRWXADQz3z5lBg==}
+    engines: {node: '>=12.11.0'}
+
+  '@primevue/core@4.0.0-rc.2':
+    resolution: {integrity: sha512-S0RGGdW/M/ogIKeif6JwkJrPLC8pyuBYy2zZlloXXj6Fpvk416sMpO308sx89fqvba2d5poT9a+AbkGob4TDtQ==}
+    engines: {node: '>=12.11.0'}
+    peerDependencies:
+      vue: ^3.0.0
+
+  '@primevue/icons@4.0.0-rc.2':
+    resolution: {integrity: sha512-VZFETBtmpAduGxXhxcYoqiuGriidyz4XR/4NcrR87CQpUWmT13PXfRoqZ1hLXwNZp1XferT1F5GtY1mHcYxJdw==}
+    engines: {node: '>=12.11.0'}
+
+  '@primevue/themes@4.0.0-rc.2':
+    resolution: {integrity: sha512-4y9NlDDwA4J51aNoO1+7anPOwjNTpCzetOZlKY7pQfxxpAmKUM4ouf87kjQz0/IFjBIxN4ZK3XfwtamFoL08Ug==}
+    engines: {node: '>=12.11.0'}
+    peerDependencies:
+      '@primeuix/styled': ^0.0.1
 
   '@rollup/rollup-android-arm-eabi@4.17.2':
     resolution: {integrity: sha512-NM0jFxY8bB8QLkoKxIQeObCaDlJKewVlIEkuyYKm5An1tdVZ966w2+MPQ2l8LBZLjR+SgyV+nRkTIunzOYBMLQ==}
@@ -1001,6 +1030,10 @@ packages:
     resolution: {integrity: sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
 
+  primevue@4.0.0-rc.2:
+    resolution: {integrity: sha512-1SICPga4FA5sx27h5FBnMHWidPJRn58mPZj0LNlJygp+9P5ksrtRRNdfDPzmRB+fWcmhvbIxk46meyHeMw1wTQ==}
+    engines: {node: '>=12.11.0'}
+
   proto-list@1.2.4:
     resolution: {integrity: sha512-vtK/94akxsTMhe0/cbfpR+syPuszcuwhqVjJq26CuNDgFGj682oRBXOP5MJpv2r7JtE8MsiepGIqvvOTBwn2vA==}
 
@@ -1123,6 +1156,11 @@ packages:
 
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
+
+  tailwindcss-primeui@0.3.1:
+    resolution: {integrity: sha512-A+uLHqdFo1jmn7qSBBDko5BXResXWfy4wKFzR/7p9P0ZENRS1xJCxKnf0E8oFRN9Joq5yjLRtMgFXfMcuPH1hg==}
+    peerDependencies:
+      tailwindcss: '>=3.1.0'
 
   tailwindcss@3.4.4:
     resolution: {integrity: sha512-ZoyXOdJjISB7/BcLTR6SEsLgKtDStYyYZVLsUtWChO4Ps20CBad7lfJKVDiejocV4ME1hLmyY0WJE3hSDcmQ2A==}
@@ -1492,6 +1530,23 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@primeuix/styled@0.0.1': {}
+
+  '@primevue/core@4.0.0-rc.2(vue@3.4.29(typescript@5.3.3))':
+    dependencies:
+      '@primeuix/styled': 0.0.1
+      vue: 3.4.29(typescript@5.3.3)
+
+  '@primevue/icons@4.0.0-rc.2(vue@3.4.29(typescript@5.3.3))':
+    dependencies:
+      '@primevue/core': 4.0.0-rc.2(vue@3.4.29(typescript@5.3.3))
+    transitivePeerDependencies:
+      - vue
+
+  '@primevue/themes@4.0.0-rc.2(@primeuix/styled@0.0.1)':
+    dependencies:
+      '@primeuix/styled': 0.0.1
 
   '@rollup/rollup-android-arm-eabi@4.17.2':
     optional: true
@@ -2231,6 +2286,13 @@ snapshots:
       ansi-styles: 5.2.0
       react-is: 18.3.1
 
+  primevue@4.0.0-rc.2(vue@3.4.29(typescript@5.3.3)):
+    dependencies:
+      '@primevue/core': 4.0.0-rc.2(vue@3.4.29(typescript@5.3.3))
+      '@primevue/icons': 4.0.0-rc.2(vue@3.4.29(typescript@5.3.3))
+    transitivePeerDependencies:
+      - vue
+
   proto-list@1.2.4: {}
 
   psl@1.9.0: {}
@@ -2356,6 +2418,10 @@ snapshots:
   supports-preserve-symlinks-flag@1.0.0: {}
 
   symbol-tree@3.2.4: {}
+
+  tailwindcss-primeui@0.3.1(tailwindcss@3.4.4):
+    dependencies:
+      tailwindcss: 3.4.4
 
   tailwindcss@3.4.4:
     dependencies:
