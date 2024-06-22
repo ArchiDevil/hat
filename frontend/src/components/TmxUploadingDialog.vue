@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import {Ref, ref, computed} from 'vue'
+import {ref} from 'vue'
 import {MandeError} from 'mande'
 
 import {createTmx} from '../client/services/TmxService'
 
-import Button from 'primevue/button'
+import FileUpload, {FileUploadUploaderEvent} from 'primevue/fileupload'
 
 const emit = defineEmits<{
   uploaded: []
@@ -14,36 +14,21 @@ defineProps<{
   title: string
 }>()
 
-const file = ref(null) as Ref<File | null>
-const input = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
 const status = ref('')
 
-const uploadAvailable = computed(() => file.value != null)
-
-const updateFiles = () => {
-  status.value = ''
-  const element = input.value as HTMLInputElement
-  if (!element.files) {
+const uploadFile = async (event: FileUploadUploaderEvent) => {
+  const files = event.files as File[]
+  if (files.length != 1) {
     return
   }
-  file.value = element.files[0]
-}
-
-const uploadFile = async () => {
-  if (!uploadAvailable.value) {
-    return
-  }
-
-  const element = input.value as HTMLInputElement
-  const attachedFile = element.files![0]
 
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    await createTmx({file: attachedFile})
+    await createTmx({file: files[0]})
     uploading.value = false
-    status.value = 'Done!'
+    status.value = 'Uploading finished!'
     emit('uploaded')
   } catch (error: unknown) {
     uploading.value = false
@@ -53,31 +38,23 @@ const uploadFile = async () => {
 </script>
 
 <template>
-  <div class="p-2 min-w-96 border rounded-border border-surface bg-surface-50">
-    <label
-      for="file-input"
-      class="mr-2"
-    >
-      {{ title }}
-    </label>
-    <input
-      id="file-input"
-      ref="input"
-      type="file"
+  <div class="min-w-96 flex flex-col gap-2">
+    <FileUpload
+      mode="advanced"
       accept=".tmx"
-      @change="updateFiles"
-    />
-    <Button
-      label="Upload"
-      class="ml-2"
-      :disabled="!uploadAvailable || uploading"
-      @click="uploadFile"
-    />
-    <span
-      v-if="status"
-      class="ml-2"
+      customUpload
+      :disabled="uploading"
+      @uploader="(event: FileUploadUploaderEvent) => uploadFile(event)"
     >
-      {{ status }}
-    </span>
+      <template #content="{files}">
+        <div v-if="files.length">{{ files[0].name }} is waiting to upload.</div>
+        <div v-else>{{ status }}</div>
+      </template>
+      <template #empty>
+        <span v-if="!status">
+          Choose or drag and drop TMX file to upload.
+        </span>
+      </template>
+    </FileUpload>
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Ref, ref, computed} from 'vue'
+import {Ref, ref, computed, onMounted} from 'vue'
 import {MandeError} from 'mande'
 
 import {createXliff, processXliff} from '../client/services/XliffService'
@@ -8,10 +8,11 @@ import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSe
 
 import {useTmxStore} from '../stores/tmx'
 
-import TmxFilesModal from './TmxFilesModal.vue'
-
-import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import InputText from 'primevue/inputtext'
+import MultiSelect from 'primevue/multiselect'
+import Select from 'primevue/select'
+import FileUpload, {FileUploadSelectEvent} from 'primevue/fileupload'
 
 const emit = defineEmits<{
   uploaded: []
@@ -22,11 +23,10 @@ defineProps<{
   title: string
 }>()
 
-const input = ref<HTMLInputElement | null>(null)
-const file = ref(null) as Ref<File | null>
 const uploadedFile = ref(null) as Ref<XliffFile | null>
 const uploading = ref(false)
 const status = ref('')
+
 const substituteNumbers = ref(false)
 const useMachineTranslation = ref(false)
 const machineTranslationSettings = ref<MachineTranslationSettings>({
@@ -37,24 +37,18 @@ const machineTranslationSettings = ref<MachineTranslationSettings>({
 const processingAvailable = computed(() => uploadedFile.value != null)
 const tmxStore = useTmxStore()
 
-const modalOpen = ref(false)
-const toggleModal = async () => {
-  modalOpen.value = !modalOpen.value
-}
-
-const createFile = async () => {
+const createFile = async (event: FileUploadSelectEvent) => {
   status.value = ''
-  const inputElement = input.value
-  if (!inputElement?.files) {
+  if (!event.files) {
     return
   }
 
-  file.value = inputElement.files[0]
+  const selectedFile = event.files[0] as File
 
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    uploadedFile.value = await createXliff({file: file.value})
+    uploadedFile.value = await createXliff({file: selectedFile})
     uploading.value = false
     status.value = 'Ready for processing'
     emit('uploaded')
@@ -91,126 +85,126 @@ const startProcessing = async () => {
     status.value = `${(error as MandeError).message} :(`
   }
 }
+
+onMounted(async () => {
+  await tmxStore.getTmx()
+})
 </script>
 
 <template>
-  <div class="border rounded-border border-surface bg-surface-50 p-2 min-w-96">
-    <div>
-      <label
-        for="file"
-        class="font-semibold mr-2"
-      >
-        {{ title }}
-      </label>
-      <input
-        id="file-input"
-        ref="input"
-        type="file"
-        accept=".xliff"
-        :disabled="uploading"
-        @change="createFile"
-      />
-      <span
-        v-if="status"
-        class="ml-2"
-      >
-        {{ status }}
-      </span>
-    </div>
-
-    <div
-      v-if="processingAvailable"
-      class="mt-3"
+  <div class="min-w-96">
+    <FileUpload
+      mode="advanced"
+      custom-upload
+      accept=".xliff"
+      :disabled="uploading"
+      @select="(event: FileUploadSelectEvent) => createFile(event)"
+      @uploader="startProcessing"
     >
-      <p class="font-semibold">Processing options</p>
-      <p class="mt-2">
-        Selected TMX files: {{ tmxStore.selectedCount }} /
-        {{ tmxStore.totalCount }}
-      </p>
-      <Button
-        label="Select TMX files to use"
-        @click="toggleModal"
-      />
-      <div class="flex items-center mt-2">
-        <Checkbox
-          id="sn"
-          v-model="substituteNumbers"
-          :binary="true"
-        />
-        <label
-          for="sn"
-          class="ml-2"
-        >
-          Substitute segments with numbers only
-        </label>
-      </div>
-      <div class="flex items-center">
-        <Checkbox
-          id="umt"
-          v-model="useMachineTranslation"
-          :binary="true"
-        />
-        <label
-          for="umt"
-          class="ml-2"
-        >
-          Use Yandex machine translation
-        </label>
-      </div>
-      <div v-if="useMachineTranslation">
-        <p class="font-semibold mt-3 mb-1">
-          Yandex translator options
-          <a
-            href="https://yandex.cloud/ru/docs/translate/api-ref/authentication"
-            class="font-normal underline decoration-1 hover:decoration-2"
-            target="_blank"
+      <template #content="{files}">
+        <div v-if="files.length != 0">
+          <p class="font-semibold">Processing options</p>
+          <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
+            <label>TMX files to use:</label>
+            <MultiSelect
+              class="w-96"
+              v-model="tmxStore.selectedTmxFiles"
+              placeholder="Select TMX files to use"
+              :options="tmxStore.tmxFiles"
+              optionLabel="name"
+              :filter="false"
+              filterPlaceholder="Search TMX files..."
+            />
+          </div>
+          <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
+            <label>When segment is found in multiple TMXs:</label>
+            <Select
+              v-model="tmxStore.tmxMode"
+              :options="[
+                {name: 'Use newest TM', value: 'newest'},
+                {name: 'Use oldest TM', value: 'oldest'},
+              ]"
+              option-label="name"
+              option-value="value"
+            />
+          </div>
+          <div class="flex items-center mt-2">
+            <Checkbox
+              id="sn"
+              v-model="substituteNumbers"
+              :binary="true"
+            />
+            <label
+              for="sn"
+              class="ml-2"
+              @click="substituteNumbers = !substituteNumbers"
+            >
+              Substitute segments with numbers only
+            </label>
+          </div>
+          <div class="flex items-center">
+            <Checkbox
+              id="umt"
+              v-model="useMachineTranslation"
+              :binary="true"
+            />
+            <label
+              for="umt"
+              class="ml-2"
+              @click="useMachineTranslation = !useMachineTranslation"
+            >
+              Use Yandex machine translation
+            </label>
+          </div>
+          <div
+            v-if="useMachineTranslation"
+            class="flex flex-col gap-2 max-w-[32rem]"
           >
-            (Where to get credentials?)
-          </a>
-        </p>
-        <div class="flex items-center">
-          <Checkbox
-            id="fid"
-            v-model="machineTranslationSettings.folder_id"
-            :binary="true"
-          />
-          <label
-            for="fid"
-            class="ml-2"
-          >
-            Folder ID
-          </label>
+            <p class="font-semibold mt-3">
+              Yandex translator options
+              <a
+                href="https://yandex.cloud/ru/docs/translate/api-ref/authentication"
+                class="font-normal underline decoration-1 hover:decoration-2"
+                target="_blank"
+              >
+                (Where to get credentials?)
+              </a>
+            </p>
+            <div class="flex items-center flex-row gap-2">
+              <label
+                for="fid"
+                class="flex-grow"
+              >
+                Folder ID
+              </label>
+              <InputText
+                id="fid"
+                class="w-96"
+                v-model="machineTranslationSettings.folder_id"
+              />
+            </div>
+            <div class="flex items-center flex-row gap-2">
+              <label
+                for="oauth"
+                class="flex-grow"
+              >
+                OAuth token
+              </label>
+              <InputText
+                id="oauth"
+                class="w-96"
+                v-model="machineTranslationSettings.oauth_token"
+              />
+            </div>
+          </div>
         </div>
-        <div class="flex items-center">
-          <Checkbox
-            id="oauth"
-            v-model="machineTranslationSettings.oauth_token"
-            :binary="true"
-          />
-          <label
-            for="oauth"
-            class="ml-2"
-          >
-            OAuth token
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-if="processingAvailable"
-      class="mt-5"
-    >
-      <Button
-        label="Start processing"
-        :disabled="!processingAvailable || uploading"
-        @click="startProcessing"
-      />
-    </div>
+        <div v-else>{{ status }}</div>
+      </template>
+      <template #empty
+        ><span v-if="!status">
+          Choose or drag and drop XLIFF file to upload
+        </span>
+      </template>
+    </FileUpload>
   </div>
-
-  <TmxFilesModal
-    :open="modalOpen"
-    @close="toggleModal"
-  />
 </template>

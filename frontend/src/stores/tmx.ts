@@ -4,52 +4,25 @@ import {TmxFile} from '../client/schemas/TmxFile'
 import {TmxUsage} from '../client/schemas/TmxUsage'
 import {getTmxs} from '../client/services/TmxService'
 
-interface SelectedTmx extends TmxFile {
-  selected: boolean
-}
-
 export const useTmxStore = defineStore('tmx', {
   state() {
     return {
-      tmxFiles: [] as SelectedTmx[],
+      tmxFiles: [] as TmxFile[],
       tmxMode: 'newest' as TmxUsage,
+      selectedTmxFiles: [] as TmxFile[],
     }
   },
   actions: {
     async getTmx() {
-      this.tmxFiles = [] as SelectedTmx[]
-      const files = await getTmxs()
-      for (const file of files) {
-        this.tmxFiles = [
-          ...this.tmxFiles,
-          {
-            id: file.id,
-            name: file.name,
-            selected: true,
-          },
-        ]
-      }
-    },
-    selectAll() {
-      for (const tmx of this.tmxFiles) {
-        tmx.selected = true
-      }
-    },
-    selectNone() {
-      for (const tmx of this.tmxFiles) {
-        tmx.selected = false
-      }
+      this.tmxFiles = []
+      this.selectedTmxFiles = []
+      this.tmxFiles = await getTmxs()
+      this.selectedTmxFiles = this.tmxFiles
     },
   },
   getters: {
-    selectedCount(state) {
-      return state.tmxFiles.filter((tmx) => tmx.selected).length
-    },
-    totalCount(state) {
-      return state.tmxFiles.length
-    },
     selectedIds(state) {
-      return state.tmxFiles.filter((tmx) => tmx.selected).map(({id}) => id)
+      return state.selectedTmxFiles.map(({id}) => id)
     },
   },
 })
