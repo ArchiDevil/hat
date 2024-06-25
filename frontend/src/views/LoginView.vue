@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {ref} from 'vue'
-import {useRouter} from 'vue-router'
+import {useRoute, useRouter} from 'vue-router'
 import {MandeError} from 'mande'
 
 import {login} from '../client/services/AuthService'
@@ -15,6 +15,8 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const status = ref<string>()
+
+const route = useRoute()
 const router = useRouter()
 
 const authenticate = async () => {
@@ -24,8 +26,8 @@ const authenticate = async () => {
       email: email.value,
       password: password.value,
     })
-    await router.replace({
-      path: '/',
+    await router.push({
+      path: (route.query?.redirect as string) || '/',
     })
   } catch (e) {
     const err = e as MandeError
