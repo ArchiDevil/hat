@@ -1,11 +1,13 @@
 import {createApp} from 'vue'
 import {createPinia} from 'pinia'
 import {createRouter, createWebHistory} from 'vue-router'
+import {MandeError, defaults} from 'mande'
 
 import PrimeVue from 'primevue/config'
 import {definePreset} from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 
+import {useUserStore} from './stores/user'
 import App from './App.vue'
 
 const IndexView = () => import('./views/IndexView.vue')
@@ -47,6 +49,46 @@ const router = createRouter({
   routes,
 })
 
+router.beforeEach(async (to, from) => {
+  const store = useUserStore()
+
+  if (to.path === '/login/') {
+    if (store.currentUser) {
+      // redirect to home page if user is logged in
+      return '/'
+    }
+    return true
+  }
+
+  const requestInterval = 10 * 60 * 1000
+  if (
+    !store.currentUser ||
+    store.lastTimeRequested.getTime() + requestInterval < Date.now()
+  ) {
+    try {
+      await store.fetchCurrentUser()
+    } catch (e) {
+      const err = e as MandeError
+      if (err.response.status == 401) {
+        router.push({
+          path: '/login/',
+          query: {
+            redirect: to.path,
+          },
+        })
+      } else {
+        throw e
+      }
+    }
+  }
+  return true
+})
+
+if (import.meta.env.DEV) {
+  // to test is locally
+  defaults.credentials = 'include'
+}
+
 const app = createApp(App)
 app.use(pinia)
 app.use(PrimeVue, {
@@ -63,4 +105,8 @@ app.use(PrimeVue, {
 })
 
 app.use(router)
+app.config.errorHandler = (err, instance, info) => {
+  console.log('Error: ', err, '- ', info)
+  console.log(instance)
+}
 app.mount('#app')
