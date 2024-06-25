@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, UTC
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.orm import Session
 
@@ -9,24 +9,10 @@ from app import schema, models
 from app.db import get_db
 from app.settings import get_settings, Settings
 from app.security import password_hasher
+from app.routers.users import get_current_user_id
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-def check_logged_in(
-    settings: Annotated[Settings, Depends(get_settings)],
-    session: Annotated[str | None, Cookie(include_in_schema=False)] = None,
-):
-    if not session:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    serializer = URLSafeTimedSerializer(secret_key=settings.secret_key)
-    data = serializer.loads(session)
-    if "user_id" in data:
-        return
-
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 @router.post("/login")
@@ -61,7 +47,7 @@ def login(
     return models.StatusMessage(message="Logged in")
 
 
-@router.post("/logout", dependencies=[Depends(check_logged_in)])
+@router.post("/logout", dependencies=[Depends(get_current_user_id)])
 def logout(response: Response) -> models.StatusMessage:
     response.delete_cookie("session")
     return models.StatusMessage(message="Logged out")

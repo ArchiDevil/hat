@@ -21,3 +21,7 @@ export const updateUser = async (user_id: number, content: UserFields): Promise<
   const api = mande(getApiBase() + `/users/${user_id}`)
   return await api.post<StatusMessage>(content)
 }
+export const getCurrentUser = async (): Promise<User> => {
+  const api = mande(getApiBase() + `/users/current`)
+  return await api.get<User>('')
+}
