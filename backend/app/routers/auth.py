@@ -6,10 +6,10 @@ from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.orm import Session
 
 from app import schema, models
+from app.auth import has_user_role
 from app.db import get_db
 from app.settings import get_settings, Settings
 from app.security import password_hasher
-from app.routers.users import get_current_user_id
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,7 +47,7 @@ def login(
     return models.StatusMessage(message="Logged in")
 
 
-@router.post("/logout", dependencies=[Depends(get_current_user_id)])
+@router.post("/logout", dependencies=[Depends(has_user_role)])
 def logout(response: Response) -> models.StatusMessage:
     response.delete_cookie("session")
     return models.StatusMessage(message="Logged out")

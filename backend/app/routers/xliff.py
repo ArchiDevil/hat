@@ -7,13 +7,16 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import schema, models
+from app.auth import has_user_role
 from app.db import get_db
 from app.xliff import extract_xliff_content
 
 # TODO: add XLIFF segments statuses according to the specification
 
 
-router = APIRouter(prefix="/xliff", tags=["xliff"])
+router = APIRouter(
+    prefix="/xliff", tags=["xliff"], dependencies=[Depends(has_user_role)]
+)
 
 
 @router.get("/")

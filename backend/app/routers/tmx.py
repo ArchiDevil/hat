@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 
 from app import schema
+from app.auth import has_user_role
 from app.db import get_db
 from app.tmx import extract_tmx_content
 from app.models import TmxFile, TmxFileWithRecords, TmxFileRecord, StatusMessage
 
 
-router = APIRouter(prefix="/tmx", tags=["tmx"])
+router = APIRouter(prefix="/tmx", tags=["tmx"], dependencies=[Depends(has_user_role)])
 
 
 @router.get("/")

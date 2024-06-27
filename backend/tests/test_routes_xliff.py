@@ -13,7 +13,7 @@ def session():
     return get_db()
 
 
-def test_can_get_list_of_xliff_docs(fastapi_client: TestClient):
+def test_can_get_list_of_xliff_docs(user_logged_client: TestClient):
     with session() as s:
         s.add(
             schema.XliffDocument(
@@ -29,7 +29,7 @@ def test_can_get_list_of_xliff_docs(fastapi_client: TestClient):
         )
         s.commit()
 
-    response = fastapi_client.get("/xliff")
+    response = user_logged_client.get("/xliff")
     assert response.status_code == 200
     assert response.json() == [
         {"id": 1, "name": "first_doc.tmx", "status": "pending"},
@@ -37,7 +37,7 @@ def test_can_get_list_of_xliff_docs(fastapi_client: TestClient):
     ]
 
 
-def test_can_get_xliff_file(fastapi_client: TestClient):
+def test_can_get_xliff_file(user_logged_client: TestClient):
     with session() as s:
         xliff_records = [
             schema.XliffRecord(
@@ -55,7 +55,7 @@ def test_can_get_xliff_file(fastapi_client: TestClient):
         )
         s.commit()
 
-    response = fastapi_client.get("/xliff/1")
+    response = user_logged_client.get("/xliff/1")
     assert response.status_code == 200
     assert response.json() == {
         "id": 1,
@@ -64,7 +64,7 @@ def test_can_get_xliff_file(fastapi_client: TestClient):
     }
 
 
-def test_can_get_xliff_records(fastapi_client: TestClient):
+def test_can_get_xliff_records(user_logged_client: TestClient):
     with session() as s:
         xliff_records = [
             schema.XliffRecord(
@@ -82,7 +82,7 @@ def test_can_get_xliff_records(fastapi_client: TestClient):
         )
         s.commit()
 
-    response = fastapi_client.get("/xliff/1/records")
+    response = user_logged_client.get("/xliff/1/records")
     assert response.status_code == 200
     assert response.json() == [
         {
@@ -100,12 +100,12 @@ def test_can_get_xliff_records(fastapi_client: TestClient):
     ]
 
 
-async def test_returns_404_when_xliff_file_not_found(fastapi_client: TestClient):
-    response = fastapi_client.get("/xliff/1")
+async def test_returns_404_when_xliff_file_not_found(user_logged_client: TestClient):
+    response = user_logged_client.get("/xliff/1")
     assert response.status_code == 404
 
 
-def test_can_delete_xliff_doc(fastapi_client: TestClient):
+def test_can_delete_xliff_doc(user_logged_client: TestClient):
     with session() as s:
         s.add(
             schema.XliffDocument(
@@ -114,7 +114,7 @@ def test_can_delete_xliff_doc(fastapi_client: TestClient):
         )
         s.commit()
 
-    response = fastapi_client.delete("/xliff/1")
+    response = user_logged_client.delete("/xliff/1")
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
 
@@ -122,14 +122,14 @@ def test_can_delete_xliff_doc(fastapi_client: TestClient):
         assert s.query(schema.XliffDocument).count() == 0
 
 
-def test_returns_404_when_deleting_nonexistent_xliff_doc(fastapi_client: TestClient):
-    response = fastapi_client.delete("/xliff/1")
+def test_returns_404_when_deleting_nonexistent_xliff_doc(user_logged_client: TestClient):
+    response = user_logged_client.delete("/xliff/1")
     assert response.status_code == 404
 
 
-def test_upload(fastapi_client: TestClient):
+def test_upload(user_logged_client: TestClient):
     with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff", files={"file": fp})
+        response = user_logged_client.post("/xliff", files={"file": fp})
     assert response.status_code == 200
 
     with session() as s:
@@ -141,12 +141,12 @@ def test_upload(fastapi_client: TestClient):
         assert not doc.records
 
 
-def test_upload_no_file(fastapi_client: TestClient):
-    response = fastapi_client.post("/xliff/", files={})
+def test_upload_no_file(user_logged_client: TestClient):
+    response = user_logged_client.post("/xliff/", files={})
     assert response.status_code == 422
 
 
-def test_upload_removes_old_files(fastapi_client: TestClient):
+def test_upload_removes_old_files(user_logged_client: TestClient):
     with session() as s:
         s.add(
             schema.XliffDocument(
@@ -159,7 +159,7 @@ def test_upload_removes_old_files(fastapi_client: TestClient):
         s.commit()
 
     with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff/", files={"file": fp})
+        response = user_logged_client.post("/xliff/", files={"file": fp})
     assert response.status_code == 200
 
     with session() as s:
@@ -167,7 +167,7 @@ def test_upload_removes_old_files(fastapi_client: TestClient):
         assert not doc
 
 
-def test_upload_removes_only_uploaded_documents(fastapi_client: TestClient):
+def test_upload_removes_only_uploaded_documents(user_logged_client: TestClient):
     with session() as s:
         s.add(
             schema.XliffDocument(
@@ -188,7 +188,7 @@ def test_upload_removes_only_uploaded_documents(fastapi_client: TestClient):
         s.commit()
 
     with open("tests/small.xliff", "rb") as fp:
-        response = fastapi_client.post("/xliff/", files={"file": fp})
+        response = user_logged_client.post("/xliff/", files={"file": fp})
     assert response.status_code == 200
 
     with session() as s:
@@ -201,12 +201,12 @@ def test_upload_removes_only_uploaded_documents(fastapi_client: TestClient):
 
 
 def test_process_sets_document_in_pending_stage_and_creates_task(
-    fastapi_client: TestClient,
+    user_logged_client: TestClient,
 ):
     with open("tests/small.xliff", "rb") as fp:
-        fastapi_client.post("/xliff/", files={"file": fp})
+        user_logged_client.post("/xliff/", files={"file": fp})
 
-    response = fastapi_client.post(
+    response = user_logged_client.post(
         "/xliff/1/process",
         json={
             "substitute_numbers": False,
@@ -224,11 +224,11 @@ def test_process_sets_document_in_pending_stage_and_creates_task(
         assert doc.processing_status == "pending"
 
 
-def test_process_creates_task(fastapi_client: TestClient):
+def test_process_creates_task(user_logged_client: TestClient):
     with open("tests/small.xliff", "rb") as fp:
-        fastapi_client.post("/xliff/", files={"file": fp})
+        user_logged_client.post("/xliff/", files={"file": fp})
 
-    response = fastapi_client.post(
+    response = user_logged_client.post(
         "/xliff/1/process",
         json={
             "substitute_numbers": False,
@@ -259,8 +259,8 @@ def test_process_creates_task(fastapi_client: TestClient):
         }
 
 
-def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestClient):
-    response = fastapi_client.post(
+def test_returns_404_when_processing_nonexistent_xliff_doc(user_logged_client: TestClient):
+    response = user_logged_client.post(
         "/xliff/1/process",
         json={
             "substitute_numbers": False,
@@ -273,9 +273,9 @@ def test_returns_404_when_processing_nonexistent_xliff_doc(fastapi_client: TestC
     assert response.status_code == 404
 
 
-def test_download_xliff(fastapi_client: TestClient):
+def test_download_xliff(user_logged_client: TestClient):
     with open("tests/small.xliff", "rb") as fp:
-        fastapi_client.post("/xliff", files={"file": fp})
+        user_logged_client.post("/xliff", files={"file": fp})
 
     with session() as s:
         xliff_records = [
@@ -307,7 +307,7 @@ def test_download_xliff(fastapi_client: TestClient):
         s.add_all(xliff_records)
         s.commit()
 
-    response = fastapi_client.get("/xliff/1/download")
+    response = user_logged_client.get("/xliff/1/download")
     assert response.status_code == 200
 
     data = response.read().decode("utf-8")
@@ -316,6 +316,6 @@ def test_download_xliff(fastapi_client: TestClient):
     assert "Региональные эффекты" in data
 
 
-def test_download_shows_404_for_unknown_xliff(fastapi_client: TestClient):
-    response = fastapi_client.get("/xliff/1/download")
+def test_download_shows_404_for_unknown_xliff(user_logged_client: TestClient):
+    response = user_logged_client.get("/xliff/1/download")
     assert response.status_code == 404

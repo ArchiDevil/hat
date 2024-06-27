@@ -12,13 +12,13 @@ def session():
     return get_db()
 
 
-def test_can_return_list_of_tmx_docs(fastapi_client: TestClient):
+def test_can_return_list_of_tmx_docs(user_logged_client: TestClient):
     with session() as s:
         s.add(schema.TmxDocument(name="first_doc.tmx"))
         s.add(schema.TmxDocument(name="another_doc.tmx"))
         s.commit()
 
-    response = fastapi_client.get("/tmx/")
+    response = user_logged_client.get("/tmx/")
     assert response.status_code == 200
     assert response.json() == [
         {
@@ -32,7 +32,7 @@ def test_can_return_list_of_tmx_docs(fastapi_client: TestClient):
     ]
 
 
-def test_can_get_tmx_file(fastapi_client: TestClient):
+def test_can_get_tmx_file(user_logged_client: TestClient):
     tmx_records = [
         schema.TmxRecord(source="Regional Effects", target="Translation"),
         schema.TmxRecord(source="User Interface", target="UI"),
@@ -41,7 +41,7 @@ def test_can_get_tmx_file(fastapi_client: TestClient):
         s.add(schema.TmxDocument(name="test_doc.tmx", records=tmx_records))
         s.commit()
 
-    response = fastapi_client.get("/tmx/1")
+    response = user_logged_client.get("/tmx/1")
     assert response.status_code == 200
     assert response.json() == {
         "id": 1,
@@ -61,17 +61,17 @@ def test_can_get_tmx_file(fastapi_client: TestClient):
     }
 
 
-def test_returns_404_when_tmx_file_not_found(fastapi_client: TestClient):
-    response = fastapi_client.get("/tmx/1")
+def test_returns_404_when_tmx_file_not_found(user_logged_client: TestClient):
+    response = user_logged_client.get("/tmx/1")
     assert response.status_code == 404
 
 
-def test_can_delete_tmx_doc(fastapi_client: TestClient):
+def test_can_delete_tmx_doc(user_logged_client: TestClient):
     with session() as s:
         s.add(schema.TmxDocument(name="first_doc.tmx"))
         s.commit()
 
-    response = fastapi_client.delete("/tmx/1")
+    response = user_logged_client.delete("/tmx/1")
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
 
@@ -80,14 +80,14 @@ def test_can_delete_tmx_doc(fastapi_client: TestClient):
         assert doc is None
 
 
-def test_returns_404_when_deleting_nonexistent_tmx_doc(fastapi_client: TestClient):
-    response = fastapi_client.delete("/tmx/10")
+def test_returns_404_when_deleting_nonexistent_tmx_doc(user_logged_client: TestClient):
+    response = user_logged_client.delete("/tmx/10")
     assert response.status_code == 404
 
 
-def test_can_upload_tmx(fastapi_client: TestClient):
+def test_can_upload_tmx(user_logged_client: TestClient):
     with open("tests/small.tmx", "rb") as f:
-        response = fastapi_client.post(
+        response = user_logged_client.post(
             "/tmx",
             files={"file": f},
         )
@@ -103,6 +103,6 @@ def test_can_upload_tmx(fastapi_client: TestClient):
         assert doc.records[0].change_date == datetime(2022, 7, 3, 7, 59, 20)
 
 
-def test_shows_422_when_no_file_uploaded(fastapi_client: TestClient):
-    response = fastapi_client.post("/tmx")
+def test_shows_422_when_no_file_uploaded(user_logged_client: TestClient):
+    response = user_logged_client.post("/tmx")
     assert response.status_code == 422
