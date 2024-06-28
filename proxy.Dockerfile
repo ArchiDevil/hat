@@ -1,7 +1,8 @@
 FROM node:20 AS build
 COPY ./frontend /app
 WORKDIR /app
-RUN npm install && npm run build
+RUN npm install -g pnpm
+RUN pnpm install && pnpm run build
 
 FROM caddy:2.7-alpine
 COPY Caddyfile /etc/caddy/Caddyfile
