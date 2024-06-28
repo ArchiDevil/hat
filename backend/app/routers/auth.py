@@ -42,7 +42,7 @@ def login(
         secure=bool(settings.domain_name),
         domain=settings.domain_name,
         httponly=True,
-        expires=datetime.now(UTC) + timedelta(days=14),
+        expires=datetime.now(UTC) + timedelta(days=21) if data.remember else None,
     )
     return models.StatusMessage(message="Logged in")
 

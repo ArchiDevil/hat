@@ -26,11 +26,34 @@ def test_can_log_in(fastapi_client: TestClient):
         s.commit()
 
     response = fastapi_client.post(
-        "/auth/login", json={"email": "test@test.com", "password": "1234"}
+        "/auth/login",
+        json={"email": "test@test.com", "password": "1234", "remember": False},
     )
     assert response.status_code == 200
     assert response.json() == {"message": "Logged in"}
-    assert response.cookies["session"] is not None
+    assert response.cookies["session"]
+
+
+def test_can_log_in_with_remember(fastapi_client: TestClient):
+    with session() as s:
+        s.add(
+            schema.User(
+                username="test",
+                password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
+                email="test@test.com",
+                role=models.UserRole.USER.value,
+                disabled=False,
+            )
+        )
+        s.commit()
+
+    response = fastapi_client.post(
+        "/auth/login",
+        json={"email": "test@test.com", "password": "1234", "remember": True},
+    )
+    assert response.status_code == 200
+    assert response.json() == {"message": "Logged in"}
+    assert response.cookies["session"]
 
 
 @pytest.mark.parametrize("password", ["1234", ""])
@@ -50,7 +73,8 @@ def test_returns_403_for_invalid_password(
         s.commit()
 
     response = fastapi_client.post(
-        "/auth/login", json={"email": "test@test.com", "password": password}
+        "/auth/login",
+        json={"email": "test@test.com", "password": password, "remember": False},
     )
     assert response.status_code == 401
 
@@ -78,7 +102,8 @@ def test_returns_403_for_disabled(fastapi_client: TestClient):
         s.commit()
 
     response = fastapi_client.post(
-        "/auth/login", json={"email": "some_test@test.com", "password": "1234"}
+        "/auth/login",
+        json={"email": "some_test@test.com", "password": "1234", "remember": False},
     )
     assert response.status_code == 403
 
@@ -97,7 +122,8 @@ def test_can_logout(fastapi_client: TestClient):
         s.commit()
 
     fastapi_client.post(
-        "/auth/login", json={"email": "test@test.com", "password": "1234"}
+        "/auth/login",
+        json={"email": "test@test.com", "password": "1234", "remember": False},
     )
 
     response = fastapi_client.post("/auth/logout")

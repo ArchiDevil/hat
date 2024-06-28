@@ -53,7 +53,8 @@ def user_logged_client(fastapi_client: TestClient):
         s.commit()
 
     fastapi_client.post(
-        "/auth/login", json={"email": "test@test.com", "password": "1234"}
+        "/auth/login",
+        json={"email": "test@test.com", "password": "1234", "remember": False},
     )
 
     yield fastapi_client

@@ -97,3 +97,4 @@ class User(Identified, UserFields):
 class AuthFields(BaseModel):
     email: str = Field(pattern=r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
     password: str
+    remember: bool
