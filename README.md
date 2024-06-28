@@ -100,10 +100,19 @@ To do this copy `.env.example` to `.env` and fill in all needed variables.
 Also you have to adjust `alembic.ini` file to match your database settings. It
 is located in `backend` directory.
 
-To run production version of the tool you need to use `docker compose`:
+To run production version of the tool you need to use `docker-compose`:
 
 ```bash
 docker-compose up -d --build
+```
+
+You can have two separate `.env` files for local testing and for production
+deployment. To do this make two copies of `.env.template` with different names:
+`.env-local` for local testing and `.env-prod` for production and specify
+which file to use by setting `--env-file` parameter when running docker-compose.
+
+```bash
+docker-compose --env-file .env.prod up -d --build
 ```
 
 This will build all needed images and run services in detached mode. Please
