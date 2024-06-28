@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import {reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {MandeError} from 'mande'
 
@@ -10,9 +10,14 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 
 import PageTitle from '../components/PageTitle.vue'
+import Checkbox from 'primevue/checkbox'
+import {AuthFields} from '../client/schemas/AuthFields'
 
-const email = ref('')
-const password = ref('')
+const fields = reactive<AuthFields>({
+  email: '',
+  password: '',
+  remember: false,
+})
 const loading = ref(false)
 const status = ref<string>()
 
@@ -23,8 +28,9 @@ const authenticate = async () => {
   try {
     loading.value = true
     await login({
-      email: email.value,
-      password: password.value,
+      email: fields.email,
+      password: fields.password,
+      remember: fields.remember,
     })
     await router.push({
       path: (route.query?.redirect as string) || '/',
@@ -48,7 +54,7 @@ const authenticate = async () => {
 
 <template>
   <div
-    class="max-w-96 flex flex-col gap-2 border-2 shadow-lg rounded px-4 mt-4 pb-8 mx-auto"
+    class="max-w-96 flex flex-col gap-4 border-2 shadow-lg rounded px-4 mt-4 pb-8 mx-auto"
   >
     <PageTitle
       title="Login"
@@ -57,21 +63,34 @@ const authenticate = async () => {
     <div class="flex flex-col gap-2">
       <label class="text-color">Email</label>
       <InputText
-        v-model="email"
+        v-model="fields.email"
         :disabled="loading"
       />
     </div>
     <div class="flex flex-col gap-2">
       <label class="text-color">Password</label>
       <Password
-        v-model="password"
+        v-model="fields.password"
         inputClass="w-full"
         :disabled="loading"
         :feedback="false"
       />
     </div>
+    <div class="flex flex-row items-center gap-2">
+      <Checkbox
+        id="remember"
+        v-model="fields.remember"
+        :disabled="loading"
+        :binary="true"
+      />
+      <label
+        class="text-color"
+        @click="fields.remember = !fields.remember"
+      >
+        Remember me
+      </label>
+    </div>
     <Button
-      class="mt-4"
       label="Login"
       @click="authenticate"
       :disabled="loading"
