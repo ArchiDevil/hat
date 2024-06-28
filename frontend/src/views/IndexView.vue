@@ -12,8 +12,6 @@ import File from '../components/File.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 import XliffUploadingDialog from '../components/XliffUploadingDialog.vue'
 import SupportLinks from '../components/SupportLinks.vue'
-import PageTitle from '../components/PageTitle.vue'
-import RoutingLink from '../components/RoutingLink.vue'
 
 const tmxDocs = ref<TmxFile[]>([])
 const xliffDocs = ref<XliffFile[]>([])
@@ -34,24 +32,6 @@ onMounted(async () => {
 
 <template>
   <div>
-    <div class="flex items-baseline">
-      <PageTitle
-        class="flex-grow"
-        title="Human Assisted Translation project"
-      />
-      <div class="pt-8">
-        <RoutingLink
-          class="mx-2 uppercase font-semibold"
-          href="/"
-          >Home</RoutingLink
-        >
-        <RoutingLink
-          class="mx-2 uppercase font-semibold"
-          href="/users/"
-          >Users</RoutingLink
-        >
-      </div>
-    </div>
     <Panel
       class="w-1/2 border rounded bg-red-50 px-4 mt-4"
       header="Warning"
