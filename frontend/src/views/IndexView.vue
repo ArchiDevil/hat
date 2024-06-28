@@ -34,7 +34,8 @@ onMounted(async () => {
   <div>
     <Panel
       class="w-1/2 border rounded bg-red-50 px-4 mt-4"
-      header="Warning"
+      header="Warning!"
+      toggleable
     >
       <p>
         The tool is currently in a testing phase. Please, be ready to sudden
