@@ -48,7 +48,8 @@ const deleteFile = async () => {
     </div>
     <RoutingLink
       class="ml-2"
-      :href="`${type}/${file.id}`"
+      :name="type"
+      :params="{id: file.id}"
       :disabled="busy"
     >
       Open

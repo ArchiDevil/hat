@@ -74,7 +74,9 @@ onMounted(async () => {
     >
       <XliffUploadingDialog
         title="Select a XLIFF file:"
-        @processed="(fileId) => $router.push(`/xliff/${fileId}`)"
+        @processed="
+          (fileId) => $router.push({name: 'xliff', params: {id: fileId}})
+        "
       />
       <File
         v-for="file in xliffDocs"

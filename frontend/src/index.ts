@@ -1,6 +1,6 @@
 import {createApp} from 'vue'
 import {createPinia} from 'pinia'
-import {createRouter, createWebHistory} from 'vue-router'
+import {RouteRecordRaw, createRouter, createWebHistory} from 'vue-router'
 import {MandeError, defaults} from 'mande'
 
 import PrimeVue from 'primevue/config'
@@ -36,12 +36,12 @@ const themePreset = definePreset(Aura, {
 
 const pinia = createPinia()
 
-const routes = [
-  {path: '/', component: IndexView},
-  {path: '/tmx/:id', component: TmxView},
-  {path: '/xliff/:id', component: XliffView},
-  {path: '/users/', component: UsersView},
-  {path: '/login/', component: LoginView},
+const routes: RouteRecordRaw[] = [
+  {path: '/', name: 'home', component: IndexView},
+  {path: '/tmx/:id', name: 'tmx', component: TmxView},
+  {path: '/xliff/:id', name: 'xliff', component: XliffView},
+  {path: '/users/', name: 'users', component: UsersView},
+  {path: '/login/', name: 'login', component: LoginView},
 ]
 
 const router = createRouter({
@@ -52,10 +52,10 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
   const store = useUserStore()
 
-  if (to.path === '/login/') {
+  if (to.name === 'login') {
     if (store.currentUser) {
       // redirect to home page if user is logged in
-      return '/'
+      return {name: 'home'}
     }
     return true
   }
@@ -71,7 +71,7 @@ router.beforeEach(async (to, from) => {
       const err = e as MandeError
       if (err.response.status == 401) {
         router.push({
-          path: '/login/',
+          name: 'login',
           query: {
             redirect: to.path,
           },
@@ -81,6 +81,7 @@ router.beforeEach(async (to, from) => {
       }
     }
   }
+
   return true
 })
 

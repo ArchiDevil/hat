@@ -1,13 +1,17 @@
 <script setup lang="ts">
+import {RouteParamsRaw} from 'vue-router'
+
 defineProps<{
-  href: string
+  name: string
+  params?: RouteParamsRaw
 }>()
 </script>
 
 <template>
   <router-link
-    :to="href"
-    class="decoration-slate-900 transition-colors underline decoration-1 hover:decoration-2">
+    :to="{name: name, params: params}"
+    class="decoration-slate-900 transition-colors underline decoration-1 hover:decoration-2"
+  >
     <slot></slot>
   </router-link>
 </template>
