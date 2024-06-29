@@ -5,11 +5,14 @@ Revises: ab1574d1a1da
 Create Date: 2023-12-07 00:56:49.742016
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 
+
+# pylint: disable=E1101
 
 # revision identifiers, used by Alembic.
 revision: str = "d2f116d3976e"

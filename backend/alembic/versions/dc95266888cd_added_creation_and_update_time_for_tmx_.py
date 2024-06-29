@@ -12,8 +12,8 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-# pylint: disable=E1101
 
+# pylint: disable=E1101
 
 # revision identifiers, used by Alembic.
 revision: str = "dc95266888cd"

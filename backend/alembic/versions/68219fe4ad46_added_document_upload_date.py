@@ -12,6 +12,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
+# pylint: disable=E1101
+
 # revision identifiers, used by Alembic.
 revision: str = "68219fe4ad46"
 down_revision: Union[str, None] = "f83699ff2dd0"
