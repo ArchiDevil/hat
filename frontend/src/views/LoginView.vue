@@ -36,15 +36,13 @@ const authenticate = async () => {
       path: (route.query?.redirect as string) || '/',
     })
   } catch (e) {
-    const err = e as MandeError
-    console.error(err.message)
-    const statusCode = err.response?.status
-    if (statusCode == 401) {
-      status.value = 'Invalid email or password'
-    } else if (statusCode == 422) {
+    const statusCode = (e as MandeError).response?.status
+    if (statusCode == 401 || statusCode == 402) {
       status.value = 'Invalid email or password'
     } else if (statusCode == 503) {
       status.value = 'Service unavailable, try again later.'
+    } else {
+      throw e
     }
   } finally {
     loading.value = false

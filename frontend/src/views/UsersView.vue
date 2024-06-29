@@ -12,6 +12,9 @@ import PageTitle from '../components/PageTitle.vue'
 import UserAddDialog from '../components/UserAddDialog.vue'
 import UserEditDialog from '../components/UserEditDialog.vue'
 
+// TODO: create/edit dialogs might be implemented using router instead like its
+// done now
+
 const users = ref<User[]>()
 const mode = ref<'table' | 'add' | 'edit'>('table')
 const currentUser = ref<User>()
@@ -50,19 +53,19 @@ onMounted(async () => {
         <Column
           field="id"
           header="Id"
-        ></Column>
+        />
         <Column
           field="username"
           header="Username"
-        ></Column>
+        />
         <Column
           field="email"
           header="Email"
-        ></Column>
+        />
         <Column
           field="role"
           header="Role"
-        ></Column>
+        />
         <Column
           field="disabled"
           header="Disabled?"

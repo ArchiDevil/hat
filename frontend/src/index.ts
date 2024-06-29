@@ -86,7 +86,7 @@ router.beforeEach(async (to, from) => {
 })
 
 if (import.meta.env.DEV) {
-  // to test is locally
+  // to test it locally
   defaults.credentials = 'include'
 }
 
@@ -107,6 +107,7 @@ app.use(PrimeVue, {
 
 app.use(router)
 app.config.errorHandler = (err, instance, info) => {
+  // TODO: add some kind of a monitoring system like sentry
   console.log('Error: ', err, '- ', info)
   console.log(instance)
 }

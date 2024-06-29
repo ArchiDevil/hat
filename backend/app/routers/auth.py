@@ -34,8 +34,6 @@ def login(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     serializer = URLSafeTimedSerializer(secret_key=settings.secret_key)
-    # TODO: would be nice to have "permanent" option for the session
-    # TODO: check that it works properly with a domain name
     response.set_cookie(
         "session",
         serializer.dumps({"user_id": user.id}),
