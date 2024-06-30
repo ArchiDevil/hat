@@ -14,10 +14,12 @@ class TmxDocument(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
+    created_by: Mapped[str] = mapped_column(ForeignKey("user.id"))
 
     records: Mapped[list["TmxRecord"]] = relationship(
         back_populates="document", cascade="all, delete-orphan", order_by="TmxRecord.id"
     )
+    user: Mapped["User"] = relationship(back_populates="tmxs")
 
 
 class TmxRecord(Base):
@@ -38,6 +40,7 @@ class XliffDocument(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
+    created_by: Mapped[str] = mapped_column(ForeignKey("user.id"))
     original_document: Mapped[str] = mapped_column()
     processing_status: Mapped[str] = mapped_column()
     upload_time: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
@@ -47,6 +50,7 @@ class XliffDocument(Base):
         cascade="all, delete-orphan",
         order_by="XliffRecord.id",
     )
+    user: Mapped["User"] = relationship(back_populates="xliffs")
 
 
 class XliffRecord(Base):
@@ -78,3 +82,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     role: Mapped[str] = mapped_column(default="user")
     disabled: Mapped[bool] = mapped_column(default=False)
+
+    tmxs: Mapped[list["TmxDocument"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", order_by="TmxDocument.id"
+    )
+    xliffs: Mapped[list["XliffDocument"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", order_by="XliffDocument.id"
+    )
