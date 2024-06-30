@@ -14,7 +14,7 @@ class TmxDocument(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
-    created_by: Mapped[str] = mapped_column(ForeignKey("user.id"))
+    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
     records: Mapped[list["TmxRecord"]] = relationship(
         back_populates="document", cascade="all, delete-orphan", order_by="TmxRecord.id"
@@ -40,7 +40,7 @@ class XliffDocument(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column()
-    created_by: Mapped[str] = mapped_column(ForeignKey("user.id"))
+    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     original_document: Mapped[str] = mapped_column()
     processing_status: Mapped[str] = mapped_column()
     upload_time: Mapped[datetime] = mapped_column(default=datetime.now(UTC))

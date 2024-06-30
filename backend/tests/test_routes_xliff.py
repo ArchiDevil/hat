@@ -38,8 +38,8 @@ def test_can_get_list_of_xliff_docs(user_logged_client: TestClient):
     response = user_logged_client.get("/xliff")
     assert response.status_code == 200
     assert response.json() == [
-        {"id": 1, "name": "first_doc.tmx", "status": "pending"},
-        {"id": 2, "name": "another_doc.tmx", "status": "processing"},
+        {"id": 1, "name": "first_doc.tmx", "status": "pending", "created_by": 1},
+        {"id": 2, "name": "another_doc.tmx", "status": "processing", "created_by": 1},
     ]
 
 
@@ -68,6 +68,7 @@ def test_can_get_xliff_file(user_logged_client: TestClient):
         "id": 1,
         "name": "test_doc.xliff",
         "status": "pending",
+        "created_by": 1,
     }
 
 

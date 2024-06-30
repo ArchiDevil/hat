@@ -5,5 +5,6 @@ import {TmxFileRecord} from './TmxFileRecord'
 export interface TmxFileWithRecords {
   id: number
   name: string
+  created_by: number
   records: TmxFileRecord[]
 }

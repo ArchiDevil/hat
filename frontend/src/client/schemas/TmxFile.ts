@@ -3,4 +3,5 @@
 export interface TmxFile {
   id: number
   name: string
+  created_by: number
 }

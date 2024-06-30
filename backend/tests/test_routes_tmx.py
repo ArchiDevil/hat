@@ -26,10 +26,12 @@ def test_can_return_list_of_tmx_docs(user_logged_client: TestClient):
         {
             "id": 1,
             "name": "first_doc.tmx",
+            "created_by": 1,
         },
         {
             "id": 2,
             "name": "another_doc.tmx",
+            "created_by": 1,
         },
     ]
 
@@ -50,6 +52,7 @@ def test_can_get_tmx_file(user_logged_client: TestClient):
     assert response.json() == {
         "id": 1,
         "name": "test_doc.tmx",
+        "created_by": 1,
         "records": [
             {
                 "id": 1,

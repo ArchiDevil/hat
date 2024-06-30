@@ -6,4 +6,5 @@ export interface XliffFile {
   id: number
   name: string
   status: DocumentStatus
+  created_by: number
 }

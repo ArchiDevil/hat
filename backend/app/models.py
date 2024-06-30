@@ -33,6 +33,7 @@ class Identified(BaseModel):
 
 class TmxFile(Identified):
     name: str
+    created_by: int
 
 
 class TmxFileRecord(Identified):
@@ -47,6 +48,7 @@ class TmxFileWithRecords(TmxFile):
 class XliffFile(Identified):
     name: str
     status: DocumentStatus
+    created_by: int
 
 
 class XliffFileRecord(Identified):

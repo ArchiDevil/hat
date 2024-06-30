@@ -32,6 +32,7 @@ def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[models.XliffFile
             id=xliff.id,
             name=xliff.name,
             status=models.DocumentStatus(xliff.processing_status),
+            created_by=xliff.created_by,
         )
         for xliff in xliffs
     ]
@@ -51,6 +52,7 @@ def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> models.Xl
         id=doc.id,
         name=doc.name,
         status=models.DocumentStatus(doc.processing_status),
+        created_by=doc.created_by,
     )
 
 
@@ -134,6 +136,7 @@ async def create_xliff(
         id=new_doc.id,
         name=new_doc.name,
         status=models.DocumentStatus(new_doc.processing_status),
+        created_by=new_doc.created_by,
     )
 
 

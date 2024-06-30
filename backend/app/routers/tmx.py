@@ -16,7 +16,9 @@ router = APIRouter(prefix="/tmx", tags=["tmx"], dependencies=[Depends(has_user_r
 @router.get("/")
 def get_tmxs(db: Annotated[Session, Depends(get_db)]) -> list[TmxFile]:
     docs = db.query(schema.TmxDocument).order_by(schema.TmxDocument.id).all()
-    return [TmxFile(id=doc.id, name=doc.name) for doc in docs]
+    return [
+        TmxFile(id=doc.id, name=doc.name, created_by=doc.created_by) for doc in docs
+    ]
 
 
 @router.get("/{tmx_id}")
@@ -30,6 +32,7 @@ def get_tmx(tmx_id: int, db: Annotated[Session, Depends(get_db)]) -> TmxFileWith
     return TmxFileWithRecords(
         id=doc.id,
         name=doc.name,
+        created_by=doc.created_by,
         records=[
             TmxFileRecord(id=record.id, source=record.source, target=record.target)
             for record in doc.records
@@ -70,7 +73,7 @@ async def create_tmx(
     )
     assert new_doc
 
-    return TmxFile(id=new_doc.id, name=new_doc.name)
+    return TmxFile(id=new_doc.id, name=new_doc.name, created_by=doc.created_by)
 
 
 @router.delete("/{tmx_id}")
