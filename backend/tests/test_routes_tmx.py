@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 from app import schema
 from app.db import get_db
 
+# pylint: disable=C0116
+
 
 @contextmanager
 def session():
@@ -14,8 +16,8 @@ def session():
 
 def test_can_return_list_of_tmx_docs(user_logged_client: TestClient):
     with session() as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx"))
-        s.add(schema.TmxDocument(name="another_doc.tmx"))
+        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
+        s.add(schema.TmxDocument(name="another_doc.tmx", created_by=1))
         s.commit()
 
     response = user_logged_client.get("/tmx/")
@@ -38,7 +40,9 @@ def test_can_get_tmx_file(user_logged_client: TestClient):
         schema.TmxRecord(source="User Interface", target="UI"),
     ]
     with session() as s:
-        s.add(schema.TmxDocument(name="test_doc.tmx", records=tmx_records))
+        s.add(
+            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
+        )
         s.commit()
 
     response = user_logged_client.get("/tmx/1")
@@ -68,7 +72,7 @@ def test_returns_404_when_tmx_file_not_found(user_logged_client: TestClient):
 
 def test_can_delete_tmx_doc(user_logged_client: TestClient):
     with session() as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx"))
+        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
         s.commit()
 
     response = user_logged_client.delete("/tmx/1")
@@ -97,6 +101,7 @@ def test_can_upload_tmx(user_logged_client: TestClient):
         doc = s.query(schema.TmxDocument).filter_by(id=1).first()
         assert doc
         assert doc.name == "small.tmx"
+        assert doc.created_by == 1
         assert len(doc.records) == 1
         assert "Handbook" in doc.records[0].source
         assert doc.records[0].creation_date == datetime(2022, 7, 3, 7, 59, 19)

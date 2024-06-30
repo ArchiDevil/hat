@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 
 from app import schema
-from app.auth import has_user_role
+from app.auth import has_user_role, get_current_user_id
 from app.db import get_db
 from app.tmx import extract_tmx_content
 from app.models import TmxFile, TmxFileWithRecords, TmxFileRecord, StatusMessage
@@ -39,13 +39,18 @@ def get_tmx(tmx_id: int, db: Annotated[Session, Depends(get_db)]) -> TmxFileWith
 
 @router.post("/")
 async def create_tmx(
-    file: Annotated[UploadFile, File()], db: Annotated[Session, Depends(get_db)]
+    file: Annotated[UploadFile, File()],
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> TmxFile:
     name = file.filename
     tmx_data = await file.read()
     segments = extract_tmx_content(tmx_data)
 
-    doc = schema.TmxDocument(name=name)
+    doc = schema.TmxDocument(
+        name=name,
+        created_by=current_user,
+    )
     db.add(doc)
     db.commit()
 

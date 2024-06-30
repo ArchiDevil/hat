@@ -6,6 +6,8 @@ import pytest
 from app import schema, models
 from app.db import get_db
 
+# pylint: disable=C0116
+
 
 @contextmanager
 def session():

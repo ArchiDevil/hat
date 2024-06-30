@@ -5,6 +5,8 @@ import requests
 from app.translators import yandex
 from app.models import MachineTranslationSettings
 
+# pylint: disable=C0116
+
 
 def test_can_iterate_batches():
     lines = [f"line{i}" for i in range(2048)]

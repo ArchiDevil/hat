@@ -8,6 +8,8 @@ import pytest
 from app import create_app, db, schema, models
 from app.db import init_connection, get_db
 
+# pylint: disable=C0116
+
 
 @contextmanager
 def session():
@@ -47,6 +49,15 @@ def user_logged_client(fastapi_client: TestClient):
                 password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
                 email="test@test.com",
                 role=models.UserRole.USER.value,
+                disabled=False,
+            )
+        )
+        s.add(
+            schema.User(
+                username="test-admin",
+                password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
+                email="admin@test.com",
+                role=models.UserRole.ADMIN.value,
                 disabled=False,
             )
         )

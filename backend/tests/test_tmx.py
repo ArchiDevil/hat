@@ -2,6 +2,8 @@ from datetime import datetime
 
 from app.tmx import extract_tmx_content
 
+# pylint: disable=C0116
+
 
 def test_can_load_simplest_tmx_1_1():
     content = """

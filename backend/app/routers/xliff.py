@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import schema, models
-from app.auth import has_user_role
+from app.auth import has_user_role, get_current_user_id
 from app.db import get_db
 from app.xliff import extract_xliff_content
 
@@ -96,7 +96,9 @@ def delete_xliff(
 
 @router.post("/")
 async def create_xliff(
-    file: Annotated[UploadFile, File()], db: Annotated[Session, Depends(get_db)]
+    file: Annotated[UploadFile, File()],
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> models.XliffFile:
     cutoff_date = datetime.now() - timedelta(days=1)
 
@@ -120,6 +122,7 @@ async def create_xliff(
         original_document=original_document,
         processing_status=models.DocumentStatus.UPLOADED.value,
         upload_time=datetime.now(),
+        created_by=current_user,
     )
     db.add(doc)
     db.commit()

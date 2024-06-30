@@ -11,6 +11,8 @@ from app.db import get_db, init_connection
 
 from worker import process_task
 
+# pylint: disable=C0116
+
 
 @pytest.fixture(autouse=True, scope="function")
 def connection():
@@ -40,7 +42,7 @@ def test_process_task_sets_records():
         tmx_records = [
             schema.TmxRecord(source="Regional Effects", target="Translation")
         ]
-        session.add(schema.TmxDocument(name="test", records=tmx_records))
+        session.add(schema.TmxDocument(name="test", records=tmx_records, created_by=1))
         session.commit()
 
         session.add(
@@ -49,6 +51,7 @@ def test_process_task_sets_records():
                 original_document=file_data,
                 processing_status=models.DocumentStatus.PENDING.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
 
@@ -112,13 +115,17 @@ def test_process_task_uses_correct_tmx_ids():
     with get_session() as session:
         tmx_records_1 = [
             schema.TmxRecord(source="Regional Effects", target="Translation"),
-            schema.TmxRecord(source="Test", target="Segment")
+            schema.TmxRecord(source="Test", target="Segment"),
         ]
         tmx_records_2 = [
             schema.TmxRecord(source="Regional Effects", target="Another translation")
         ]
-        session.add(schema.TmxDocument(name="test1", records=tmx_records_1))
-        session.add(schema.TmxDocument(name="test2", records=tmx_records_2))
+        session.add(
+            schema.TmxDocument(name="test1", records=tmx_records_1, created_by=1)
+        )
+        session.add(
+            schema.TmxDocument(name="test2", records=tmx_records_2, created_by=1)
+        )
         session.commit()
 
         session.add(
@@ -127,6 +134,7 @@ def test_process_task_uses_correct_tmx_ids():
                 original_document=file_data,
                 processing_status=models.DocumentStatus.PENDING.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
 
@@ -190,8 +198,12 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str):
                 change_date=datetime(2021, 1, 1, 0, 0, 0),
             )
         ]
-        session.add(schema.TmxDocument(name="test1", records=tmx_records_1))
-        session.add(schema.TmxDocument(name="test2", records=tmx_records_2))
+        session.add(
+            schema.TmxDocument(name="test1", records=tmx_records_1, created_by=1)
+        )
+        session.add(
+            schema.TmxDocument(name="test2", records=tmx_records_2, created_by=1)
+        )
         session.commit()
 
         session.add(
@@ -200,6 +212,7 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str):
                 original_document=file_data,
                 processing_status=models.DocumentStatus.PENDING.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
 
@@ -239,7 +252,7 @@ def test_process_task_substitutes_numbers():
 
     with get_session() as session:
         tmx_records = []
-        session.add(schema.TmxDocument(name="test", records=tmx_records))
+        session.add(schema.TmxDocument(name="test", records=tmx_records, created_by=1))
         session.commit()
 
         session.add(
@@ -248,6 +261,7 @@ def test_process_task_substitutes_numbers():
                 original_document=file_data,
                 processing_status=models.DocumentStatus.PENDING.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
 
@@ -362,6 +376,7 @@ def test_process_task_puts_doc_in_error_state(monkeypatch):
                 original_document=file_data,
                 processing_status=models.DocumentStatus.PENDING.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
 

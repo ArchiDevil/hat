@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from app import schema, models
 from app.db import get_db
 
+# pylint: disable=C0116
+
 
 @contextmanager
 def session():
@@ -17,7 +19,10 @@ def test_can_get_list_of_xliff_docs(user_logged_client: TestClient):
     with session() as s:
         s.add(
             schema.XliffDocument(
-                name="first_doc.tmx", original_document="", processing_status="pending"
+                name="first_doc.tmx",
+                original_document="",
+                processing_status="pending",
+                created_by=1,
             )
         )
         s.add(
@@ -25,6 +30,7 @@ def test_can_get_list_of_xliff_docs(user_logged_client: TestClient):
                 name="another_doc.tmx",
                 original_document="",
                 processing_status="processing",
+                created_by=1,
             )
         )
         s.commit()
@@ -51,6 +57,7 @@ def test_can_get_xliff_file(user_logged_client: TestClient):
                 original_document="Something",
                 records=xliff_records,
                 processing_status="pending",
+                created_by=1,
             )
         )
         s.commit()
@@ -78,6 +85,7 @@ def test_can_get_xliff_records(user_logged_client: TestClient):
                 original_document="Something",
                 records=xliff_records,
                 processing_status="pending",
+                created_by=1,
             )
         )
         s.commit()
@@ -109,7 +117,10 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient):
     with session() as s:
         s.add(
             schema.XliffDocument(
-                name="first_doc.tmx", original_document="", processing_status="waiting"
+                name="first_doc.tmx",
+                original_document="",
+                processing_status="waiting",
+                created_by=1,
             )
         )
         s.commit()
@@ -122,7 +133,9 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient):
         assert s.query(schema.XliffDocument).count() == 0
 
 
-def test_returns_404_when_deleting_nonexistent_xliff_doc(user_logged_client: TestClient):
+def test_returns_404_when_deleting_nonexistent_xliff_doc(
+    user_logged_client: TestClient,
+):
     response = user_logged_client.delete("/xliff/1")
     assert response.status_code == 404
 
@@ -136,6 +149,7 @@ def test_upload(user_logged_client: TestClient):
         doc = s.query(schema.XliffDocument).filter_by(id=1).first()
         assert doc is not None
         assert doc.name == "small.xliff"
+        assert doc.created_by == 1
         assert doc.processing_status == "uploaded"
         assert doc.original_document.startswith("<?xml version=")
         assert not doc.records
@@ -154,6 +168,7 @@ def test_upload_removes_old_files(user_logged_client: TestClient):
                 original_document="",
                 processing_status=models.DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
         s.commit()
@@ -175,6 +190,7 @@ def test_upload_removes_only_uploaded_documents(user_logged_client: TestClient):
                 original_document="",
                 processing_status=models.DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
         s.add(
@@ -183,6 +199,7 @@ def test_upload_removes_only_uploaded_documents(user_logged_client: TestClient):
                 original_document="",
                 processing_status=models.DocumentStatus.DONE.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
+                created_by=1,
             )
         )
         s.commit()
@@ -259,7 +276,9 @@ def test_process_creates_task(user_logged_client: TestClient):
         }
 
 
-def test_returns_404_when_processing_nonexistent_xliff_doc(user_logged_client: TestClient):
+def test_returns_404_when_processing_nonexistent_xliff_doc(
+    user_logged_client: TestClient,
+):
     response = user_logged_client.post(
         "/xliff/1/process",
         json={

@@ -1,5 +1,7 @@
 from app.xliff import extract_xliff_content
 
+# pylint: disable=C0116
+
 
 def test_can_parse_simple_xliff():
     content = """
