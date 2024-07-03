@@ -4,14 +4,15 @@ import {useRoute, useRouter} from 'vue-router'
 import {MandeError} from 'mande'
 
 import {login} from '../client/services/AuthService'
+import {AuthFields} from '../client/schemas/AuthFields'
 
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import Panel from 'primevue/panel'
 
 import PageTitle from '../components/PageTitle.vue'
-import Checkbox from 'primevue/checkbox'
-import {AuthFields} from '../client/schemas/AuthFields'
 
 const fields = reactive<AuthFields>({
   email: '',
@@ -58,6 +59,29 @@ const authenticate = async () => {
       title="Login"
       class="text-center text-color"
     />
+    <Panel header="Information">
+      <p>
+        Currently, the access to the website is limited. To apply for access,
+        write a message to the
+        <a
+          class="underline"
+          href="https://t.me/archidevil"
+          >administration</a
+        >. It will be opened to the public in the future.
+      </p>
+      <p class="mt-2">
+        <span class="text-red-700"
+          >There is no way to restore a password right now!</span
+        >
+        Make sure you've saved it in a safe place after you've got an access. If
+        you lost it, contact the
+        <a
+          class="underline"
+          href="https://t.me/archidevil"
+          >administration</a
+        >.
+      </p>
+    </Panel>
     <div class="flex flex-col gap-2">
       <label class="text-color">Email</label>
       <InputText
