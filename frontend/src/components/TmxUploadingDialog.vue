@@ -52,7 +52,7 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
       </template>
       <template #empty>
         <span v-if="!status">
-          Choose or drag and drop TMX file to upload.
+          Choose TMX file to upload.
         </span>
       </template>
     </FileUpload>

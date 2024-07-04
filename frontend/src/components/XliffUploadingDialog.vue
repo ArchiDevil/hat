@@ -112,7 +112,7 @@ onMounted(async () => {
               placeholder="Select TMX files to use"
               :options="tmxStore.tmxFiles"
               optionLabel="name"
-              :filter="false"
+              filter
               filterPlaceholder="Search TMX files..."
             />
           </div>
@@ -202,7 +202,7 @@ onMounted(async () => {
       </template>
       <template #empty
         ><span v-if="!status">
-          Choose or drag and drop XLIFF file to upload
+          Choose XLIFF file to upload.
         </span>
       </template>
     </FileUpload>
