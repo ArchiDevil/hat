@@ -41,10 +41,6 @@ class TmxFileRecord(Identified):
     target: str
 
 
-class TmxFileWithRecords(TmxFile):
-    records: list[TmxFileRecord]
-
-
 class XliffFile(Identified):
     name: str
     status: DocumentStatus
@@ -55,10 +51,6 @@ class XliffFileRecord(Identified):
     segment_id: int
     source: str
     target: str
-
-
-class XliffFileWithRecords(XliffFile):
-    records: list[XliffFileRecord]
 
 
 class MachineTranslationSettings(BaseModel):

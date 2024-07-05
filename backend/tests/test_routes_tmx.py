@@ -53,19 +53,76 @@ def test_can_get_tmx_file(user_logged_client: TestClient):
         "id": 1,
         "name": "test_doc.tmx",
         "created_by": 1,
-        "records": [
-            {
-                "id": 1,
-                "source": "Regional Effects",
-                "target": "Translation",
-            },
-            {
-                "id": 2,
-                "source": "User Interface",
-                "target": "UI",
-            },
-        ],
     }
+
+
+def test_can_get_tmx_records(user_logged_client: TestClient):
+    tmx_records = [
+        schema.TmxRecord(source="Regional Effects", target="Translation"),
+        schema.TmxRecord(source="User Interface", target="UI"),
+    ]
+    with session() as s:
+        s.add(
+            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
+        )
+        s.commit()
+
+    with session() as s:
+        docs = s.query(schema.TmxDocument).all()
+        assert len(docs) == 1
+
+    response = user_logged_client.get("/tmx/1/records")
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": 1, "source": "Regional Effects", "target": "Translation"},
+        {"id": 2, "source": "User Interface", "target": "UI"},
+    ]
+
+
+def test_can_get_tmx_records_with_page(user_logged_client: TestClient):
+    tmx_records = [
+        schema.TmxRecord(source=f"line{x}", target=f"line{x}") for x in range(150)
+    ]
+    with session() as s:
+        s.add(
+            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
+        )
+        s.commit()
+
+    with session() as s:
+        docs = s.query(schema.TmxDocument).all()
+        assert len(docs) == 1
+
+    response = user_logged_client.get("/tmx/1/records", params={"page": "2"})
+    assert response.status_code == 200
+    assert len(response.json()) == 50
+    assert response.json()[0] == {"id": 101, "source": "line100", "target": "line100"}
+
+
+def test_tmx_records_are_empty_for_too_large_page(user_logged_client: TestClient):
+    tmx_records = [
+        schema.TmxRecord(source=f"line{x}", target=f"line{x}") for x in range(150)
+    ]
+    with session() as s:
+        s.add(
+            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
+        )
+        s.commit()
+
+    with session() as s:
+        docs = s.query(schema.TmxDocument).all()
+        assert len(docs) == 1
+
+    response = user_logged_client.get("/tmx/1/records", params={"page": "20"})
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_tmx_records_returns_404_for_nonexistent_document(
+    user_logged_client: TestClient,
+):
+    response = user_logged_client.get("/tmx/1/records", params={"page": "2"})
+    assert response.status_code == 404
 
 
 def test_returns_404_when_tmx_file_not_found(user_logged_client: TestClient):

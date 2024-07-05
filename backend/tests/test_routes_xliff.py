@@ -109,6 +109,65 @@ def test_can_get_xliff_records(user_logged_client: TestClient):
     ]
 
 
+def test_xliff_records_returns_second_page(user_logged_client: TestClient):
+    with session() as s:
+        xliff_records = [
+            schema.XliffRecord(segment_id=i, source=f"line{i}", target=f"line{i}")
+            for i in range(150)
+        ]
+
+        s.add(
+            schema.XliffDocument(
+                name="test_doc.xliff",
+                original_document="Something",
+                records=xliff_records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get("/xliff/1/records", params={"page": "2"})
+    assert response.status_code == 200
+    assert len(response.json()) == 50
+    assert response.json()[0] == {
+        "id": 101,
+        "segment_id": 100,
+        "source": "line100",
+        "target": "line100",
+    }
+
+
+def test_xliff_records_returns_empty_for_too_large_page(user_logged_client: TestClient):
+    with session() as s:
+        xliff_records = [
+            schema.XliffRecord(segment_id=i, source=f"line{i}", target=f"line{i}")
+            for i in range(150)
+        ]
+
+        s.add(
+            schema.XliffDocument(
+                name="test_doc.xliff",
+                original_document="Something",
+                records=xliff_records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get("/xliff/1/records", params={"page": "20"})
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_xliff_records_returns_404_for_nonexistent_document(
+    user_logged_client: TestClient,
+):
+    response = user_logged_client.get("/xliff/2/records")
+    assert response.status_code == 404
+
+
 async def test_returns_404_when_xliff_file_not_found(user_logged_client: TestClient):
     response = user_logged_client.get("/xliff/1")
     assert response.status_code == 404

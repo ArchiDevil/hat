@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import json
-from typing import Annotated
+from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -58,8 +58,14 @@ def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> models.Xl
 
 @router.get("/{doc_id}/records")
 def get_xliff_records(
-    doc_id: int, db: Annotated[Session, Depends(get_db)]
+    doc_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    page: Annotated[int | None, Query(ge=1)] = None,
 ) -> list[models.XliffFileRecord]:
+    page_records: Final = 100
+    if not page:
+        page = 0
+
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -68,6 +74,14 @@ def get_xliff_records(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
+    records = (
+        db.query(schema.XliffRecord)
+        .filter(schema.XliffRecord.document_id == doc_id)
+        .offset(page_records * (page - 1))
+        .limit(page_records)
+        .all()
+    )
+
     return [
         models.XliffFileRecord(
             id=record.id,
@@ -75,7 +89,7 @@ def get_xliff_records(
             source=record.source,
             target=record.target,
         )
-        for record in doc.records
+        for record in records
     ]
 
 
