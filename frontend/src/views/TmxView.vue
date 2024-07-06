@@ -11,20 +11,16 @@ import Paginator, {PageState} from 'primevue/paginator'
 import DocumentPair from '../components/DocumentPair.vue'
 import PageTitle from '../components/PageTitle.vue'
 
+// TODO: 100 records per page is a magic number, it should be obtained from
+// the server side somehow.
+
 const route = useRoute()
 const router = useRouter()
-
 const document = ref<TmxFileWithRecordsCount>()
 const records = ref<TmxFileRecord[]>()
+
 const page = computed(() => {
   return Number(route.query['page'] ?? '0')
-})
-
-watchEffect(async () => {
-  if (!document.value) {
-    return
-  }
-  records.value = await getTmxRecords(document.value.id, page.value)
 })
 
 const updatePage = async (event: PageState) => {
@@ -34,6 +30,13 @@ const updatePage = async (event: PageState) => {
     },
   })
 }
+
+watchEffect(async () => {
+  if (!document.value) {
+    return
+  }
+  records.value = await getTmxRecords(document.value.id, page.value)
+})
 
 onMounted(async () => {
   const route = useRoute()

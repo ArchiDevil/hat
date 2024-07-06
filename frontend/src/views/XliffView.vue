@@ -17,15 +17,17 @@ import DocumentPair from '../components/DocumentPair.vue'
 import SupportLinks from '../components/SupportLinks.vue'
 import PageTitle from '../components/PageTitle.vue'
 
+// TODO: 100 records per page is a magic number, it should be obtained from
+// the server side somehow
+
 const route = useRoute()
 const router = useRouter()
+const document = ref<XliffFileWithRecordsCount>()
+const records = ref<XliffFileRecord[]>()
 
 const documentId = computed(() => {
   return Number(route.params.id)
 })
-
-const document = ref<XliffFileWithRecordsCount>()
-const records = ref<XliffFileRecord[]>()
 const page = computed(() => {
   return Number(route.query['page'] ?? '0')
 })
@@ -37,13 +39,6 @@ const documentReady = computed(() => {
     document.value &&
     (document.value.status == 'done' || document.value.status == 'error')
   )
-})
-
-watchEffect(async () => {
-  if (!document.value || !documentReady.value) {
-    return
-  }
-  records.value = await getXliffRecords(documentId.value, page.value)
 })
 
 const loadDocument = async () => {
@@ -61,6 +56,13 @@ const updatePage = async (event: PageState) => {
     },
   })
 }
+
+watchEffect(async () => {
+  if (!document.value || !documentReady.value) {
+    return
+  }
+  records.value = await getXliffRecords(documentId.value, page.value)
+})
 
 onMounted(async () => {
   await loadDocument()
