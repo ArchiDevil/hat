@@ -59,9 +59,9 @@ onMounted(async () => {
     />
     <div v-if="records">
       <DocumentPair
+        v-for="record in records"
+        :key="record.id"
         :record="record"
-        v-for="(record, i) in records"
-        :key="i"
       />
     </div>
     <Paginator

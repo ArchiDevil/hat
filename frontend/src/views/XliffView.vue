@@ -103,8 +103,8 @@ onMounted(async () => {
         />
         <div>
           <DocumentPair
-            v-for="(record, i) in records"
-            :key="i"
+            v-for="record in records"
+            :key="record.id"
             :record="record"
           />
         </div>
