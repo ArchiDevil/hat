@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue'
-import {useRoute} from 'vue-router'
+import {computed, onMounted, ref, watchEffect} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 
 import {
   getXliff,
@@ -10,38 +10,60 @@ import {
 import {XliffFileWithRecordsCount} from '../client/schemas/XliffFileWithRecordsCount'
 import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
 
+import Paginator, {PageState} from 'primevue/paginator'
+
 import Link from '../components/Link.vue'
 import DocumentPair from '../components/DocumentPair.vue'
 import SupportLinks from '../components/SupportLinks.vue'
 import PageTitle from '../components/PageTitle.vue'
 
+const route = useRoute()
+const router = useRouter()
+
 const documentId = computed(() => {
-  const route = useRoute()
   return Number(route.params.id)
 })
 
 const document = ref<XliffFileWithRecordsCount>()
 const records = ref<XliffFileRecord[]>()
-
+const page = computed(() => {
+  return Number(route.query['page'] ?? '0')
+})
 const downloadLink = computed(() => {
   return getDownloadXliffLink(documentId.value)
 })
-
-const documentStatus = computed(() => {
-  return document.value?.status
+const documentReady = computed(() => {
+  return (
+    document.value &&
+    (document.value.status == 'done' || document.value.status == 'error')
+  )
 })
 
-const updateData = async () => {
+watchEffect(async () => {
+  if (!document.value || !documentReady.value) {
+    return
+  }
+  records.value = await getXliffRecords(documentId.value, page.value)
+})
+
+const loadDocument = async () => {
   document.value = await getXliff(documentId.value)
-  if (document.value?.status === 'done' || document.value?.status == 'error') {
-    records.value = await getXliffRecords(documentId.value)
-  } else {
-    setTimeout(updateData, 1000)
+  const status = document.value.status
+  if (status == 'uploaded' || status == 'pending' || status == 'processing') {
+    setTimeout(loadDocument, 1000)
   }
 }
 
+const updatePage = async (event: PageState) => {
+  router.push({
+    query: {
+      page: event.page,
+    },
+  })
+}
+
 onMounted(async () => {
-  await updateData()
+  await loadDocument()
 })
 </script>
 
@@ -51,8 +73,8 @@ onMounted(async () => {
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
     <p class="mb-4">Number of records: {{ document?.records_count }}</p>
-    <template v-if="documentStatus == 'done' || documentStatus == 'error'">
-      <template v-if="documentStatus == 'error'">
+    <template v-if="documentReady">
+      <template v-if="document?.status == 'error'">
         <p class="mt-2 text-red-700">
           Error while processing the document. We still provide you the document
           content. It might be processed partially.
@@ -64,20 +86,33 @@ onMounted(async () => {
       </template>
 
       <template v-if="records">
-        <p>Number of records: {{ records.length }}</p>
         <Link
           :href="downloadLink"
           class="mb-4 inline-block"
         >
           Download XLIFF document
         </Link>
+        <Paginator
+          :rows="100"
+          :total-records="document?.records_count"
+          :first="page * 100"
+          v-on:page="(event) => updatePage(event)"
+          v-if="records && records?.length"
+        />
         <div>
           <DocumentPair
-            v-for="record in records"
-            :key="record.source"
+            v-for="(record, i) in records"
+            :key="i"
             :record="record"
           />
         </div>
+        <Paginator
+          :rows="100"
+          :total-records="document?.records_count"
+          :first="page * 100"
+          v-on:page="(event) => updatePage(event)"
+          v-if="records && records?.length"
+        />
       </template>
       <template v-else>
         <p>Loading...</p>
