@@ -69,6 +69,7 @@ def test_can_get_xliff_file(user_logged_client: TestClient):
         "name": "test_doc.xliff",
         "status": "pending",
         "created_by": 1,
+        "records_count": 2,
     }
 
 

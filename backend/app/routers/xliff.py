@@ -39,7 +39,9 @@ def get_xliffs(db: Annotated[Session, Depends(get_db)]) -> list[models.XliffFile
 
 
 @router.get("/{doc_id}")
-def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> models.XliffFile:
+def get_xliff(
+    doc_id: int, db: Annotated[Session, Depends(get_db)]
+) -> models.XliffFileWithRecordsCount:
     doc = (
         db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
     )
@@ -48,11 +50,16 @@ def get_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]) -> models.Xl
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
-    return models.XliffFile(
+    records_count = (
+        db.query(schema.XliffRecord).filter(schema.XliffRecord.document == doc).count()
+    )
+
+    return models.XliffFileWithRecordsCount(
         id=doc.id,
         name=doc.name,
         status=models.DocumentStatus(doc.processing_status),
         created_by=doc.created_by,
+        records_count=records_count,
     )
 
 

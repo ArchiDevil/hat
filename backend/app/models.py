@@ -36,6 +36,10 @@ class TmxFile(Identified):
     created_by: int
 
 
+class TmxFileWithRecordsCount(TmxFile):
+    records_count: int
+
+
 class TmxFileRecord(Identified):
     source: str
     target: str
@@ -45,6 +49,10 @@ class XliffFile(Identified):
     name: str
     status: DocumentStatus
     created_by: int
+
+
+class XliffFileWithRecordsCount(XliffFile):
+    records_count: int
 
 
 class XliffFileRecord(Identified):

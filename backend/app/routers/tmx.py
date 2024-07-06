@@ -22,14 +22,22 @@ def get_tmxs(db: Annotated[Session, Depends(get_db)]) -> list[models.TmxFile]:
 
 
 @router.get("/{tmx_id}")
-def get_tmx(tmx_id: int, db: Annotated[Session, Depends(get_db)]) -> models.TmxFile:
+def get_tmx(
+    tmx_id: int, db: Annotated[Session, Depends(get_db)]
+) -> models.TmxFileWithRecordsCount:
     doc = db.query(schema.TmxDocument).filter(schema.TmxDocument.id == tmx_id).first()
     if not doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
-    return models.TmxFile(id=doc.id, name=doc.name, created_by=doc.created_by)
+    records_count = (
+        db.query(schema.TmxRecord).filter(schema.TmxRecord.document == doc).count()
+    )
+
+    return models.TmxFileWithRecordsCount(
+        id=doc.id, name=doc.name, created_by=doc.created_by, records_count=records_count
+    )
 
 
 @router.get("/{tmx_id}/records")
