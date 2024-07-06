@@ -6,7 +6,12 @@ import {
   MethodDesc,
   PropDescription,
 } from './interfaces'
-import {getImports, tsType, writeGeneratedContent} from './utils'
+import {
+  getDefaultImports,
+  getImports,
+  tsType,
+  writeGeneratedContent,
+} from './utils'
 
 interface ServiceMethod {
   path: string
@@ -49,35 +54,54 @@ const responseType = (response: MethodDesc['responses'][string]) => {
   return tsType(schema)
 }
 
-const paramSig = (name: string, required: boolean, schema: PropDescription) => {
+const paramSignature = (
+  name: string,
+  required: boolean,
+  schema: PropDescription
+) => {
   const type = tsType(schema)
   return `${name}${required ? '' : '?'}: ${type}`
 }
 
 const genService = (methods: ServiceMethod[]) => {
-  let content = ''
+  let lines: string[] = []
   const types = new Set<string>()
   for (const method of methods) {
     // TODO: it is better to search for suitable response, not for a default
     const responseData = method.description.responses['200']
+    const paramsList = (method.description.parameters ?? [])
+      .filter((param) => {
+        return param.in == 'path' || param.in == 'query'
+      })
+      .map((param) => {
+        return {
+          location: param.in as string,
+          signature: `${paramSignature(
+            param.name,
+            param.required,
+            param.schema
+          )}`,
+        }
+      })
 
     if (
       responseData.content &&
       'application/octet-stream' in responseData.content
     ) {
-      const paramsList = (method.description.parameters ?? []).map(
-        (param) => `${paramSig(param.name, param.required, param.schema)}`
-      )
-
       // replace all OpenAPI path parameters with JS template literals
       const interpolatedPath = method.path.replace(/\{(.*)?\}/g, '${$1}')
-      const requestParams = paramsList.join(', ')
+      const requestParams = paramsList
+        .map((param) => param.signature)
+        .join(', ')
       const methodName = convertServiceNameToLink(method.description.summary)
       const funcSignature = `(${requestParams}): string`
 
-      content += `export const ${methodName} = ${funcSignature} => {\n`
-      content += `  return getApiBase() + \`${interpolatedPath}\`\n`
-      content += `}\n`
+      lines = [
+        ...lines,
+        `export const ${methodName} = ${funcSignature} => {`,
+        `  return getApiBase() + \`${interpolatedPath}\``,
+        `}`,
+      ]
     } else {
       const respType = responseType(responseData)
 
@@ -92,10 +116,6 @@ const genService = (methods: ServiceMethod[]) => {
       } else if (respType.endsWith('[]')) {
         types.add(respType.slice(0, -2))
       }
-
-      const paramsList = (method.description.parameters ?? []).map(
-        (param) => `${paramSig(param.name, param.required, param.schema)}`
-      )
 
       const isFormData = (content: {
         [contentType: string]: {
@@ -120,19 +140,21 @@ const genService = (methods: ServiceMethod[]) => {
             method.description.requestBody.content['multipart/form-data'].schema
           const type = tsType(schema)
           types.add(type)
-          paramsList.push(`data: ${type}`)
+          paramsList.push({location: 'other', signature: `data: ${type}`})
         } else if (isJsonData(method.description.requestBody.content)) {
           const schema =
             method.description.requestBody.content['application/json'].schema
           const type = tsType(schema)
           types.add(type)
-          paramsList.push(`content: ${type}`)
+          paramsList.push({location: 'other', signature: `content: ${type}`})
         } else {
           console.warn('Unknown request body:', method.description.requestBody)
         }
       }
 
-      const requestParams = paramsList.join(', ')
+      const requestParams = paramsList
+        .map((param) => param.signature)
+        .join(', ')
 
       // replace all OpenAPI path parameters with JS template literals
       const interpolatedPath = method.path.replace(/\{(.*)?\}/g, '${$1}')
@@ -143,38 +165,47 @@ const genService = (methods: ServiceMethod[]) => {
       const mandeType = respType != 'undefined' ? `<${respType}>` : ''
       const methodName = convertServiceName(method.description.summary)
 
-      let functionBody = ''
+      let functionBody: string[] = []
       if (method.description.requestBody) {
         if (isFormData(method.description.requestBody.content)) {
           // TODO: it should be done smarter, not just hardcoded 'file'
           const fileParamName = 'file'
           const fileParam = `data.${fileParamName}`
 
-          functionBody += `  const formData = new FormData()\n`
-          functionBody += `  formData.append('file', ${fileParam})\n`
-          functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
-          functionBody += `  return await api.${method.httpMethod}${mandeType}('', formData)\n`
+          functionBody = [
+            `  const formData = new FormData()`,
+            `  formData.append('file', ${fileParam})`,
+            `  const api = mande(getApiBase() + \`${interpolatedPath}\`)`,
+            `  return await api.${method.httpMethod}${mandeType}('', formData)`,
+          ]
         } else if (isJsonData(method.description.requestBody.content)) {
-          functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
-          functionBody += `  return await api.${method.httpMethod}${mandeType}(content)\n`
+          functionBody = [
+            `  const api = mande(getApiBase() + \`${interpolatedPath}\`)`,
+            `  return await api.${method.httpMethod}${mandeType}(content)`,
+          ]
         }
       } else {
-        functionBody += `  const api = mande(getApiBase() + \`${interpolatedPath}\`)\n`
-        functionBody += `  return await api.${method.httpMethod}${mandeType}('')\n`
+        functionBody = [
+          `  const api = mande(getApiBase() + \`${interpolatedPath}\`)`,
+          `  return await api.${method.httpMethod}${mandeType}('')`,
+        ]
       }
 
-      content += `export const ${methodName} = ${funcSignature} => {\n`
-      content += `${functionBody}`
-      content += `}\n`
+      lines = [
+        ...lines,
+        `export const ${methodName} = ${funcSignature} => {`,
+        ...functionBody,
+        '}',
+      ]
     }
   }
 
-  let fileContent = ''
-  fileContent += `import {mande} from 'mande'\n\n`
-  fileContent += `import {getApiBase} from '../defaults'\n\n`
-  fileContent += `${getImports(types, '../schemas/')}`
-  fileContent += `${content}`
-  return fileContent
+  const imports = getImports(types, '../schemas/')
+  if (imports.length > 0) {
+    imports.push('')
+  }
+
+  return [...getDefaultImports(), ...imports, ...lines, ''].join('\n')
 }
 
 export const genServices = (

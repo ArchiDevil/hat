@@ -8,15 +8,22 @@ export const getReferencedType = (ref: string): string => {
   return ref.split('/').pop() ?? ''
 }
 
+export const getDefaultImports = () => {
+  return [
+    `import {mande} from 'mande'\n`,
+    `import {getApiBase} from '../defaults'\n`,
+  ]
+}
+
 export const getImports = (
   types: Iterable<string>,
   schemasPath: string
-): string => {
+): string[] => {
   const imports: string[] = []
   for (const type of types) {
     imports.push(`import {${type}} from '${schemasPath}${type}'`)
   }
-  return `${imports.join('\n')}` + (imports.length > 0 ? '\n\n' : '')
+  return imports
 }
 
 export function tsType(prop: PropDescription): string {

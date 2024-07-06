@@ -16,13 +16,13 @@ export const genSchemas = (
     props: {[name: string]: PropDescription},
     requiredProps: string[]
   ) => {
-    let content = ''
+    const lines: string[] = []
     for (const propName in props) {
       const prop = props[propName]
       const required = requiredProps.find((val) => propName == val) ? '' : '?'
-      content += `  ${propName}${required}: ${tsType(prop)}\n`
+      lines.push(`  ${propName}${required}: ${tsType(prop)}`)
     }
-    return content
+    return lines
   }
 
   const getUsedTypes = (properties: {
@@ -57,9 +57,18 @@ export const genSchemas = (
     if ('properties' in schemaDesc && schemaDesc.properties) {
       const schemaProperties = schemaDesc.properties
       const types = getUsedTypes(schemaProperties)
-      const imports = `${getImports(types, './')}`
+      const imports = getImports(types, './')
+      if (imports.length > 0) {
+        imports.push('')
+      }
       const props = genProps(schemaProperties, schemaDesc.required ?? [])
-      return `${imports}export interface ${schema} {\n${props}}\n`
+      return [
+        ...imports,
+        `export interface ${schema} {`,
+        ...props,
+        `}`,
+        '',
+      ].join('\n')
     } else if ('enum' in schemaDesc && schemaDesc.enum) {
       const enumValues = schemaDesc.enum.map((val) => `'${val}'`).join(' | ')
       return `export type ${schema} = ${enumValues}\n`
