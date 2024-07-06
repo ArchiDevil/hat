@@ -7,7 +7,7 @@ import {
   getDownloadXliffLink,
   getXliffRecords,
 } from '../client/services/XliffService'
-import {XliffFile} from '../client/schemas/XliffFile'
+import {XliffFileWithRecordsCount} from '../client/schemas/XliffFileWithRecordsCount'
 import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
 
 import Link from '../components/Link.vue'
@@ -20,7 +20,7 @@ const documentId = computed(() => {
   return Number(route.params.id)
 })
 
-const document = ref<XliffFile>()
+const document = ref<XliffFileWithRecordsCount>()
 const records = ref<XliffFileRecord[]>()
 
 const downloadLink = computed(() => {
@@ -50,6 +50,7 @@ onMounted(async () => {
     <PageTitle title="XLIFF file viewer" />
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
+    <p class="mb-4">Number of records: {{ document?.records_count }}</p>
     <template v-if="documentStatus == 'done' || documentStatus == 'error'">
       <template v-if="documentStatus == 'error'">
         <p class="mt-2 text-red-700">

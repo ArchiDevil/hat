@@ -6,8 +6,9 @@ import {getApiBase} from '../defaults'
 
 import {TmxFile} from '../schemas/TmxFile'
 import {Body_create_tmx_tmx__post} from '../schemas/Body_create_tmx_tmx__post'
-import {TmxFileWithRecords} from '../schemas/TmxFileWithRecords'
+import {TmxFileWithRecordsCount} from '../schemas/TmxFileWithRecordsCount'
 import {StatusMessage} from '../schemas/StatusMessage'
+import {TmxFileRecord} from '../schemas/TmxFileRecord'
 
 export const getTmxs = async (): Promise<TmxFile[]> => {
   const api = mande(getApiBase() + `/tmx/`)
@@ -19,11 +20,15 @@ export const createTmx = async (data: Body_create_tmx_tmx__post): Promise<TmxFil
   const api = mande(getApiBase() + `/tmx/`)
   return await api.post<TmxFile>('', formData)
 }
-export const getTmx = async (tmx_id: number): Promise<TmxFileWithRecords> => {
+export const getTmx = async (tmx_id: number): Promise<TmxFileWithRecordsCount> => {
   const api = mande(getApiBase() + `/tmx/${tmx_id}`)
-  return await api.get<TmxFileWithRecords>('')
+  return await api.get<TmxFileWithRecordsCount>('')
 }
 export const deleteTmx = async (tmx_id: number): Promise<StatusMessage> => {
   const api = mande(getApiBase() + `/tmx/${tmx_id}`)
   return await api.delete<StatusMessage>('')
+}
+export const getTmxRecords = async (tmx_id: number, page?: number | null): Promise<TmxFileRecord[]> => {
+  const api = mande(getApiBase() + `/tmx/${tmx_id}/records`)
+  return await api.get<TmxFileRecord[]>('', {query: {page}})
 }
