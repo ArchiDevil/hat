@@ -44,7 +44,7 @@ def get_tmx(
 def get_tmx_records(
     tmx_id: int,
     db: Annotated[Session, Depends(get_db)],
-    page: Annotated[int | None, Query(ge=1)] = None,
+    page: Annotated[int | None, Query(ge=0)] = None,
 ) -> list[models.TmxFileRecord]:
     page_records: Final = 100
     if not page:
@@ -59,7 +59,8 @@ def get_tmx_records(
     records = (
         db.query(schema.TmxRecord)
         .filter(schema.TmxRecord.document_id == tmx_id)
-        .offset(page_records * (page - 1))
+        .order_by(schema.TmxRecord.id)
+        .offset(page_records * page)
         .limit(page_records)
         .all()
     )

@@ -128,7 +128,7 @@ def test_xliff_records_returns_second_page(user_logged_client: TestClient):
         )
         s.commit()
 
-    response = user_logged_client.get("/xliff/1/records", params={"page": "2"})
+    response = user_logged_client.get("/xliff/1/records", params={"page": "1"})
     assert response.status_code == 200
     assert len(response.json()) == 50
     assert response.json()[0] == {

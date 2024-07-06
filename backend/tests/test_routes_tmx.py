@@ -94,7 +94,7 @@ def test_can_get_tmx_records_with_page(user_logged_client: TestClient):
         docs = s.query(schema.TmxDocument).all()
         assert len(docs) == 1
 
-    response = user_logged_client.get("/tmx/1/records", params={"page": "2"})
+    response = user_logged_client.get("/tmx/1/records", params={"page": "1"})
     assert response.status_code == 200
     assert len(response.json()) == 50
     assert response.json()[0] == {"id": 101, "source": "line100", "target": "line100"}

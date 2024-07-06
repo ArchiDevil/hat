@@ -67,7 +67,7 @@ def get_xliff(
 def get_xliff_records(
     doc_id: int,
     db: Annotated[Session, Depends(get_db)],
-    page: Annotated[int | None, Query(ge=1)] = None,
+    page: Annotated[int | None, Query(ge=0)] = None,
 ) -> list[models.XliffFileRecord]:
     page_records: Final = 100
     if not page:
@@ -84,7 +84,8 @@ def get_xliff_records(
     records = (
         db.query(schema.XliffRecord)
         .filter(schema.XliffRecord.document_id == doc_id)
-        .offset(page_records * (page - 1))
+        .order_by(schema.XliffRecord.segment_id)
+        .offset(page_records * page)
         .limit(page_records)
         .all()
     )
