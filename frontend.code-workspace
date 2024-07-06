@@ -9,7 +9,6 @@
       "esbenp.prettier-vscode",
       "dbaeumer.vscode-eslint",
       "bradlc.vscode-tailwindcss",
-      "vue.vscode-typescript-vue-plugin",
       "vue.volar"
     ]
   },
