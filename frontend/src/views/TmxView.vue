@@ -17,7 +17,7 @@ const router = useRouter()
 const document = ref<TmxFileWithRecordsCount>()
 const records = ref<TmxFileRecord[]>()
 const page = computed(() => {
-  return route.query['page'] ? parseInt(route.query['page'] as string) : 0
+  return Number(route.query['page'] ?? '0')
 })
 
 watchEffect(async () => {
@@ -52,6 +52,7 @@ onMounted(async () => {
       :total-records="document?.records_count"
       :first="page * 100"
       v-on:page="(event) => updatePage(event)"
+      v-if="records && records?.length"
     />
     <div v-if="records">
       <DocumentPair
@@ -65,6 +66,7 @@ onMounted(async () => {
       :total-records="document?.records_count"
       :first="page * 100"
       v-on:page="(event) => updatePage(event)"
+      v-if="records && records?.length"
     />
   </div>
 </template>
