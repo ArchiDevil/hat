@@ -61,6 +61,10 @@ class XliffFileRecord(Identified):
     target: str
 
 
+class XliffRecordUpdate(BaseModel):
+    target: str
+
+
 class MachineTranslationSettings(BaseModel):
     # Yandex only for now
     # source_language: str

@@ -169,8 +169,62 @@ def test_xliff_records_returns_404_for_nonexistent_document(
     assert response.status_code == 404
 
 
-async def test_returns_404_when_xliff_file_not_found(user_logged_client: TestClient):
+def test_returns_404_when_xliff_file_not_found(user_logged_client: TestClient):
     response = user_logged_client.get("/xliff/1")
+    assert response.status_code == 404
+
+
+def test_can_update_xliff_record(user_logged_client: TestClient):
+    with session() as s:
+        xliff_records = [
+            schema.XliffRecord(
+                segment_id=8, source="Regional Effects", target="Translation"
+            ),
+            schema.XliffRecord(segment_id=14, source="User Interface", target="UI"),
+        ]
+        s.add(
+            schema.XliffDocument(
+                name="test_doc.xliff",
+                original_document="Something",
+                records=xliff_records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.put("/xliff/1/record/2", json={"target": "Updated"})
+    assert response.status_code == 200
+    assert response.json() == {"message": "Record updated"}
+
+    with session() as s:
+        record = s.query(schema.XliffRecord).filter(schema.XliffRecord.id == 2).one()
+        assert record.target == "Updated"
+
+
+def test_returns_404_for_nonexistent_doc_when_updating_record(
+    user_logged_client: TestClient,
+):
+    response = user_logged_client.put(
+        "/xliff/2000/record/3", json={"target": "Updated"}
+    )
+    assert response.status_code == 404
+
+
+def test_returns_404_for_nonexistent_record(user_logged_client: TestClient):
+    with session() as s:
+        s.add(
+            schema.XliffDocument(
+                name="test_doc.xliff",
+                original_document="Something",
+                records=[],
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.put("/xliff/1/record/3", json={"target": "Updated"})
     assert response.status_code == 404
 
 

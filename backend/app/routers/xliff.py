@@ -101,6 +101,38 @@ def get_xliff_records(
     ]
 
 
+@router.put("/{doc_id}/record/{record_id}")
+def update_xliff_record(
+    doc_id: int,
+    record_id: int,
+    record: models.XliffRecordUpdate,
+    db: Annotated[Session, Depends(get_db)],
+) -> models.StatusMessage:
+    doc = (
+        db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
+    )
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    found_record = (
+        db.query(schema.XliffRecord)
+        .filter(schema.XliffRecord.document_id == doc_id)
+        .filter(schema.XliffRecord.id == record_id)
+        .first()
+    )
+    if not found_record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Record not found"
+        )
+
+    found_record.target = record.target
+    db.commit()
+
+    return models.StatusMessage(message="Record updated")
+
+
 @router.delete("/{doc_id}")
 def delete_xliff(
     doc_id: int, db: Annotated[Session, Depends(get_db)]
