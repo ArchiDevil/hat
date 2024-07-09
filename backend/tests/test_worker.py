@@ -40,7 +40,10 @@ def test_process_task_sets_records():
 
     with get_session() as session:
         tmx_records = [
-            schema.TmxRecord(source="Regional Effects", target="Translation")
+            schema.TmxRecord(
+                source="Regional Effects",
+                target="Translation",
+            )
         ]
         session.add(schema.TmxDocument(name="test", records=tmx_records, created_by=1))
         session.commit()
@@ -88,24 +91,32 @@ def test_process_task_sets_records():
         assert doc.records[0].document_id == 1
         assert doc.records[0].source == "Regional Effects"
         assert doc.records[0].target == "Translation"
+        assert doc.records[0].state == "translated"
+        assert not doc.records[0].approved
         # It does not provide text for missing TMX record
         assert doc.records[1].id == 2
         assert doc.records[1].segment_id == 675607
         assert doc.records[1].document_id == 1
         assert doc.records[1].source == "Other Effects"
         assert doc.records[1].target == ""
+        assert doc.records[1].state == "needs-translation"
+        assert not doc.records[1].approved
         # It does not touch approved record
         assert doc.records[2].id == 3
         assert doc.records[2].segment_id == 675608
         assert doc.records[2].document_id == 1
         assert doc.records[2].source == "Regional Effects"
         assert doc.records[2].target == "Региональные эффекты"
+        assert doc.records[2].state == "translated"
+        assert doc.records[2].approved
         # It does not substitute numbers
         assert doc.records[3].id == 4
         assert doc.records[3].segment_id == 675609
         assert doc.records[3].document_id == 1
         assert doc.records[3].source == "123456789"
         assert doc.records[3].target == ""
+        assert doc.records[3].state == "needs-translation"
+        assert not doc.records[3].approved
 
 
 def test_process_task_uses_correct_tmx_ids():

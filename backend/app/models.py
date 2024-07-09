@@ -59,6 +59,8 @@ class XliffFileRecord(Identified):
     segment_id: int
     source: str
     target: str
+    state: str
+    approved: bool
 
 
 class XliffRecordUpdate(BaseModel):

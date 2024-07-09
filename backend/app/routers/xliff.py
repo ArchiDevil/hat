@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app import schema, models
 from app.auth import has_user_role, get_current_user_id
 from app.db import get_db
-from app.xliff import extract_xliff_content
+from app.xliff import extract_xliff_content, SegmentState
 
 # TODO: add XLIFF segments statuses according to the specification
 
@@ -96,6 +96,8 @@ def get_xliff_records(
             segment_id=record.segment_id,
             source=record.source,
             target=record.target,
+            state=record.state,
+            approved=record.approved,
         )
         for record in records
     ]
@@ -248,6 +250,8 @@ def download_xliff(doc_id: int, db: Annotated[Session, Depends(get_db)]):
         record = db.query(schema.XliffRecord).filter_by(segment_id=segment.id_).first()
         if record and not segment.approved:
             segment.translation = record.target
+            segment.approved = record.approved
+            segment.state = SegmentState(record.state)
 
     def encode_to_latin_1(original: str):
         output = ""

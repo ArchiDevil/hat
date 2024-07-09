@@ -70,8 +70,8 @@ class XliffSegment:
         return self.__target
 
     @property
-    def state(self) -> Optional[str]:
-        return self.__state.value
+    def state(self) -> SegmentState:
+        return self.__state
 
     @property
     def dirty(self) -> bool:
@@ -87,6 +87,10 @@ class XliffSegment:
     def approved(self, value: bool) -> None:
         self.__approved = value
         self.__dirty = True
+
+    @state.setter
+    def state(self, value: SegmentState) -> None:
+        self.__state = value
 
     def __str__(self) -> str:
         return f"XliffSegment({self.__id}, {self.__approved}, {self.__source}, {self.__target})"
@@ -130,7 +134,7 @@ class XliffData:
                 target_node.remove(child)
 
             target_node.text = segment.translation
-            target_node.attrib["state"] = segment.state
+            target_node.attrib["state"] = segment.state.value
 
     def write(self) -> BytesIO:
         output = BytesIO()

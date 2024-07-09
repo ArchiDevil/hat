@@ -59,6 +59,7 @@ def process_xliff(
                 # we cannot find translation for this segment
                 # save it to translate by Yandex
                 to_translate.append(i)
+                continue
 
             segment.translation = translation if translation else ""
 
@@ -97,6 +98,8 @@ def process_xliff(
                 segment_id=segment.id_,
                 source=segment.original,
                 target=segment.translation,
+                state=segment.state.value,
+                approved=segment.approved,
             )
         )
 

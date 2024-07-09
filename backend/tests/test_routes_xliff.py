@@ -47,9 +47,19 @@ def test_can_get_xliff_file(user_logged_client: TestClient):
     with session() as s:
         xliff_records = [
             schema.XliffRecord(
-                segment_id=8, source="Regional Effects", target="Translation"
+                segment_id=8,
+                source="Regional Effects",
+                target="Translation",
+                state="needs-translation",
+                approved=False,
             ),
-            schema.XliffRecord(segment_id=14, source="User Interface", target="UI"),
+            schema.XliffRecord(
+                segment_id=14,
+                source="User Interface",
+                target="UI",
+                state="needs-translation",
+                approved=False,
+            ),
         ]
         s.add(
             schema.XliffDocument(
@@ -77,9 +87,19 @@ def test_can_get_xliff_records(user_logged_client: TestClient):
     with session() as s:
         xliff_records = [
             schema.XliffRecord(
-                segment_id=8, source="Regional Effects", target="Translation"
+                segment_id=8,
+                source="Regional Effects",
+                target="Translation",
+                state="needs-translation",
+                approved=False,
             ),
-            schema.XliffRecord(segment_id=14, source="User Interface", target="UI"),
+            schema.XliffRecord(
+                segment_id=14,
+                source="User Interface",
+                target="UI",
+                state="needs-translation",
+                approved=False,
+            ),
         ]
         s.add(
             schema.XliffDocument(
@@ -100,12 +120,16 @@ def test_can_get_xliff_records(user_logged_client: TestClient):
             "segment_id": 8,
             "source": "Regional Effects",
             "target": "Translation",
+            "state": "needs-translation",
+            "approved": False,
         },
         {
             "id": 2,
             "segment_id": 14,
             "source": "User Interface",
             "target": "UI",
+            "state": "needs-translation",
+            "approved": False,
         },
     ]
 
@@ -113,7 +137,13 @@ def test_can_get_xliff_records(user_logged_client: TestClient):
 def test_xliff_records_returns_second_page(user_logged_client: TestClient):
     with session() as s:
         xliff_records = [
-            schema.XliffRecord(segment_id=i, source=f"line{i}", target=f"line{i}")
+            schema.XliffRecord(
+                segment_id=i,
+                source=f"line{i}",
+                target=f"line{i}",
+                state="needs-translation",
+                approved=False,
+            )
             for i in range(150)
         ]
 
@@ -136,13 +166,21 @@ def test_xliff_records_returns_second_page(user_logged_client: TestClient):
         "segment_id": 100,
         "source": "line100",
         "target": "line100",
+        "state": "needs-translation",
+        "approved": False,
     }
 
 
 def test_xliff_records_returns_empty_for_too_large_page(user_logged_client: TestClient):
     with session() as s:
         xliff_records = [
-            schema.XliffRecord(segment_id=i, source=f"line{i}", target=f"line{i}")
+            schema.XliffRecord(
+                segment_id=i,
+                source=f"line{i}",
+                target=f"line{i}",
+                state="needs-translation",
+                approved=False,
+            )
             for i in range(150)
         ]
 
@@ -178,9 +216,19 @@ def test_can_update_xliff_record(user_logged_client: TestClient):
     with session() as s:
         xliff_records = [
             schema.XliffRecord(
-                segment_id=8, source="Regional Effects", target="Translation"
+                segment_id=8,
+                source="Regional Effects",
+                target="Translation",
+                state="needs-translation",
+                approved=False,
             ),
-            schema.XliffRecord(segment_id=14, source="User Interface", target="UI"),
+            schema.XliffRecord(
+                segment_id=14,
+                source="User Interface",
+                target="UI",
+                state="needs-translation",
+                approved=False,
+            ),
         ]
         s.add(
             schema.XliffDocument(
@@ -418,24 +466,32 @@ def test_download_xliff(user_logged_client: TestClient):
                 document_id=1,
                 source="Regional Effects",
                 target="Some",
+                state="needs-translation",
+                approved=False,
             ),
             schema.XliffRecord(
                 segment_id=675607,
                 document_id=1,
                 source="Other Effects",
                 target="",
+                state="needs-translation",
+                approved=True,
             ),
             schema.XliffRecord(
                 segment_id=675608,
                 document_id=1,
                 source="Regional Effects",
                 target="Региональные эффекты",
+                state="translated",
+                approved=True,
             ),
             schema.XliffRecord(
                 segment_id=675609,
                 document_id=1,
                 source="123456789",
                 target="",
+                state="final",
+                approved=False,
             ),
         ]
         s.add_all(xliff_records)
@@ -448,6 +504,9 @@ def test_download_xliff(user_logged_client: TestClient):
     assert data.startswith("<?xml version=")
     assert "Regional Effects" in data
     assert "Региональные эффекты" in data
+    assert 'approved="yes"' in data
+    assert "translated" in data
+    assert "final" in data
 
 
 def test_download_shows_404_for_unknown_xliff(user_logged_client: TestClient):
