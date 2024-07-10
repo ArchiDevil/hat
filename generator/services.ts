@@ -105,7 +105,7 @@ const getMethod = (method: ServiceMethod) => {
     'application/octet-stream' in responseData.content
   ) {
     // replace all OpenAPI path parameters with JS template literals
-    const interpolatedPath = method.path.replace(/\{(.*)?\}/g, '${$1}')
+    const interpolatedPath = method.path.replace(/\{(\w+)\}/g, '${$1}')
     const requestParams = paramsList.map((param) => param.signature).join(', ')
     const methodName = convertServiceNameToLink(method.description.summary)
     const funcSignature = `(${requestParams}): string`
@@ -163,7 +163,7 @@ const getMethod = (method: ServiceMethod) => {
     const requestParams = paramsList.map((param) => param.signature).join(', ')
 
     // replace all OpenAPI path parameters with JS template literals
-    const interpolatedPath = method.path.replace(/\{(.*)?\}/g, '${$1}')
+    const interpolatedPath = method.path.replace(/\{(\w+)\}/g, '${$1}')
 
     const retVal = respType != 'undefined' ? respType : 'void'
     const funcSignature = `async (${requestParams}): Promise<${retVal}>`
