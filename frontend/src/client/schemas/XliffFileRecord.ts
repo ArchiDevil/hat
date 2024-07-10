@@ -5,4 +5,6 @@ export interface XliffFileRecord {
   segment_id: number
   source: string
   target: string
+  state: string
+  approved: boolean
 }

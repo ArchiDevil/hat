@@ -9,6 +9,7 @@ import {Body_create_xliff_xliff__post} from '../schemas/Body_create_xliff_xliff_
 import {XliffFileWithRecordsCount} from '../schemas/XliffFileWithRecordsCount'
 import {StatusMessage} from '../schemas/StatusMessage'
 import {XliffFileRecord} from '../schemas/XliffFileRecord'
+import {XliffRecordUpdate} from '../schemas/XliffRecordUpdate'
 import {XliffProcessingSettings} from '../schemas/XliffProcessingSettings'
 
 export const getXliffs = async (): Promise<XliffFile[]> => {
@@ -32,6 +33,10 @@ export const deleteXliff = async (doc_id: number): Promise<StatusMessage> => {
 export const getXliffRecords = async (doc_id: number, page?: number | null): Promise<XliffFileRecord[]> => {
   const api = mande(getApiBase() + `/xliff/${doc_id}/records`)
   return await api.get<XliffFileRecord[]>('', {query: {page}})
+}
+export const updateXliffRecord = async (doc_id: number, record_id: number, content: XliffRecordUpdate): Promise<StatusMessage> => {
+  const api = mande(getApiBase() + `/xliff/${doc_id}/record/${record_id}`)
+  return await api.put<StatusMessage>(content)
 }
 export const processXliff = async (doc_id: number, content: XliffProcessingSettings): Promise<StatusMessage> => {
   const api = mande(getApiBase() + `/xliff/${doc_id}/process`)
