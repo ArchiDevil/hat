@@ -16,10 +16,9 @@ const logout = async () => {
 
 <template>
   <div class="flex items-baseline">
-    <PageTitle
-      class="flex-grow"
-      title="Human Assisted Translation project"
-    />
+    <div class="text-lg flex-grow uppercase">
+      Human Assisted Translation project
+    </div>
     <div class="pt-8">
       <RoutingLink
         class="mx-2 uppercase font-semibold"
