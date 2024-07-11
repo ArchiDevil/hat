@@ -56,7 +56,10 @@ export const useXliffStore = defineStore('xliff', {
       this.records[idx].loading = false
     },
     focusNextSegment() {
-      if (this.currentFocusIdx) {
+      if (
+        this.currentFocusIdx &&
+        this.currentFocusIdx < this.records.length - 1
+      ) {
         this.currentFocusIdx += 1
       }
     },

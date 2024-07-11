@@ -35,15 +35,13 @@ const updatePage = async (event: PageState) => {
   router.push({query: {page: event.page}})
 }
 
-const onSegmentCommit = (record: number, text: string) => {
-  store.updateRecord(record, text)
-  if (store.currentFocusIdx != 99) {
-    store.focusNextSegment()
-  }
-}
-
 const onSegmentUpdate = (record: number, text: string) => {
   store.updateRecord(record, text)
+}
+
+const onSegmentCommit = (record: number, text: string) => {
+  onSegmentUpdate(record, text)
+  store.focusNextSegment()
 }
 
 watchEffect(async () => {
