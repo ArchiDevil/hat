@@ -1,29 +1,21 @@
 <script setup lang="ts">
-import {computed, onMounted, ref, watchEffect} from 'vue'
+import {computed, onMounted, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-
-import {
-  getXliff,
-  getDownloadXliffLink,
-  getXliffRecords,
-} from '../client/services/XliffService'
-import {XliffFileWithRecordsCount} from '../client/schemas/XliffFileWithRecordsCount'
-import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
 
 import Paginator, {PageState} from 'primevue/paginator'
 
 import Link from '../components/Link.vue'
-import DocumentPair from '../components/DocumentPair.vue'
+import DocSegment from '../components/DocSegment.vue'
 import SupportLinks from '../components/SupportLinks.vue'
 import PageTitle from '../components/PageTitle.vue'
+import {useXliffStore} from '../stores/xliff'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow
 
 const route = useRoute()
 const router = useRouter()
-const document = ref<XliffFileWithRecordsCount>()
-const records = ref<XliffFileRecord[]>()
+const store = useXliffStore()
 
 const documentId = computed(() => {
   return Number(route.params.id)
@@ -31,37 +23,34 @@ const documentId = computed(() => {
 const page = computed(() => {
   return Number(route.query['page'] ?? '0')
 })
-const downloadLink = computed(() => {
-  return getDownloadXliffLink(documentId.value)
-})
-const documentReady = computed(() => {
-  return (
-    document.value &&
-    (document.value.status == 'done' || document.value.status == 'error')
-  )
-})
 
 const loadDocument = async () => {
-  document.value = await getXliff(documentId.value)
-  const status = document.value.status
-  if (status == 'uploaded' || status == 'pending' || status == 'processing') {
+  store.loadDocument(documentId.value)
+  if (!store.document) {
     setTimeout(loadDocument, 1000)
   }
 }
 
 const updatePage = async (event: PageState) => {
-  router.push({
-    query: {
-      page: event.page,
-    },
-  })
+  router.push({query: {page: event.page}})
+}
+
+const onSegmentCommit = (record: number, text: string) => {
+  store.updateRecord(record, text)
+  if (store.currentFocusIdx != 99) {
+    store.focusNextSegment()
+  }
+}
+
+const onSegmentUpdate = (record: number, text: string) => {
+  store.updateRecord(record, text)
 }
 
 watchEffect(async () => {
-  if (!document.value || !documentReady.value) {
+  if (!store.document || !store.documentReady) {
     return
   }
-  records.value = await getXliffRecords(documentId.value, page.value)
+  store.loadRecords(page.value)
 })
 
 onMounted(async () => {
@@ -72,11 +61,10 @@ onMounted(async () => {
 <template>
   <div>
     <PageTitle title="XLIFF file viewer" />
-    <p>File ID: {{ document?.id }}</p>
-    <p>File name: {{ document?.name }}</p>
-    <p class="mb-4">Number of records: {{ document?.records_count }}</p>
-    <template v-if="documentReady">
-      <template v-if="document?.status == 'error'">
+    <h2 class="text-xl font-bold mt-2 mb-4">{{ store.document?.name }}</h2>
+    <p>Number of records: {{ store.document?.records_count }}</p>
+    <template v-if="store.documentReady && !store.documentLoading">
+      <template v-if="store.document?.status == 'error'">
         <p class="mt-2 text-red-700">
           Error while processing the document. We still provide you the document
           content. It might be processed partially.
@@ -87,33 +75,39 @@ onMounted(async () => {
         <SupportLinks class="mb-4" />
       </template>
 
-      <template v-if="records">
+      <template v-if="store.records">
         <Link
-          :href="downloadLink"
+          :href="store.downloadLink ?? ''"
           class="mb-4 inline-block"
         >
           Download XLIFF document
         </Link>
         <Paginator
           :rows="100"
-          :total-records="document?.records_count"
+          :total-records="store.document?.records_count"
           :first="page * 100"
           v-on:page="(event) => updatePage(event)"
-          v-if="records && records?.length"
+          v-if="store.records && store.records?.length"
         />
-        <div>
-          <DocumentPair
-            v-for="record in records"
+        <div class="flex flex-col gap-1">
+          <DocSegment
+            v-for="(record, idx) in store.records"
             :key="record.id"
+            editable
             :record="record"
+            :disabled="record.loading"
+            :focused-id="store.currentFocusId"
+            @commit="(text) => onSegmentCommit(record.id, text)"
+            @update-record="(text) => onSegmentUpdate(record.id, text)"
+            @focus="store.currentFocusIdx = idx"
           />
         </div>
         <Paginator
           :rows="100"
-          :total-records="document?.records_count"
+          :total-records="store.document?.records_count"
           :first="page * 100"
           v-on:page="(event) => updatePage(event)"
-          v-if="records && records?.length"
+          v-if="store.records && store.records?.length"
         />
       </template>
       <template v-else>

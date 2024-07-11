@@ -8,7 +8,7 @@ import {TmxFileRecord} from '../client/schemas/TmxFileRecord'
 
 import Paginator, {PageState} from 'primevue/paginator'
 
-import DocumentPair from '../components/DocumentPair.vue'
+import DocSegment from '../components/DocSegment.vue'
 import PageTitle from '../components/PageTitle.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
@@ -58,7 +58,7 @@ onMounted(async () => {
       v-if="records && records?.length"
     />
     <div v-if="records">
-      <DocumentPair
+      <DocSegment
         v-for="record in records"
         :key="record.id"
         :record="record"
