@@ -1,9 +1,9 @@
 from contextlib import contextmanager
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
-from app import schema, models
+from app import models, schema
 from app.db import get_db
 
 # pylint: disable=C0116

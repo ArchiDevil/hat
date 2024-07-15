@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:16.1-alpine
+    environment:
+      - POSTGRES_PASSWORD=hat_dev
+      - POSTGRES_USER=hat_dev
+      - POSTGRES_DB=hat_dev
+    volumes:
+      - ./var/postgresql-data/:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"

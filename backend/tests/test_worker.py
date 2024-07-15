@@ -1,14 +1,13 @@
-from datetime import datetime, timedelta
 import json
 import os
 import tempfile
+from datetime import datetime, timedelta
 
 import pytest
 from sqlalchemy.orm import Session
 
 from app import db, models, schema
 from app.db import get_db, init_connection
-
 from worker import process_task
 
 # pylint: disable=C0116

@@ -1,7 +1,7 @@
 from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from .settings import get_settings
+from app.settings import get_settings
 
 engine: Engine | None = None
 SessionLocal: sessionmaker | None = None

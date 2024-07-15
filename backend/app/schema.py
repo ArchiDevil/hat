@@ -1,8 +1,7 @@
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped
-from sqlalchemy.orm import mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):

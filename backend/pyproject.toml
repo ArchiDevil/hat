@@ -3,3 +3,11 @@ asyncio_mode = "auto"
 
 [tool.coverage.run]
 omit = ["**/tests/*"]
+
+[tool.ruff]
+line-length = 88
+exclude = [".venv", "alembic"]
+
+[tool.ruff.lint.isort]
+default-section = "third-party"
+

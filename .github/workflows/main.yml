@@ -7,10 +7,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
-      - run: cd backend && pip install -r requirements.txt
+      - run: cd backend && pip install -r requirements.dev.txt
       - run: cd backend && pytest
+      - run: cd backend && ruff check .
 
   frontend-tests:
     runs-on: ubuntu-latest
