@@ -1,12 +1,12 @@
-from contextlib import contextmanager
 import os
 import tempfile
+from contextlib import contextmanager
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
-from app import create_app, db, schema, models
-from app.db import init_connection, get_db
+from app import create_app, db, models, schema
+from app.db import get_db, init_connection
 
 # pylint: disable=C0116
 

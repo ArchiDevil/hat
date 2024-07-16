@@ -55,7 +55,10 @@ def test_can_load_simplest_tmx_1_4():
     data = extract_tmx_content(content)
     assert len(data) == 1
     assert data[0].original == "Each character who plays the game makes a Wisdom check"
-    assert data[0].translation == "Каждый персонаж, участвующий в игре, делает проверку Мудрости"
+    assert (
+        data[0].translation
+        == "Каждый персонаж, участвующий в игре, делает проверку Мудрости"
+    )
     assert data[0].creation_date == datetime(2022, 7, 3, 7, 59, 19)
     assert data[0].change_date == datetime(2022, 7, 3, 7, 59, 20)
 
@@ -93,7 +96,6 @@ def test_can_load_tagged_1_4():
     )
     assert data[0].creation_date == datetime(2022, 7, 3, 7, 59, 19)
     assert data[0].change_date == datetime(2022, 7, 3, 7, 59, 20)
-
 
 
 def test_can_load_multiple_segments():

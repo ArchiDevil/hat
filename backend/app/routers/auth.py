@@ -1,16 +1,15 @@
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.orm import Session
 
-from app import schema, models
+from app import models, schema
 from app.auth import has_user_role
 from app.db import get_db
-from app.settings import get_settings, Settings
 from app.security import password_hasher
-
+from app.settings import Settings, get_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

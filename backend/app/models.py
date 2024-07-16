@@ -26,6 +26,10 @@ class UserRole(Enum):
     USER = "user"
     ADMIN = "admin"
 
+    @classmethod
+    def get_values(cls):
+        return tuple(role.value for role in cls)
+
 
 class Identified(BaseModel):
     id: int

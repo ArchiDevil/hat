@@ -3,8 +3,8 @@ import logging
 import time
 from typing import Generator
 
-from pydantic import BaseModel, PositiveInt, ValidationError
 import requests
+from pydantic import BaseModel, PositiveInt, ValidationError
 
 from app.models import MachineTranslationSettings
 from app.settings import get_settings

@@ -1,12 +1,12 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Cookie, status
+from fastapi import Cookie, Depends, HTTPException, status
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.orm import Session
 
-from app import schema, models
+from app import models, schema
 from app.db import get_db
-from app.settings import get_settings, Settings
+from app.settings import Settings, get_settings
 
 
 def get_current_user_id(

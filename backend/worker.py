@@ -10,8 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import db, models, schema
-from app.xliff import extract_xliff_content, XliffSegment
 from app.translators import yandex
+from app.xliff import XliffSegment, extract_xliff_content
 
 
 def get_segment_translation(

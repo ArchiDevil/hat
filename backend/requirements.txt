@@ -7,8 +7,6 @@ hypercorn==0.17.*
 alembic==1.13.*
 sqlalchemy==2.0.*
 psycopg2==2.9.*
-pytest==7.4.*
-pytest-asyncio==0.23.2
 requests==2.32.*
 passlib==1.7.*
 itsdangerous==2.2.0

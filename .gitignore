@@ -6,3 +6,6 @@ backend/instance/
 .coverage
 frontend/node_modules/
 frontend/dist/
+.env
+backend/var
+frontend/package-lock.json

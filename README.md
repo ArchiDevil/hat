@@ -120,3 +120,12 @@ note that reverse proxy is listening to `6916` port on the localhost, so you
 need to set up something to listed on the domain name if you need.
 
 The production version is located at https://hat.codecliffs.ru
+
+
+## Backend linting
+
+To run linting for  backend code execute the following command:
+
+```bash
+ruff format . && ruff check --select I --fix . && ruff check  --fix .
+```

@@ -3,9 +3,9 @@ import getpass
 import re
 
 from app.db import get_db
+from app.models import UserRole
 from app.schema import User
 from app.security import password_hasher
-from app.models import UserRole
 
 
 def add_user():
@@ -17,9 +17,8 @@ def add_user():
         print("Invalid email address!")
         return
 
-    possible_roles = [role.value for role in UserRole.__members__.values()]
-    role = UserRole(input(f"Enter role {possible_roles}: ")).value
-    if role not in possible_roles:
+    role = UserRole(input(f"Enter role {UserRole.get_values()}: ")).value
+    if role not in UserRole.get_values():
         print(f"{role} is an invalid role!")
 
     password = getpass.getpass("Enter password (at least 8 symbols): ")

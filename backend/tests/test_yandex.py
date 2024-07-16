@@ -2,8 +2,8 @@ import time
 
 import requests
 
-from app.translators import yandex
 from app.models import MachineTranslationSettings
+from app.translators import yandex
 
 # pylint: disable=C0116
 
