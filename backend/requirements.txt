@@ -1,4 +1,4 @@
-fastapi==0.110.*
+fastapi==0.111.*
 python-multipart==0.0.9
 httpx==0.26.0
 pydantic_settings==2.2.1

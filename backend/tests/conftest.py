@@ -1,48 +1,59 @@
-import os
-import tempfile
-from contextlib import contextmanager
-
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import StaticPool, create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
-from app import create_app, db, models, schema
-from app.db import get_db, init_connection
+from app import models, schema
+from app.db import Base, get_db
+from main import app
 
-# pylint: disable=C0116
+SQLALCHEMY_DATABASE_URL = "sqlite:///"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base.metadata.create_all(bind=engine)
 
 
-@contextmanager
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+
+app.dependency_overrides[get_db] = override_get_db
+
+
+@pytest.fixture()
 def session():
-    return get_db()
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+    db = TestingSessionLocal()
+
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+client = TestClient(app)
 
 
 @pytest.fixture()
-def fastapi_app():
-    db_fd, db_path = tempfile.mkstemp()
-
-    app = create_app()
-    init_connection(f"sqlite:///{db_path}")
-    assert db.engine and db.SessionLocal
-
-    schema.Base.metadata.drop_all(db.engine)
-    schema.Base.metadata.create_all(db.engine)
-
-    yield app
-
-    db.close_connection()
-
-    os.close(db_fd)
-    os.unlink(db_path)
+def fastapi_client():
+    yield client
 
 
 @pytest.fixture()
-def fastapi_client(fastapi_app):
-    yield TestClient(fastapi_app)
-
-
-@pytest.fixture()
-def user_logged_client(fastapi_client: TestClient):
-    with session() as s:
+def user_logged_client(fastapi_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.User(
                 username="test",

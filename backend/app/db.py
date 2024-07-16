@@ -1,31 +1,17 @@
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-from app.settings import get_settings
+from app.settings import settings
 
-engine: Engine | None = None
-SessionLocal: sessionmaker | None = None
+engine = create_engine(settings.database_url)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
-def init_connection(connection_url: str):
-    global engine, SessionLocal
-    engine = create_engine(connection_url)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def close_connection():
-    global engine
-    if engine:
-        engine.dispose()
-        engine = None
+Base = declarative_base()
 
 
 def get_db():
-    if not engine:
-        init_connection(get_settings().database_url)
-
-    assert SessionLocal
-    db: Session = SessionLocal()
+    db = SessionLocal()
     try:
         yield db
     finally:

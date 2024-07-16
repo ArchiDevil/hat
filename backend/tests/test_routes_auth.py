@@ -1,21 +1,14 @@
-from contextlib import contextmanager
-
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 from app import models, schema
-from app.db import get_db
 
 # pylint: disable=C0116
 
 
-@contextmanager
-def session():
-    return get_db()
-
-
-def test_can_log_in(fastapi_client: TestClient):
-    with session() as s:
+def test_can_log_in(fastapi_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.User(
                 username="test",
@@ -36,8 +29,8 @@ def test_can_log_in(fastapi_client: TestClient):
     assert response.cookies["session"]
 
 
-def test_can_log_in_with_remember(fastapi_client: TestClient):
-    with session() as s:
+def test_can_log_in_with_remember(fastapi_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.User(
                 username="test",
@@ -60,9 +53,9 @@ def test_can_log_in_with_remember(fastapi_client: TestClient):
 
 @pytest.mark.parametrize("password", ["1234", ""])
 def test_returns_403_for_invalid_password(
-    fastapi_client: TestClient, password: str | None
+    fastapi_client: TestClient, password: str | None, session: Session
 ):
-    with session() as s:
+    with session as s:
         s.add(
             schema.User(
                 username="test",
@@ -81,8 +74,8 @@ def test_returns_403_for_invalid_password(
     assert response.status_code == 401
 
 
-def test_returns_403_for_disabled(fastapi_client: TestClient):
-    with session() as s:
+def test_returns_403_for_disabled(fastapi_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.User(
                 username="test",
@@ -110,8 +103,8 @@ def test_returns_403_for_disabled(fastapi_client: TestClient):
     assert response.status_code == 403
 
 
-def test_can_logout(fastapi_client: TestClient):
-    with session() as s:
+def test_can_logout(fastapi_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.User(
                 username="test",

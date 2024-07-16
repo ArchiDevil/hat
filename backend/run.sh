@@ -6,4 +6,4 @@
 alembic upgrade head
 
 # then run the app
-exec hypercorn -b 0.0.0.0:8000 --workers 4 --access-logfile - --error-logfile - asgi:app
+exec hypercorn -b 0.0.0.0:8000 --workers 4 --access-logfile - --error-logfile - main:app

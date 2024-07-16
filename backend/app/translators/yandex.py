@@ -7,7 +7,7 @@ import requests
 from pydantic import BaseModel, PositiveInt, ValidationError
 
 from app.models import MachineTranslationSettings
-from app.settings import get_settings
+from app.settings import settings
 
 
 class YandexTranslatorResponse(BaseModel):
@@ -59,7 +59,7 @@ def get_iam_token(oauth_token: str):
         iam_token (str): An IAM token from Yandex Translator API.
     """
     response = requests.post(
-        f"{get_settings().iam_api}/iam/v1/tokens",
+        f"{settings.iam_api}/iam/v1/tokens",
         json={"yandexPassportOauthToken": oauth_token},
         timeout=15,
     )
@@ -89,7 +89,7 @@ def translate_batch(lines: list[str], iam_token: str, folder_id: str) -> list[st
     }
 
     response = requests.post(
-        f"{get_settings().translation_api}/translate/v2/translate",
+        f"{settings.translation_api}/translate/v2/translate",
         json=json_data,
         headers=headers,
         timeout=15,

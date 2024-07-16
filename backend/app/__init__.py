@@ -1,28 +1,22 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from app.db import Base
+from app.glossary.models import GlossaryDocument, GlossaryRecord
+from app.schema import (
+    DocumentTask,
+    TmxDocument,
+    TmxRecord,
+    User,
+    XliffDocument,
+    XliffRecord,
+)
 
-from app.routers import auth, tmx, user, users, xliff
-
-
-def create_app():
-    app = FastAPI()
-
-    # TODO: it would be nice to make it debug-only
-    origins = [
-        "http://localhost:5173",
-    ]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    app.include_router(auth.router)
-    app.include_router(tmx.router)
-    app.include_router(xliff.router)
-    app.include_router(user.router)
-    app.include_router(users.router)
-
-    return app
+__all__ = [
+    "Base",
+    "DocumentTask",
+    "TmxDocument",
+    "TmxRecord",
+    "User",
+    "XliffDocument",
+    "XliffRecord",
+    "GlossaryDocument",
+    "GlossaryRecord",
+]
