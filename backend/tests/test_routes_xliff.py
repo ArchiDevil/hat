@@ -407,6 +407,9 @@ def test_process_sets_document_in_pending_stage_and_creates_task(
 
 
 def test_process_creates_task(user_logged_client: TestClient, session: Session):
+    with session as s:
+        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
+
     with open("tests/small.xliff", "rb") as fp:
         user_logged_client.post("/xliff/", files={"file": fp})
 
@@ -416,7 +419,7 @@ def test_process_creates_task(user_logged_client: TestClient, session: Session):
             "substitute_numbers": False,
             "use_machine_translation": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [],
+            "tmx_file_ids": [1],
             "tmx_usage": "newest",
         },
     )
@@ -435,10 +438,41 @@ def test_process_creates_task(user_logged_client: TestClient, session: Session):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "tmx_file_ids": [],
+                "tmx_file_ids": [1],
                 "tmx_usage": "newest",
             },
         }
+
+
+def test_process_creates_xliff_tmx_link(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
+        s.add(schema.TmxDocument(name="another_doc.tmx", created_by=1))
+        s.commit()
+
+    with open("tests/small.xliff", "rb") as fp:
+        user_logged_client.post("/xliff/", files={"file": fp})
+
+    response = user_logged_client.post(
+        "/xliff/1/process",
+        json={
+            "substitute_numbers": False,
+            "use_machine_translation": False,
+            "machine_translation_settings": None,
+            "tmx_file_ids": [1, 2],
+            "tmx_usage": "newest",
+        },
+    )
+
+    assert response.status_code == 200
+
+    with session as s:
+        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        assert len(doc.tmxs) == 2
+        assert doc.tmxs[0].id == 1
+        assert doc.tmxs[1].id == 2
 
 
 def test_returns_404_when_processing_nonexistent_xliff_doc(

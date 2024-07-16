@@ -209,6 +209,12 @@ def process_xliff(
         )
 
     doc.processing_status = models.DocumentStatus.PENDING.value
+    tmxs = (
+        db.query(schema.TmxDocument)
+        .filter(schema.TmxDocument.id.in_(settings.tmx_file_ids))
+        .all()
+    )
+    doc.tmxs = tmxs
     db.commit()
 
     task_config = {

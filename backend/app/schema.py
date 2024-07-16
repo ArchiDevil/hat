@@ -1,13 +1,21 @@
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import Column, ForeignKey, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
 if TYPE_CHECKING:
     from app.glossary.models import GlossaryDocument
+
+
+xliff_to_tmx_link = Table(
+    "xliff_record_to_tmx",
+    Base.metadata,
+    Column("xliff_id", ForeignKey("xliff_document.id"), nullable=False),
+    Column("tmx_id", ForeignKey("tmx_document.id"), nullable=False),
+)
 
 
 class TmxDocument(Base):
@@ -21,6 +29,9 @@ class TmxDocument(Base):
         back_populates="document", cascade="all, delete-orphan", order_by="TmxRecord.id"
     )
     user: Mapped["User"] = relationship(back_populates="tmxs")
+    xliffs: Mapped[list["XliffDocument"]] = relationship(
+        secondary=xliff_to_tmx_link, back_populates="tmxs"
+    )
 
 
 class TmxRecord(Base):
@@ -52,6 +63,9 @@ class XliffDocument(Base):
         order_by="XliffRecord.id",
     )
     user: Mapped["User"] = relationship(back_populates="xliffs")
+    tmxs: Mapped[list["TmxDocument"]] = relationship(
+        secondary=xliff_to_tmx_link, back_populates="xliffs"
+    )
 
 
 class XliffRecord(Base):
