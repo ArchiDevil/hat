@@ -1,5 +1,4 @@
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from itsdangerous import URLSafeTimedSerializer
@@ -9,7 +8,7 @@ from app import models, schema
 from app.auth import has_user_role
 from app.db import get_db
 from app.security import password_hasher
-from app.settings import Settings, get_settings
+from app.settings import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -17,9 +16,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login")
 def login(
     data: models.AuthFields,
-    db: Annotated[Session, Depends(get_db)],
-    settings: Annotated[Settings, Depends(get_settings)],
     response: Response,
+    db: Session = Depends(get_db),
 ) -> models.StatusMessage:
     if not data.password:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)

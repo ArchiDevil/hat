@@ -6,11 +6,10 @@ from sqlalchemy.orm import Session
 
 from app import models, schema
 from app.db import get_db
-from app.settings import Settings, get_settings
+from app.settings import settings
 
 
 def get_current_user_id(
-    settings: Annotated[Settings, Depends(get_settings)],
     session: Annotated[str | None, Cookie(include_in_schema=False)] = None,
 ) -> int:
     if not session:

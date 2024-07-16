@@ -1,11 +1,13 @@
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.db import Base
 
-class Base(DeclarativeBase):
-    pass
+if TYPE_CHECKING:
+    from app.glossary.models import GlossaryDocument
 
 
 class TmxDocument(Base):
@@ -89,4 +91,9 @@ class User(Base):
     )
     xliffs: Mapped[list["XliffDocument"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", order_by="XliffDocument.id"
+    )
+    glossaries: Mapped[list["GlossaryDocument"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="GlossaryDocument.id",
     )

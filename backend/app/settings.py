@@ -1,4 +1,4 @@
-from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings
 
@@ -11,8 +11,11 @@ class Settings(BaseSettings):
     translation_api: str = "https://translate.api.cloud.yandex.net"
     secret_key: str = "secret-key"
     domain_name: str | None = None
+    env: Literal["DEV", "PROD"] = "DEV"
+    origins: tuple[str, ...] = (
+        "http://localhost:5173",
+        "http://localhost:8000",
+    )
 
 
-@lru_cache
-def get_settings():
-    return Settings()
+settings = Settings()

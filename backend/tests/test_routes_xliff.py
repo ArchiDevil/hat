@@ -1,22 +1,16 @@
 import json
-from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 from app import models, schema
-from app.db import get_db
 
 # pylint: disable=C0116
 
 
-@contextmanager
-def session():
-    return get_db()
-
-
-def test_can_get_list_of_xliff_docs(user_logged_client: TestClient):
-    with session() as s:
+def test_can_get_list_of_xliff_docs(user_logged_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.XliffDocument(
                 name="first_doc.tmx",
@@ -43,8 +37,8 @@ def test_can_get_list_of_xliff_docs(user_logged_client: TestClient):
     ]
 
 
-def test_can_get_xliff_file(user_logged_client: TestClient):
-    with session() as s:
+def test_can_get_xliff_file(user_logged_client: TestClient, session: Session):
+    with session as s:
         xliff_records = [
             schema.XliffRecord(
                 segment_id=8,
@@ -83,8 +77,8 @@ def test_can_get_xliff_file(user_logged_client: TestClient):
     }
 
 
-def test_can_get_xliff_records(user_logged_client: TestClient):
-    with session() as s:
+def test_can_get_xliff_records(user_logged_client: TestClient, session: Session):
+    with session as s:
         xliff_records = [
             schema.XliffRecord(
                 segment_id=8,
@@ -134,8 +128,10 @@ def test_can_get_xliff_records(user_logged_client: TestClient):
     ]
 
 
-def test_xliff_records_returns_second_page(user_logged_client: TestClient):
-    with session() as s:
+def test_xliff_records_returns_second_page(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
         xliff_records = [
             schema.XliffRecord(
                 segment_id=i,
@@ -171,8 +167,10 @@ def test_xliff_records_returns_second_page(user_logged_client: TestClient):
     }
 
 
-def test_xliff_records_returns_empty_for_too_large_page(user_logged_client: TestClient):
-    with session() as s:
+def test_xliff_records_returns_empty_for_too_large_page(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
         xliff_records = [
             schema.XliffRecord(
                 segment_id=i,
@@ -212,8 +210,8 @@ def test_returns_404_when_xliff_file_not_found(user_logged_client: TestClient):
     assert response.status_code == 404
 
 
-def test_can_update_xliff_record(user_logged_client: TestClient):
-    with session() as s:
+def test_can_update_xliff_record(user_logged_client: TestClient, session: Session):
+    with session as s:
         xliff_records = [
             schema.XliffRecord(
                 segment_id=8,
@@ -245,7 +243,7 @@ def test_can_update_xliff_record(user_logged_client: TestClient):
     assert response.status_code == 200
     assert response.json() == {"message": "Record updated"}
 
-    with session() as s:
+    with session as s:
         record = s.query(schema.XliffRecord).filter(schema.XliffRecord.id == 2).one()
         assert record.target == "Updated"
 
@@ -259,8 +257,10 @@ def test_returns_404_for_nonexistent_doc_when_updating_record(
     assert response.status_code == 404
 
 
-def test_returns_404_for_nonexistent_record(user_logged_client: TestClient):
-    with session() as s:
+def test_returns_404_for_nonexistent_record(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
         s.add(
             schema.XliffDocument(
                 name="test_doc.xliff",
@@ -276,8 +276,8 @@ def test_returns_404_for_nonexistent_record(user_logged_client: TestClient):
     assert response.status_code == 404
 
 
-def test_can_delete_xliff_doc(user_logged_client: TestClient):
-    with session() as s:
+def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.XliffDocument(
                 name="first_doc.tmx",
@@ -292,7 +292,7 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient):
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
 
-    with session() as s:
+    with session as s:
         assert s.query(schema.XliffDocument).count() == 0
 
 
@@ -303,12 +303,12 @@ def test_returns_404_when_deleting_nonexistent_xliff_doc(
     assert response.status_code == 404
 
 
-def test_upload(user_logged_client: TestClient):
+def test_upload(user_logged_client: TestClient, session: Session):
     with open("tests/small.xliff", "rb") as fp:
         response = user_logged_client.post("/xliff", files={"file": fp})
     assert response.status_code == 200
 
-    with session() as s:
+    with session as s:
         doc = s.query(schema.XliffDocument).filter_by(id=1).first()
         assert doc is not None
         assert doc.name == "small.xliff"
@@ -323,8 +323,8 @@ def test_upload_no_file(user_logged_client: TestClient):
     assert response.status_code == 422
 
 
-def test_upload_removes_old_files(user_logged_client: TestClient):
-    with session() as s:
+def test_upload_removes_old_files(user_logged_client: TestClient, session: Session):
+    with session as s:
         s.add(
             schema.XliffDocument(
                 name="some_doc.xliff",
@@ -340,13 +340,15 @@ def test_upload_removes_old_files(user_logged_client: TestClient):
         response = user_logged_client.post("/xliff/", files={"file": fp})
     assert response.status_code == 200
 
-    with session() as s:
+    with session as s:
         doc = s.query(schema.XliffDocument).filter_by(name="some_doc.xliff").first()
         assert not doc
 
 
-def test_upload_removes_only_uploaded_documents(user_logged_client: TestClient):
-    with session() as s:
+def test_upload_removes_only_uploaded_documents(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
         s.add(
             schema.XliffDocument(
                 name="uploaded_doc.xliff",
@@ -371,7 +373,7 @@ def test_upload_removes_only_uploaded_documents(user_logged_client: TestClient):
         response = user_logged_client.post("/xliff/", files={"file": fp})
     assert response.status_code == 200
 
-    with session() as s:
+    with session as s:
         doc = s.query(schema.XliffDocument).filter_by(name="uploaded_doc.xliff").first()
         assert not doc
         doc = (
@@ -381,7 +383,7 @@ def test_upload_removes_only_uploaded_documents(user_logged_client: TestClient):
 
 
 def test_process_sets_document_in_pending_stage_and_creates_task(
-    user_logged_client: TestClient,
+    user_logged_client: TestClient, session: Session
 ):
     with open("tests/small.xliff", "rb") as fp:
         user_logged_client.post("/xliff/", files={"file": fp})
@@ -399,12 +401,12 @@ def test_process_sets_document_in_pending_stage_and_creates_task(
 
     assert response.status_code == 200
 
-    with session() as s:
+    with session as s:
         doc = s.query(schema.XliffDocument).filter_by(id=1).one()
         assert doc.processing_status == "pending"
 
 
-def test_process_creates_task(user_logged_client: TestClient):
+def test_process_creates_task(user_logged_client: TestClient, session: Session):
     with open("tests/small.xliff", "rb") as fp:
         user_logged_client.post("/xliff/", files={"file": fp})
 
@@ -421,7 +423,7 @@ def test_process_creates_task(user_logged_client: TestClient):
 
     assert response.status_code == 200
 
-    with session() as s:
+    with session as s:
         task = s.query(schema.DocumentTask).filter_by(id=1).one()
         assert task.status == "pending"
         loaded_data = json.loads(task.data)
@@ -455,11 +457,11 @@ def test_returns_404_when_processing_nonexistent_xliff_doc(
     assert response.status_code == 404
 
 
-def test_download_xliff(user_logged_client: TestClient):
+def test_download_xliff(user_logged_client: TestClient, session: Session):
     with open("tests/small.xliff", "rb") as fp:
         user_logged_client.post("/xliff", files={"file": fp})
 
-    with session() as s:
+    with session as s:
         xliff_records = [
             schema.XliffRecord(
                 segment_id=675606,
