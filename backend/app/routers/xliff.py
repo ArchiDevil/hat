@@ -4,6 +4,7 @@ from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select, func, text
 from sqlalchemy.orm import Session
 
 from app import models, schema
@@ -100,6 +101,50 @@ def get_xliff_records(
             approved=record.approved,
         )
         for record in records
+    ]
+
+
+@router.get("/{doc_id}/segments/{segment_id}/substitutions")
+def get_segment_substitutions(
+    doc_id: int, segment_id: int, db: Annotated[Session, Depends(get_db)]
+) -> list[models.XliffSubstitution]:
+    doc = (
+        db.query(schema.XliffDocument).filter(schema.XliffDocument.id == doc_id).first()
+    )
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    original_segment = (
+        db.query(schema.XliffRecord).filter(schema.XliffRecord.id == segment_id).first()
+    )
+    if not original_segment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
+        )
+
+    tmx_ids = [tmx.id for tmx in doc.tmxs]
+    if not tmx_ids:
+        return []
+
+    similarity_func = func.similarity(schema.TmxRecord.source, original_segment.source)
+    db.execute(
+        text("SET pg_trgm.similarity_threshold TO :threshold"), {"threshold": 0.7}
+    )
+    records = db.execute(
+        select(schema.TmxRecord.source, schema.TmxRecord.target, similarity_func)
+        .filter(
+            schema.TmxRecord.source.op("%")(original_segment.source),
+            schema.TmxRecord.id.in_(tmx_ids),
+        )
+        .order_by(similarity_func.desc())
+        .limit(10),
+    ).all()
+
+    return [
+        models.XliffSubstitution(source=source, target=target, similarity=similarity)
+        for (source, target, similarity) in records
     ]
 
 

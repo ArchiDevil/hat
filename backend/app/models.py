@@ -71,6 +71,12 @@ class XliffRecordUpdate(BaseModel):
     target: str
 
 
+class XliffSubstitution(BaseModel):
+    source: str
+    target: str
+    similarity: float
+
+
 class MachineTranslationSettings(BaseModel):
     # Yandex only for now
     # source_language: str
