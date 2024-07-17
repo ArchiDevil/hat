@@ -30,7 +30,7 @@ class TmxDocument(Base):
     )
     user: Mapped["User"] = relationship(back_populates="tmxs")
     xliffs: Mapped[list["XliffDocument"]] = relationship(
-        secondary=xliff_to_tmx_link, back_populates="tmxs"
+        secondary=xliff_to_tmx_link, back_populates="tmxs", order_by="XliffDocument.id"
     )
 
 
@@ -64,7 +64,7 @@ class XliffDocument(Base):
     )
     user: Mapped["User"] = relationship(back_populates="xliffs")
     tmxs: Mapped[list["TmxDocument"]] = relationship(
-        secondary=xliff_to_tmx_link, back_populates="xliffs"
+        secondary=xliff_to_tmx_link, back_populates="xliffs", order_by="TmxDocument.id"
     )
 
 
