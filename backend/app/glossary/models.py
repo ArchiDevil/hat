@@ -35,7 +35,7 @@ class GlossaryRecord(Base):
 
     document_id: Mapped[int] = mapped_column(ForeignKey("glossary_document.id"))
     comment: Mapped[str] = mapped_column()
-    src: Mapped[str] = mapped_column()
-    dst: Mapped[str] = mapped_column()
+    source: Mapped[str] = mapped_column()
+    target: Mapped[str] = mapped_column()
 
     document: Mapped["GlossaryDocument"] = relationship(back_populates="records")
