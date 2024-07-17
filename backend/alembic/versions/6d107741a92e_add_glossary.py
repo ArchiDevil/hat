@@ -40,8 +40,8 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("document_id", sa.Integer(), nullable=False),
         sa.Column("comment", sa.String(), nullable=False),
-        sa.Column("src", sa.String(), nullable=False),
-        sa.Column("dst", sa.String(), nullable=False),
+        sa.Column("source", sa.String(), nullable=False),
+        sa.Column("target", sa.String(), nullable=False),
         sa.ForeignKeyConstraint(
             ["document_id"],
             ["glossary_document.id"],
