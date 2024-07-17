@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, tmx, user, users, xliff
+from app.routers import auth, glossary, tmx, user, users, xliff
 from app.settings import settings
 
-ROUTERS = (auth, tmx, user, users, xliff)
+ROUTERS = (auth, tmx, user, users, xliff, glossary)
 
 
 def create_app():

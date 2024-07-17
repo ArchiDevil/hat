@@ -5,10 +5,10 @@ from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.orm import Session
 
 from app import models, schema
-from app.auth import has_user_role
 from app.db import get_db
 from app.security import password_hasher
 from app.settings import settings
+from app.user.depends import has_user_role
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
