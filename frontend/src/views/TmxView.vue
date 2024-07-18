@@ -10,6 +10,7 @@ import Paginator, {PageState} from 'primevue/paginator'
 
 import DocSegment from '../components/DocSegment.vue'
 import PageTitle from '../components/PageTitle.vue'
+import PageNav from '../components/PageNav.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow.
@@ -45,7 +46,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div class="container">
+    <PageNav />
     <PageTitle title="TMX file viewer" />
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
@@ -57,7 +59,10 @@ onMounted(async () => {
       v-on:page="(event) => updatePage(event)"
       v-if="records && records?.length"
     />
-    <div v-if="records">
+    <div
+      v-if="records"
+      class="flex flex-col gap-1"
+    >
       <DocSegment
         v-for="record in records"
         :key="record.id"

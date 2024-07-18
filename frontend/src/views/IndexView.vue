@@ -8,6 +8,7 @@ import {TmxFile} from '../client/schemas/TmxFile'
 
 import Panel from 'primevue/panel'
 
+import PageNav from '../components/PageNav.vue'
 import File from '../components/File.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 import XliffUploadingDialog from '../components/XliffUploadingDialog.vue'
@@ -31,7 +32,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div class="container">
+    <PageNav />
     <Panel
       class="w-1/2 border rounded bg-red-50 px-4 mt-4"
       header="Warning!"

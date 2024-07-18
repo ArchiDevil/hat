@@ -3,7 +3,6 @@ import {useRouter} from 'vue-router'
 
 import {useUserStore} from '../stores/user'
 
-import PageTitle from './PageTitle.vue'
 import RoutingLink from './RoutingLink.vue'
 
 const router = useRouter()

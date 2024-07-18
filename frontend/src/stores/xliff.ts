@@ -2,8 +2,10 @@ import {acceptHMRUpdate, defineStore} from 'pinia'
 
 import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
 import {XliffFileWithRecordsCount} from '../client/schemas/XliffFileWithRecordsCount'
+import {XliffSubstitution} from '../client/schemas/XliffSubstitution'
 import {
   getDownloadXliffLink,
+  getSegmentSubstitutions,
   getXliff,
   getXliffRecords,
   updateXliffRecord,
@@ -21,6 +23,7 @@ export const useXliffStore = defineStore('xliff', {
       records: [] as XliffFileRecordWithStatus[],
       currentFocusIdx: undefined as number | undefined,
       downloadLink: undefined as string | undefined,
+      substitutions: [] as XliffSubstitution[],
     }
   },
   actions: {
@@ -55,6 +58,10 @@ export const useXliffStore = defineStore('xliff', {
       })
       this.records[idx].loading = false
     },
+    async focusSegment(idx: number) {
+      this.currentFocusIdx = idx
+      await this.loadSubstitutions()
+    },
     focusNextSegment() {
       if (
         this.currentFocusIdx &&
@@ -63,13 +70,24 @@ export const useXliffStore = defineStore('xliff', {
         this.currentFocusIdx += 1
       }
     },
+    async loadSubstitutions() {
+      if (!this.document || this.currentFocusIdx === undefined) {
+        this.substitutions = []
+        return
+      }
+
+      this.substitutions = await getSegmentSubstitutions(
+        this.document.id,
+        this.currentFocusId!
+      )
+    },
   },
   getters: {
     documentReady: (state) =>
       state.document &&
       (state.document.status == 'done' || state.document.status == 'error'),
     currentFocusId: (state) =>
-      state.currentFocusIdx
+      state.records && state.currentFocusIdx !== undefined
         ? state.records[state.currentFocusIdx].id
         : undefined,
   },

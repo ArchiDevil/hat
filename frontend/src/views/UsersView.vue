@@ -9,6 +9,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import PageTitle from '../components/PageTitle.vue'
+import PageNav from '../components/PageNav.vue'
 import UserAddDialog from '../components/UserAddDialog.vue'
 import UserEditDialog from '../components/UserEditDialog.vue'
 
@@ -35,7 +36,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
+  <div class="container">
+    <PageNav />
     <PageTitle title="Users page" />
     <template v-if="mode == 'table'">
       <Button
