@@ -68,8 +68,8 @@ onMounted(async () => {
         <Link
           href="/"
           class="ml-4"
-          >Return to main page</Link
-        >
+          title="Return to main page"
+        />
       </div>
       <p class="ml-4">Number of records: {{ store.document?.records_count }}</p>
       <template v-if="store.documentReady && !store.documentLoading">
@@ -93,9 +93,8 @@ onMounted(async () => {
         <Link
           :href="store.downloadLink"
           class="inline-block"
-        >
-          Download document
-        </Link>
+          title="Download document"
+        />
       </div>
     </div>
     <div class="overflow-hidden pt-2 grid grid-cols-[auto_1fr] gap-2">
