@@ -43,6 +43,7 @@ export function tsType(prop: PropDescription): string {
       return 'string'
     }
     case 'integer':
+    case 'number':
       return 'number'
     case 'boolean':
       return 'boolean'
@@ -57,6 +58,7 @@ export function tsType(prop: PropDescription): string {
               console.warn('Unsupport null array')
               return 'any[]'
             case 'integer':
+            case 'number':
               return 'number[]'
             case 'boolean':
               return 'boolean[]'

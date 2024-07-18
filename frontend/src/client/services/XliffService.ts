@@ -7,6 +7,7 @@ import {Body_create_xliff_xliff__post} from '../schemas/Body_create_xliff_xliff_
 import {XliffFileWithRecordsCount} from '../schemas/XliffFileWithRecordsCount'
 import {StatusMessage} from '../schemas/StatusMessage'
 import {XliffFileRecord} from '../schemas/XliffFileRecord'
+import {XliffSubstitution} from '../schemas/XliffSubstitution'
 import {XliffRecordUpdate} from '../schemas/XliffRecordUpdate'
 import {XliffProcessingSettings} from '../schemas/XliffProcessingSettings'
 
@@ -26,6 +27,9 @@ export const deleteXliff = async (doc_id: number): Promise<StatusMessage> => {
 }
 export const getXliffRecords = async (doc_id: number, page?: number | null): Promise<XliffFileRecord[]> => {
   return await api.get<XliffFileRecord[]>(`/xliff/${doc_id}/records`, {query: {page}})
+}
+export const getSegmentSubstitutions = async (doc_id: number, segment_id: number): Promise<XliffSubstitution[]> => {
+  return await api.get<XliffSubstitution[]>(`/xliff/${doc_id}/segments/${segment_id}/substitutions`)
 }
 export const updateXliffRecord = async (doc_id: number, record_id: number, content: XliffRecordUpdate): Promise<StatusMessage> => {
   return await api.put<StatusMessage>(`/xliff/${doc_id}/record/${record_id}`, content)
