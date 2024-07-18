@@ -10,8 +10,7 @@ export const getReferencedType = (ref: string): string => {
 
 export const getDefaultImports = () => {
   return [
-    `import {mande} from 'mande'\n`,
-    `import {getApiBase} from '../defaults'\n`,
+    `import {getApiBase, api} from '../defaults'\n`,
   ]
 }
 
