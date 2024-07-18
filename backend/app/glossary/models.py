@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
@@ -19,14 +19,13 @@ class ProcessingStatuses:
 class GlossaryDocument(Base):
     __tablename__ = "glossary_document"
     id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
-    original_document: Mapped[str] = mapped_column()
     processing_status: Mapped[str] = mapped_column(
         default=ProcessingStatuses.IN_PROCESS
     )
-    upload_time: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+    upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
 
     records: Mapped[list["GlossaryRecord"]] = relationship(
         back_populates="document",
@@ -41,8 +40,8 @@ class GlossaryRecord(Base):
     __tablename__ = "glossary_record"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
     author: Mapped[str] = mapped_column()
     comment: Mapped[str] = mapped_column(nullable=True)
