@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from app.base.schema import Identified
+
 
 class DocumentStatus(Enum):
     UPLOADED = "uploaded"
@@ -29,10 +31,6 @@ class UserRole(Enum):
     @classmethod
     def get_values(cls):
         return tuple(role.value for role in cls)
-
-
-class Identified(BaseModel):
-    id: int
 
 
 class TmxFile(Identified):
