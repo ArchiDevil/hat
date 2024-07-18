@@ -11,6 +11,7 @@ import DocSegment from '../components/DocSegment.vue'
 import SubstitutionsList from '../components/xliff/SubstitutionsList.vue'
 import LoadingMessage from '../components/xliff/LoadingMessage.vue'
 import ProcessingErrorMessage from '../components/xliff/ProcessingErrorMessage.vue'
+import RoutingLink from '../components/RoutingLink.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow
@@ -65,8 +66,8 @@ onMounted(async () => {
         <h2 class="text-xl font-bold mt-4 mb-4 ml-4 inline-block">
           {{ store.document?.name }}
         </h2>
-        <Link
-          href="/"
+        <RoutingLink
+          name="home"
           class="ml-4"
           title="Return to main page"
         />

@@ -22,16 +22,14 @@ const logout = async () => {
       <RoutingLink
         class="mx-2 uppercase font-semibold"
         name="home"
-      >
-        Home
-      </RoutingLink>
+        title="Home"
+      />
       <RoutingLink
         v-if="useUserStore().currentUser?.role === 'admin'"
         class="mx-2 uppercase font-semibold"
         name="users"
-      >
-        Users
-      </RoutingLink>
+        title="Users"
+      />
       <a
         href="#"
         class="mx-2 uppercase font-semibold underline hover:decoration-2"

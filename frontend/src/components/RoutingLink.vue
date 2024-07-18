@@ -4,6 +4,7 @@ import {RouteParamsRaw} from 'vue-router'
 defineProps<{
   name: string
   params?: RouteParamsRaw
+  title: string
 }>()
 </script>
 
@@ -12,6 +13,6 @@ defineProps<{
     :to="{name: name, params: params}"
     class="decoration-slate-900 transition-colors underline decoration-1 hover:decoration-2"
   >
-    <slot></slot>
+    {{ title }}
   </router-link>
 </template>

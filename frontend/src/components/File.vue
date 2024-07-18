@@ -51,9 +51,8 @@ const deleteFile = async () => {
       :name="type"
       :params="{id: file.id}"
       :disabled="busy"
-    >
-      Open
-    </RoutingLink>
+      title="Open"
+    />
     <Button
       label="Delete"
       class="ml-2"
