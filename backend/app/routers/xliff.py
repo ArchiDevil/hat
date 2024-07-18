@@ -136,7 +136,7 @@ def get_segment_substitutions(
         select(schema.TmxRecord.source, schema.TmxRecord.target, similarity_func)
         .filter(
             schema.TmxRecord.source.op("%")(original_segment.source),
-            schema.TmxRecord.id.in_(tmx_ids),
+            schema.TmxRecord.document_id.in_(tmx_ids),
         )
         .order_by(similarity_func.desc())
         .limit(10),
