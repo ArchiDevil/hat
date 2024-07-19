@@ -1,4 +1,4 @@
-from sqlalchemy import select, func, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app import models, schema

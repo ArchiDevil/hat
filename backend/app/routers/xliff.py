@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from app import models, schema
 from app.auth import get_current_user_id, has_user_role
 from app.db import get_db
-from app.xliff import SegmentState, extract_xliff_content
 from app.translation_memory.utils import get_substitutions
+from app.xliff import SegmentState, extract_xliff_content
 
 # TODO: add XLIFF segments statuses according to the specification
 
