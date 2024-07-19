@@ -115,7 +115,7 @@ onMounted(async () => {
             />
           </div>
           <SubstitutionsList
-            class="border-l border-y rounded-l-lg px-4 mb-1 overflow-scroll"
+            class="border-l border-y rounded-l-lg px-2 mb-1 overflow-scroll"
           />
         </template>
         <p v-else>Loading...</p>
