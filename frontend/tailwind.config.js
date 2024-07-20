@@ -15,7 +15,8 @@ module.exports = {
       '2xl': '1.5rem',
     },
     fontFamily: {
-      sans: ['Open Sans', 'sans-serif'],
+      ui: ['Inter', 'sans-serif'],
+      text: ['Open Sans', 'sans-serif'],
     },
     container: {
       center: true,

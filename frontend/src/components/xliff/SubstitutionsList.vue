@@ -15,8 +15,8 @@ const store = useXliffStore()
       >
         {{ (match.similarity * 100.0).toFixed(0) }}%
       </div>
-      <div>{{ match.source }}</div>
-      <div>{{ match.target }}</div>
+      <div class="font-text">{{ match.source }}</div>
+      <div class="font-text">{{ match.target }}</div>
     </div>
   </div>
 </template>
