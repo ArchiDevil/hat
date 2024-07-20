@@ -4,12 +4,12 @@ from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select, func, text
 from sqlalchemy.orm import Session
 
 from app import models, schema
 from app.auth import get_current_user_id, has_user_role
 from app.db import get_db
+from app.translation_memory.utils import get_substitutions
 from app.xliff import SegmentState, extract_xliff_content
 
 # TODO: add XLIFF segments statuses according to the specification
@@ -128,24 +128,7 @@ def get_segment_substitutions(
     if not tmx_ids:
         return []
 
-    similarity_func = func.similarity(schema.TmxRecord.source, original_segment.source)
-    db.execute(
-        text("SET pg_trgm.similarity_threshold TO :threshold"), {"threshold": 0.7}
-    )
-    records = db.execute(
-        select(schema.TmxRecord.source, schema.TmxRecord.target, similarity_func)
-        .filter(
-            schema.TmxRecord.source.op("%")(original_segment.source),
-            schema.TmxRecord.document_id.in_(tmx_ids),
-        )
-        .order_by(similarity_func.desc())
-        .limit(10),
-    ).all()
-
-    return [
-        models.XliffSubstitution(source=source, target=target, similarity=similarity)
-        for (source, target, similarity) in records
-    ]
+    return get_substitutions(original_segment.source, tmx_ids, db)
 
 
 @router.put("/{doc_id}/record/{record_id}")

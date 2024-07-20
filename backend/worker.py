@@ -10,37 +10,45 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import db, models, schema
+from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
-from app.xliff import XliffSegment, extract_xliff_content
+from app.xliff import extract_xliff_content
 
 
 def get_segment_translation(
-    segment: XliffSegment,
+    source: str,
     settings: models.XliffProcessingSettings,
     session: Session,
 ):
-    # TODO: this is slow, it needs to be optimized
-    selector = (
-        select(schema.TmxRecord.source, schema.TmxRecord.target)
-        .where(schema.TmxRecord.source == segment.original)
-        .where(schema.TmxRecord.document_id.in_(settings.tmx_file_ids))
-    )
-    match settings.tmx_usage:
-        case models.TmxUsage.NEWEST:
-            selector = selector.order_by(schema.TmxRecord.change_date.desc())
-        case models.TmxUsage.OLDEST:
-            selector = selector.order_by(schema.TmxRecord.change_date.asc())
-        case _:
-            logging.error("Unknown TMX usage option")
-            return None
+    # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
+    if settings.substitute_numbers and source.isdigit():
+        return source
 
-    tmx_data = session.execute(selector.limit(1)).first()
+    if settings.similarity_threshold < 1.0:
+        substitutions = get_substitutions(
+            source, settings.tmx_file_ids, session, settings.similarity_threshold, 1
+        )
+        if substitutions:
+            return substitutions[0].target
+    else:
+        selector = (
+            select(schema.TmxRecord.source, schema.TmxRecord.target)
+            .where(schema.TmxRecord.source == source)
+            .where(schema.TmxRecord.document_id.in_(settings.tmx_file_ids))
+        )
+        match settings.tmx_usage:
+            case models.TmxUsage.NEWEST:
+                selector = selector.order_by(schema.TmxRecord.change_date.desc())
+            case models.TmxUsage.OLDEST:
+                selector = selector.order_by(schema.TmxRecord.change_date.asc())
+            case _:
+                logging.error("Unknown TMX usage option")
+                return None
 
-    if tmx_data:
-        return tmx_data.target
+        tmx_data = session.execute(selector.limit(1)).first()
 
-    if settings.substitute_numbers and segment.original.isdigit():
-        return segment.original
+        if tmx_data:
+            return tmx_data.target
 
     return None
 
@@ -54,7 +62,7 @@ def process_xliff(
     to_translate: list[int] = []
     for i, segment in enumerate(xliff_data.segments):
         if not segment.approved:
-            translation = get_segment_translation(segment, settings, session)
+            translation = get_segment_translation(segment.original, settings, session)
             if not translation:
                 # we cannot find translation for this segment
                 # save it to translate by Yandex
@@ -66,7 +74,7 @@ def process_xliff(
     # translate by Yandex if there is a setting to do so enabled
     # TODO: it is better to make solution more translation service agnostic
     machine_translation_failed = False
-    if settings.use_machine_translation and len(to_translate) > 0:
+    if settings.machine_translation_settings and len(to_translate) > 0:
         if (
             not settings.machine_translation_settings
             or not settings.machine_translation_settings.folder_id

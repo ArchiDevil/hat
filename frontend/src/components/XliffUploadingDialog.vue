@@ -33,6 +33,7 @@ const machineTranslationSettings = ref<MachineTranslationSettings>({
   folder_id: '',
   oauth_token: '',
 })
+const similarityThreshold = ref<number>(1.0)
 
 const processingAvailable = computed(() => uploadedFile.value != null)
 const tmxStore = useTmxStore()
@@ -70,12 +71,12 @@ const startProcessing = async () => {
     status.value = 'Processing...'
     await processXliff(uploadedFile.value!.id, {
       substitute_numbers: substituteNumbers.value,
-      use_machine_translation: useMachineTranslation.value,
       machine_translation_settings: useMachineTranslation.value
         ? machineTranslationSettings.value
         : null,
       tmx_file_ids: tmxStore.selectedIds,
       tmx_usage: tmxStore.tmxMode,
+      similarity_threshold: similarityThreshold.value,
     })
     uploading.value = false
     status.value = 'Done!'
@@ -128,6 +129,22 @@ onMounted(async () => {
               option-value="value"
             />
           </div>
+          <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
+            <label>Substitution similary threshold:</label>
+            <Select
+              v-model="similarityThreshold"
+              :options="[
+                {name: '100%', value: 1.0},
+                {name: '95%', value: 0.95},
+                {name: '90%', value: 0.9},
+                {name: '85%', value: 0.85},
+                {name: '80%', value: 0.8},
+                {name: '75%', value: 0.75},
+              ]"
+              option-label="name"
+              option-value="value"
+            />
+          </div>
           <div class="flex items-center mt-2">
             <Checkbox
               id="sn"
@@ -139,7 +156,7 @@ onMounted(async () => {
               class="ml-2"
               @click="substituteNumbers = !substituteNumbers"
             >
-              Substitute segments with numbers only
+              Substitute segments containing only digits
             </label>
           </div>
           <div class="flex items-center">
@@ -200,10 +217,8 @@ onMounted(async () => {
         </div>
         <div v-else>{{ status }}</div>
       </template>
-      <template #empty
-        ><span v-if="!status">
-          Choose XLIFF file to upload.
-        </span>
+      <template #empty>
+        <span v-if="!status">Choose XLIFF file to upload.</span>
       </template>
     </FileUpload>
   </div>

@@ -392,7 +392,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task(
         "/xliff/1/process",
         json={
             "substitute_numbers": False,
-            "use_machine_translation": False,
             "machine_translation_settings": None,
             "tmx_file_ids": [],
             "tmx_usage": "newest",
@@ -417,7 +416,6 @@ def test_process_creates_task(user_logged_client: TestClient, session: Session):
         "/xliff/1/process",
         json={
             "substitute_numbers": False,
-            "use_machine_translation": False,
             "machine_translation_settings": None,
             "tmx_file_ids": [1],
             "tmx_usage": "newest",
@@ -436,10 +434,10 @@ def test_process_creates_task(user_logged_client: TestClient, session: Session):
             "doc_id": 1,
             "settings": {
                 "substitute_numbers": False,
-                "use_machine_translation": False,
                 "machine_translation_settings": None,
                 "tmx_file_ids": [1],
                 "tmx_usage": "newest",
+                "similarity_threshold": 1.0,
             },
         }
 
@@ -459,7 +457,6 @@ def test_process_creates_xliff_tmx_link(
         "/xliff/1/process",
         json={
             "substitute_numbers": False,
-            "use_machine_translation": False,
             "machine_translation_settings": None,
             "tmx_file_ids": [1, 2],
             "tmx_usage": "newest",
@@ -482,7 +479,6 @@ def test_returns_404_when_processing_nonexistent_xliff_doc(
         "/xliff/1/process",
         json={
             "substitute_numbers": False,
-            "use_machine_translation": False,
             "machine_translation_settings": None,
             "tmx_file_ids": [],
             "tmx_usage": "newest",

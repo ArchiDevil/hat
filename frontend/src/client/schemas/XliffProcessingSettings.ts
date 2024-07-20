@@ -5,8 +5,8 @@ import {TmxUsage} from './TmxUsage'
 
 export interface XliffProcessingSettings {
   substitute_numbers: boolean
-  use_machine_translation: boolean
   machine_translation_settings: MachineTranslationSettings | null
   tmx_file_ids: number[]
   tmx_usage: TmxUsage
+  similarity_threshold?: number
 }

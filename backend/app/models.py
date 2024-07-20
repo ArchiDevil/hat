@@ -87,10 +87,10 @@ class MachineTranslationSettings(BaseModel):
 
 class XliffProcessingSettings(BaseModel):
     substitute_numbers: bool
-    use_machine_translation: bool
     machine_translation_settings: Optional[MachineTranslationSettings]
     tmx_file_ids: list[int]
     tmx_usage: TmxUsage
+    similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
 class StatusMessage(BaseModel):
