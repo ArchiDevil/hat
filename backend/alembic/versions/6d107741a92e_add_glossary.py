@@ -1,4 +1,4 @@
-"""add glossary
+"""Add glossary
 
 Revision ID: 6d107741a92e
 Revises: b3e764c93fac
