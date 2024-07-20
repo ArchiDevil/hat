@@ -13,7 +13,7 @@ COPY ./backend/alembic /app/alembic
 COPY ./backend/alembic.ini /app/alembic.ini
 
 COPY ./backend/manage.py /app/manage.py
-COPY ./backend/asgi.py /app/asgi.py
+COPY ./backend/main.py /app/main.py
 COPY ./backend/app /app/app
 
 WORKDIR /app
