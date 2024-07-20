@@ -6,6 +6,6 @@
 
 <style scoped>
 .content {
-  @apply text-color font-medium font-sans;
+  @apply text-color font-medium font-ui;
 }
 </style>

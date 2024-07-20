@@ -49,7 +49,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="flex flex-row gap-2">
+  <div class="flex flex-row gap-2 font-text">
     <div class="p-2 text-center w-16">
       {{ record.id }}
     </div>

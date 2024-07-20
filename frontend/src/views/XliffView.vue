@@ -30,7 +30,7 @@ const page = computed(() => {
 
 const loadDocument = async () => {
   if (!documentId.value) return
-  store.loadDocument(documentId.value)
+  await store.loadDocument(documentId.value)
   if (!store.document || !store.documentReady) {
     setTimeout(loadDocument, 1000)
   }
