@@ -5,6 +5,7 @@ import {useRoute, useRouter} from 'vue-router'
 import {useXliffStore} from '../stores/xliff'
 
 import Paginator, {PageState} from 'primevue/paginator'
+import Skeleton from 'primevue/skeleton'
 
 import Link from '../components/Link.vue'
 import DocSegment from '../components/DocSegment.vue'
@@ -28,8 +29,9 @@ const page = computed(() => {
 })
 
 const loadDocument = async () => {
+  if (!documentId.value) return
   store.loadDocument(documentId.value)
-  if (!store.document) {
+  if (!store.document || !store.documentReady) {
     setTimeout(loadDocument, 1000)
   }
 }
@@ -60,7 +62,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="w-full h-screen grid grid-rows-[1fr_auto] overflow-hidden">
+  <div
+    v-if="store.documentReady"
+    class="w-full h-screen grid grid-rows-[auto_1fr] overflow-hidden"
+  >
     <div class="bg-surface-0 border-b">
       <div>
         <h2 class="text-xl font-bold mt-4 mb-4 ml-4 inline-block">
@@ -80,7 +85,7 @@ onMounted(async () => {
         />
       </template>
       <div
-        v-if="store.records"
+        v-if="store.documentReady"
         class="flex flex-row gap-4 items-center"
       >
         <Paginator
@@ -88,7 +93,6 @@ onMounted(async () => {
           :total-records="store.document?.records_count"
           :first="page * 100"
           v-on:page="(event) => updatePage(event)"
-          v-if="store.records && store.records?.length"
           class="inline-block"
         />
         <Link
@@ -98,10 +102,10 @@ onMounted(async () => {
         />
       </div>
     </div>
-    <div class="overflow-hidden pt-2 grid grid-cols-[auto_1fr] gap-2">
+    <div class="overflow-hidden grid grid-cols-[auto_1fr] gap-2">
       <template v-if="store.documentReady && !store.documentLoading">
         <template v-if="store.records">
-          <div class="flex flex-col gap-1 pb-1 overflow-scroll">
+          <div class="flex flex-col gap-1 overflow-scroll my-1 bg-surface-50">
             <DocSegment
               v-for="(record, idx) in store.records"
               :key="record.id"
@@ -115,15 +119,36 @@ onMounted(async () => {
             />
           </div>
           <SubstitutionsList
-            class="border-l border-y rounded-l-lg px-2 mb-1 overflow-scroll"
+            class="border-l border-y rounded-l-lg px-2 my-1 overflow-scroll bg-surface-50"
           />
         </template>
         <p v-else>Loading...</p>
       </template>
-      <LoadingMessage
-        v-else
-        class="mt-2"
+    </div>
+  </div>
+  <div v-else>
+    <div class="ml-8 mt-4 flex flex-col gap-2">
+      <Skeleton
+        width="20rem"
+        height="2rem"
       />
+      <Skeleton
+        width="10rem"
+        height="1.2rem"
+      />
+      <Skeleton
+        width="16rem"
+        height="1.2rem"
+      />
+      <Skeleton
+        width="8rem"
+        height="1.2rem"
+      />
+      <RoutingLink
+        name="home"
+        title="Return to main page"
+      />
+      <LoadingMessage class="max-w-[600px]" />
     </div>
   </div>
 </template>

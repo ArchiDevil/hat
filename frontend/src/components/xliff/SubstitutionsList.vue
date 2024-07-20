@@ -11,7 +11,7 @@ const store = useXliffStore()
       class="py-2 text-base grid grid-cols-[auto_1fr_1fr] gap-2 border-b"
     >
       <div
-        class="border px-0.5 rounded bg-surface-100 w-16 text-center grow-0"
+        class="border rounded bg-surface-200 w-16 text-center grow-0 h-fit"
       >
         {{ (match.similarity * 100.0).toFixed(0) }}%
       </div>

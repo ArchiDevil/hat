@@ -54,14 +54,14 @@ watchEffect(() => {
       {{ record.id }}
     </div>
     <div
-      class="border rounded-border border-surface p-2 disabled:bg-surface-200 w-1/2"
+      class="border rounded-border border-surface p-2 disabled:bg-surface-200 w-1/2 bg-white"
       :class="{'bg-surface-200': disabled ?? false}"
     >
       {{ record.source }}
     </div>
     <div
       ref="targetInput"
-      class="border rounded-border border-surface p-2 active:border-primary focus:border-primary focus:outline-none w-1/2"
+      class="border rounded-border border-surface p-2 active:border-primary focus:border-primary focus:outline-none w-1/2 bg-white"
       :class="{'bg-surface-200': disabled ?? false}"
       :contenteditable="editable"
       @input="onInput"

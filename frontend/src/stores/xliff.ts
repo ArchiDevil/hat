@@ -30,6 +30,7 @@ export const useXliffStore = defineStore('xliff', {
     async loadDocument(doc_id: number) {
       this.documentLoading = true
       this.currentFocusIdx = undefined
+      this.document = undefined
       this.document = await getXliff(doc_id)
       this.downloadLink = getDownloadXliffLink(this.document.id)
       this.documentLoading = false
