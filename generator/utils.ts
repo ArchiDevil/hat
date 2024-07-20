@@ -10,8 +10,7 @@ export const getReferencedType = (ref: string): string => {
 
 export const getDefaultImports = () => {
   return [
-    `import {mande} from 'mande'\n`,
-    `import {getApiBase} from '../defaults'\n`,
+    `import {getApiBase, api} from '../defaults'\n`,
   ]
 }
 
@@ -44,6 +43,7 @@ export function tsType(prop: PropDescription): string {
       return 'string'
     }
     case 'integer':
+    case 'number':
       return 'number'
     case 'boolean':
       return 'boolean'
@@ -58,6 +58,7 @@ export function tsType(prop: PropDescription): string {
               console.warn('Unsupport null array')
               return 'any[]'
             case 'integer':
+            case 'number':
               return 'number[]'
             case 'boolean':
               return 'boolean[]'

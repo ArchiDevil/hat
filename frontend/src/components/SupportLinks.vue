@@ -4,10 +4,19 @@ import Link from './Link.vue'
 
 <template>
   <ul class="list-disc">
-    <li>Telegram: <Link href="https://t.me/archidevil">@archidevil</Link></li>
+    <li>
+      Telegram:
+      <Link
+        href="https://t.me/archidevil"
+        title="@archidevil"
+      />
+    </li>
     <li>
       Github:
-      <Link href="https://github.com/ArchiDevil/hat/issues">Issues page</Link>
+      <Link
+        href="https://github.com/ArchiDevil/hat/issues"
+        title="Issues page"
+      />
     </li>
   </ul>
 </template>

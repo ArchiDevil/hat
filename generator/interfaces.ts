@@ -1,4 +1,4 @@
-export type TrivialType = 'string' | 'integer' | 'boolean' | 'null'
+export type TrivialType = 'string' | 'integer' | 'boolean' | 'null' | 'number'
 
 export interface RefDesc {
   $ref: string

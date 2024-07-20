@@ -49,19 +49,19 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="grid grid-cols-11 gap-2">
-    <div class="p-2 col-span-1 text-center">
+  <div class="flex flex-row gap-2">
+    <div class="p-2 text-center w-16">
       {{ record.id }}
     </div>
     <div
-      class="border rounded-border border-surface p-2 disabled:bg-surface-200 col-span-5"
+      class="border rounded-border border-surface p-2 disabled:bg-surface-200 w-1/2 bg-white"
       :class="{'bg-surface-200': disabled ?? false}"
     >
       {{ record.source }}
     </div>
     <div
       ref="targetInput"
-      class="border rounded-border border-surface p-2 active:border-primary focus:border-primary focus:outline-none col-span-5"
+      class="border rounded-border border-surface p-2 active:border-primary focus:border-primary focus:outline-none w-1/2 bg-white"
       :class="{'bg-surface-200': disabled ?? false}"
       :contenteditable="editable"
       @input="onInput"

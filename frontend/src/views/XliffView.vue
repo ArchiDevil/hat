@@ -2,13 +2,17 @@
 import {computed, onMounted, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 
+import {useXliffStore} from '../stores/xliff'
+
 import Paginator, {PageState} from 'primevue/paginator'
+import Skeleton from 'primevue/skeleton'
 
 import Link from '../components/Link.vue'
 import DocSegment from '../components/DocSegment.vue'
-import SupportLinks from '../components/SupportLinks.vue'
-import PageTitle from '../components/PageTitle.vue'
-import {useXliffStore} from '../stores/xliff'
+import SubstitutionsList from '../components/xliff/SubstitutionsList.vue'
+import LoadingMessage from '../components/xliff/LoadingMessage.vue'
+import ProcessingErrorMessage from '../components/xliff/ProcessingErrorMessage.vue'
+import RoutingLink from '../components/RoutingLink.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow
@@ -25,8 +29,9 @@ const page = computed(() => {
 })
 
 const loadDocument = async () => {
+  if (!documentId.value) return
   store.loadDocument(documentId.value)
-  if (!store.document) {
+  if (!store.document || !store.documentReady) {
     setTimeout(loadDocument, 1000)
   }
 }
@@ -57,70 +62,93 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
-    <PageTitle title="XLIFF file viewer" />
-    <h2 class="text-xl font-bold mt-2 mb-4">{{ store.document?.name }}</h2>
-    <p>Number of records: {{ store.document?.records_count }}</p>
-    <template v-if="store.documentReady && !store.documentLoading">
-      <template v-if="store.document?.status == 'error'">
-        <p class="mt-2 text-red-700">
-          Error while processing the document. We still provide you the document
-          content. It might be processed partially.
-        </p>
-        <p class="mt-2">
-          If this problem persists, use one of these links to report an issue:
-        </p>
-        <SupportLinks class="mb-4" />
+  <div
+    v-if="store.documentReady"
+    class="w-full h-screen grid grid-rows-[auto_1fr] overflow-hidden"
+  >
+    <div class="bg-surface-0 border-b">
+      <div>
+        <h2 class="text-xl font-bold mt-4 mb-4 ml-4 inline-block">
+          {{ store.document?.name }}
+        </h2>
+        <RoutingLink
+          name="home"
+          class="ml-4"
+          title="Return to main page"
+        />
+      </div>
+      <p class="ml-4">Number of records: {{ store.document?.records_count }}</p>
+      <template v-if="store.documentReady && !store.documentLoading">
+        <ProcessingErrorMessage
+          v-if="store.document?.status == 'error'"
+          class="mt-2"
+        />
       </template>
-
-      <template v-if="store.records">
+      <div
+        v-if="store.documentReady"
+        class="flex flex-row gap-4 items-center"
+      >
+        <Paginator
+          :rows="100"
+          :total-records="store.document?.records_count"
+          :first="page * 100"
+          v-on:page="(event) => updatePage(event)"
+          class="inline-block"
+        />
         <Link
-          :href="store.downloadLink ?? ''"
-          class="mb-4 inline-block"
-        >
-          Download XLIFF document
-        </Link>
-        <Paginator
-          :rows="100"
-          :total-records="store.document?.records_count"
-          :first="page * 100"
-          v-on:page="(event) => updatePage(event)"
-          v-if="store.records && store.records?.length"
+          :href="store.downloadLink"
+          class="inline-block"
+          title="Download document"
         />
-        <div class="flex flex-col gap-1">
-          <DocSegment
-            v-for="(record, idx) in store.records"
-            :key="record.id"
-            editable
-            :record="record"
-            :disabled="record.loading"
-            :focused-id="store.currentFocusId"
-            @commit="(text) => onSegmentCommit(record.id, text)"
-            @update-record="(text) => onSegmentUpdate(record.id, text)"
-            @focus="store.currentFocusIdx = idx"
+      </div>
+    </div>
+    <div class="overflow-hidden grid grid-cols-[auto_1fr] gap-2">
+      <template v-if="store.documentReady && !store.documentLoading">
+        <template v-if="store.records">
+          <div class="flex flex-col gap-1 overflow-scroll my-1 bg-surface-50">
+            <DocSegment
+              v-for="(record, idx) in store.records"
+              :key="record.id"
+              editable
+              :record="record"
+              :disabled="record.loading"
+              :focused-id="store.currentFocusId"
+              @commit="(text) => onSegmentCommit(record.id, text)"
+              @update-record="(text) => onSegmentUpdate(record.id, text)"
+              @focus="store.focusSegment(idx)"
+            />
+          </div>
+          <SubstitutionsList
+            class="border-l border-y rounded-l-lg px-2 my-1 overflow-scroll bg-surface-50"
           />
-        </div>
-        <Paginator
-          :rows="100"
-          :total-records="store.document?.records_count"
-          :first="page * 100"
-          v-on:page="(event) => updatePage(event)"
-          v-if="store.records && store.records?.length"
-        />
+        </template>
+        <p v-else>Loading...</p>
       </template>
-      <template v-else>
-        <p>Loading...</p>
-      </template>
-    </template>
-    <template v-else>
-      <p class="mt-2">
-        The document is being processed right now. This should not take long.
-      </p>
-      <p class="mt-2">
-        If the file is processed too long (it not should take more than 5-10
-        minutes), use one of these links to report an issue:
-      </p>
-      <SupportLinks />
-    </template>
+    </div>
+  </div>
+  <div v-else>
+    <div class="ml-8 mt-4 flex flex-col gap-2">
+      <Skeleton
+        width="20rem"
+        height="2rem"
+      />
+      <Skeleton
+        width="10rem"
+        height="1.2rem"
+      />
+      <Skeleton
+        width="16rem"
+        height="1.2rem"
+      />
+      <Skeleton
+        width="8rem"
+        height="1.2rem"
+      />
+      <RoutingLink
+        name="home"
+        title="Return to main page"
+      />
+      <LoadingMessage class="max-w-[600px]" />
+    </div>
   </div>
 </template>

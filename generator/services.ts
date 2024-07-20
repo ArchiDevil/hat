@@ -181,13 +181,11 @@ const getMethod = (method: ServiceMethod) => {
         functionBody = [
           `  const formData = new FormData()`,
           `  formData.append('file', data.file)`,
-          `  const api = mande(getApiBase() + \`${interpolatedPath}\`)`,
-          `  return await api.${method.httpMethod}${mandeType}('', formData)`,
+          `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`, formData)`,
         ]
       } else if (isJsonData(method.description.requestBody.content)) {
         functionBody = [
-          `  const api = mande(getApiBase() + \`${interpolatedPath}\`)`,
-          `  return await api.${method.httpMethod}${mandeType}(content)`,
+          `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`, content)`,
         ]
       }
     } else {
@@ -199,10 +197,9 @@ const getMethod = (method: ServiceMethod) => {
           .join(', ')
       }
 
-      const methodParams = !query ? "''" : `'', {query: {${query}}}`
+      const methodParams = !query ? "" : `, {query: {${query}}}`
       functionBody = [
-        `  const api = mande(getApiBase() + \`${interpolatedPath}\`)`,
-        `  return await api.${method.httpMethod}${mandeType}(${methodParams})`,
+        `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`${methodParams})`,
       ]
     }
 
