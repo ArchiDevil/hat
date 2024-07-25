@@ -1,5 +1,6 @@
 from app.db import Base
 from app.glossary.models import GlossaryDocument, GlossaryRecord
+from app.documents.models import Document, DocumentRecord
 from app.schema import (
     DocumentTask,
     TmxDocument,
@@ -19,4 +20,6 @@ __all__ = [
     "XliffRecord",
     "GlossaryDocument",
     "GlossaryRecord",
+    "Document",
+    "DocumentRecord",
 ]

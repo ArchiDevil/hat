@@ -1,7 +1,8 @@
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app import models, schema
+from app import schema
+from .schema import MemorySubstitution
 
 
 def get_substitutions(
@@ -10,7 +11,7 @@ def get_substitutions(
     db: Session,
     threshold: float = 0.7,
     count: int = 10,
-) -> list[models.XliffSubstitution]:
+) -> list[MemorySubstitution]:
     similarity_func = func.similarity(schema.TmxRecord.source, source)
     db.execute(
         text("SET pg_trgm.similarity_threshold TO :threshold"), {"threshold": threshold}
@@ -26,6 +27,6 @@ def get_substitutions(
     ).all()
 
     return [
-        models.XliffSubstitution(source=source, target=target, similarity=similarity)
+        MemorySubstitution(source=source, target=target, similarity=similarity)
         for (source, target, similarity) in records
     ]
