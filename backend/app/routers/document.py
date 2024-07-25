@@ -142,7 +142,7 @@ async def create_doc(
     original_document = file_data.decode("utf-8")
 
     ext = name.split(".")[-1]
-    if ext not in ["xliff"]:
+    if ext not in ["xliff", "txt"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file type"
         )
@@ -155,11 +155,17 @@ async def create_doc(
     )
     query.add_document(doc)
 
-    xliff_doc = schema.XliffDocument(
-        parent_id=doc.id, original_document=original_document
-    )
-    db.add(xliff_doc)
-    db.commit()
+    # quite simple logic, but it is fine for now
+    match name.split(".")[-1]:
+        case "xliff":
+            xliff_doc = schema.XliffDocument(
+                parent_id=doc.id, original_document=original_document
+            )
+            db.add(xliff_doc)
+            db.commit()
+        case "txt":
+            # TODO: implement TXT support
+            pass
 
     return doc_schema.Document(
         id=doc.id,
@@ -179,6 +185,7 @@ def process_doc(
     GenericDocsQuery(db).enqueue_document(doc, settings.tmx_file_ids)
 
     task_config = {
+        # TODO: select processing type based on file type (xliff/txt)
         "type": "xliff",
         "doc_id": doc_id,
         "settings": settings.model_dump_json(),
@@ -203,6 +210,7 @@ def process_doc(
     },
 )
 def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
+    # TODO: update to support XLIFF/TXT formats
     doc = get_doc_by_id(db, doc_id)
     if not doc.xliff:
         raise HTTPException(status_code=404, detail="No XLIFF file found")
