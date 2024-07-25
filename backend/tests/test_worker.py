@@ -1,11 +1,13 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 from sqlalchemy.orm import Session
 
-from app import models, schema
 from app.db import get_db
+from app.documents.models import Document
+from app.models import DocumentStatus
+from app.schema import DocumentTask, TmxDocument, TmxRecord, XliffDocument, XliffRecord
 from worker import process_task
 
 # pylint: disable=C0116
@@ -21,83 +23,106 @@ def test_process_task_sets_records(session: Session):
 
     with session as s:
         tmx_records = [
-            schema.TmxRecord(
+            TmxRecord(
                 source="Regional Effects",
                 target="Translation",
             )
         ]
-        s.add(schema.TmxDocument(name="test", records=tmx_records, created_by=1))
-        s.commit()
-
-        s.add(
-            schema.XliffDocument(
-                name="uploaded_doc.xliff",
-                original_document=file_data,
-                processing_status=models.DocumentStatus.PENDING.value,
-                upload_time=(datetime.now() - timedelta(days=2)),
-                created_by=1,
-            )
+        s.add_all(
+            [
+                TmxDocument(name="test", records=tmx_records, created_by=1),
+                Document(
+                    name="small.xliff",
+                    created_by=1,
+                    processing_status=DocumentStatus.PENDING.value,
+                    upload_time=datetime.now(),
+                ),
+                XliffDocument(
+                    parent_id=1,
+                    original_document=file_data,
+                ),
+            ]
         )
 
-        task_data = {
-            "type": "xliff",
-            "doc_id": 1,
-            "settings": json.dumps(
+        task = DocumentTask(
+            data=json.dumps(
                 {
-                    "substitute_numbers": False,
-                    "use_machine_translation": False,
-                    "machine_translation_settings": None,
-                    "tmx_file_ids": [1],
-                    "tmx_usage": "newest",
+                    "type": "xliff",
+                    "doc_id": 1,
+                    "settings": json.dumps(
+                        {
+                            "substitute_numbers": False,
+                            "use_machine_translation": False,
+                            "machine_translation_settings": None,
+                            "tmx_file_ids": [1],
+                            "tmx_usage": "newest",
+                        }
+                    ),
                 }
             ),
-        }
-        s.add(
-            schema.DocumentTask(
-                data=json.dumps(task_data),
-                status="pending",
-            )
+            status="pending",
         )
+        s.add(task)
         s.commit()
 
-        result = process_task(s, s.query(schema.DocumentTask).one())
+        result = process_task(s, task)
         assert result
 
-        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
         assert len(doc.records) == 4
+
         # It provides text for matching TMX record
-        assert doc.records[0].id == 1
-        assert doc.records[0].segment_id == 675606
-        assert doc.records[0].document_id == 1
-        assert doc.records[0].source == "Regional Effects"
-        assert doc.records[0].target == "Translation"
-        assert doc.records[0].state == "translated"
-        assert not doc.records[0].approved
+        record = doc.records[0]
+        assert record.id == 1
+        assert record.document_id == 1
+        assert record.source == "Regional Effects"
+        assert record.target == "Translation"
+        xliff_record = (
+            s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
+        )
+        assert xliff_record.segment_id == 675606
+        assert xliff_record.state == "translated"
+        assert not xliff_record.approved
+
         # It does not provide text for missing TMX record
-        assert doc.records[1].id == 2
-        assert doc.records[1].segment_id == 675607
-        assert doc.records[1].document_id == 1
-        assert doc.records[1].source == "Other Effects"
-        assert doc.records[1].target == ""
-        assert doc.records[1].state == "needs-translation"
-        assert not doc.records[1].approved
+        record = doc.records[1]
+        assert record.id == 2
+        assert record.document_id == 1
+        assert record.source == "Other Effects"
+        assert record.target == ""
+        xliff_record = (
+            s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
+        )
+        assert xliff_record.segment_id == 675607
+        assert xliff_record.state == "needs-translation"
+        assert not xliff_record.approved
+
         # It does not touch approved record
-        assert doc.records[2].id == 3
-        assert doc.records[2].segment_id == 675608
-        assert doc.records[2].document_id == 1
-        assert doc.records[2].source == "Regional Effects"
-        assert doc.records[2].target == "Региональные эффекты"
-        assert doc.records[2].state == "translated"
-        assert doc.records[2].approved
+        record = doc.records[2]
+        assert record.id == 3
+        assert record.document_id == 1
+        assert record.source == "Regional Effects"
+        assert record.target == "Региональные эффекты"
+        xliff_record = (
+            s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
+        )
+        assert xliff_record.segment_id == 675608
+        assert xliff_record.state == "translated"
+        assert xliff_record.approved
+
         # It does not substitute numbers
-        assert doc.records[3].id == 4
-        assert doc.records[3].segment_id == 675609
-        assert doc.records[3].document_id == 1
-        assert doc.records[3].source == "123456789"
-        assert doc.records[3].target == ""
-        assert doc.records[3].state == "needs-translation"
-        assert not doc.records[3].approved
+        record = doc.records[3]
+        assert record.id == 4
+        assert record.document_id == 1
+        assert record.source == "123456789"
+        assert record.target == ""
+        xliff_record = (
+            s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
+        )
+        assert xliff_record.segment_id == 675609
+        assert xliff_record.state == "needs-translation"
+        assert not xliff_record.approved
 
 
 def test_process_task_uses_correct_tmx_ids(session: Session):
@@ -106,59 +131,65 @@ def test_process_task_uses_correct_tmx_ids(session: Session):
 
     with session as s:
         tmx_records_1 = [
-            schema.TmxRecord(source="Regional Effects", target="Translation"),
-            schema.TmxRecord(source="Test", target="Segment"),
+            TmxRecord(source="Regional Effects", target="Translation"),
+            TmxRecord(source="Test", target="Segment"),
         ]
         tmx_records_2 = [
-            schema.TmxRecord(source="Regional Effects", target="Another translation")
+            TmxRecord(source="Regional Effects", target="Another translation")
         ]
-        s.add(schema.TmxDocument(name="test1", records=tmx_records_1, created_by=1))
-        s.add(schema.TmxDocument(name="test2", records=tmx_records_2, created_by=1))
+        s.add_all(
+            [
+                TmxDocument(name="test1", records=tmx_records_1, created_by=1),
+                TmxDocument(name="test2", records=tmx_records_2, created_by=1),
+                Document(
+                    name="small.xliff",
+                    created_by=1,
+                    processing_status=DocumentStatus.PENDING.value,
+                    upload_time=datetime.now(),
+                ),
+                XliffDocument(
+                    parent_id=1,
+                    original_document=file_data,
+                ),
+                DocumentTask(
+                    data=json.dumps(
+                        {
+                            "type": "xliff",
+                            "doc_id": 1,
+                            "settings": json.dumps(
+                                {
+                                    "substitute_numbers": False,
+                                    "use_machine_translation": False,
+                                    "machine_translation_settings": None,
+                                    "tmx_file_ids": [2],
+                                    "tmx_usage": "newest",
+                                }
+                            ),
+                        }
+                    ),
+                    status="pending",
+                ),
+            ]
+        )
         s.commit()
 
-        s.add(
-            schema.XliffDocument(
-                name="uploaded_doc.xliff",
-                original_document=file_data,
-                processing_status=models.DocumentStatus.PENDING.value,
-                upload_time=(datetime.now() - timedelta(days=2)),
-                created_by=1,
-            )
-        )
-
-        task_data = {
-            "type": "xliff",
-            "doc_id": 1,
-            "settings": json.dumps(
-                {
-                    "substitute_numbers": False,
-                    "use_machine_translation": False,
-                    "machine_translation_settings": None,
-                    "tmx_file_ids": [2],
-                    "tmx_usage": "newest",
-                }
-            ),
-        }
-        s.add(
-            schema.DocumentTask(
-                data=json.dumps(task_data),
-                status="pending",
-            )
-        )
-        s.commit()
-
-        result = process_task(s, s.query(schema.DocumentTask).one())
+        result = process_task(s, s.query(DocumentTask).one())
         assert result
 
-        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
         assert len(doc.records) == 4
         # It provides text for matching TMX record
         assert doc.records[0].id == 1
-        assert doc.records[0].segment_id == 675606
         assert doc.records[0].document_id == 1
         assert doc.records[0].source == "Regional Effects"
         assert doc.records[0].target == "Another translation"
+        xliff_record = (
+            s.query(XliffRecord)
+            .filter(XliffRecord.parent_id == doc.records[0].id)
+            .one()
+        )
+        assert xliff_record.segment_id == 675606
 
 
 @pytest.mark.parametrize(
@@ -171,7 +202,7 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
 
     with session as s:
         tmx_records_1 = [
-            schema.TmxRecord(
+            TmxRecord(
                 source="Regional Effects",
                 target="Translation",
                 creation_date=datetime(2020, 1, 1, 0, 0, 0),
@@ -179,52 +210,53 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
             )
         ]
         tmx_records_2 = [
-            schema.TmxRecord(
+            TmxRecord(
                 source="Regional Effects",
                 target="Another translation",
                 creation_date=datetime(2021, 1, 1, 0, 0, 0),
                 change_date=datetime(2021, 1, 1, 0, 0, 0),
             )
         ]
-        s.add(schema.TmxDocument(name="test1", records=tmx_records_1, created_by=1))
-        s.add(schema.TmxDocument(name="test2", records=tmx_records_2, created_by=1))
+        s.add_all(
+            [
+                TmxDocument(name="test1", records=tmx_records_1, created_by=1),
+                TmxDocument(name="test2", records=tmx_records_2, created_by=1),
+                Document(
+                    name="small.xliff",
+                    created_by=1,
+                    processing_status=DocumentStatus.PENDING.value,
+                    upload_time=datetime.now(),
+                ),
+                XliffDocument(
+                    parent_id=1,
+                    original_document=file_data,
+                ),
+                DocumentTask(
+                    data=json.dumps(
+                        {
+                            "type": "xliff",
+                            "doc_id": 1,
+                            "settings": json.dumps(
+                                {
+                                    "substitute_numbers": False,
+                                    "use_machine_translation": False,
+                                    "machine_translation_settings": None,
+                                    "tmx_file_ids": [1, 2],
+                                    "tmx_usage": mode,
+                                }
+                            ),
+                        }
+                    ),
+                    status="pending",
+                ),
+            ]
+        )
         s.commit()
 
-        s.add(
-            schema.XliffDocument(
-                name="uploaded_doc.xliff",
-                original_document=file_data,
-                processing_status=models.DocumentStatus.PENDING.value,
-                upload_time=(datetime.now() - timedelta(days=2)),
-                created_by=1,
-            )
-        )
-
-        task_data = {
-            "type": "xliff",
-            "doc_id": 1,
-            "settings": json.dumps(
-                {
-                    "substitute_numbers": False,
-                    "use_machine_translation": False,
-                    "machine_translation_settings": None,
-                    "tmx_file_ids": [1, 2],
-                    "tmx_usage": mode,
-                }
-            ),
-        }
-        s.add(
-            schema.DocumentTask(
-                data=json.dumps(task_data),
-                status="pending",
-            )
-        )
-        s.commit()
-
-        result = process_task(s, s.query(schema.DocumentTask).one())
+        result = process_task(s, s.query(DocumentTask).one())
         assert result
 
-        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
         assert len(doc.records) > 1
         assert doc.records[0].target == trans_result
@@ -235,53 +267,58 @@ def test_process_task_substitutes_numbers(session: Session):
         file_data = fp.read()
 
     with session as s:
-        tmx_records = []
-        s.add(schema.TmxDocument(name="test", records=tmx_records, created_by=1))
+        s.add_all(
+            [
+                TmxDocument(name="test", records=[], created_by=1),
+                Document(
+                    name="small.xliff",
+                    created_by=1,
+                    processing_status=DocumentStatus.PENDING.value,
+                    upload_time=datetime.now(),
+                ),
+                XliffDocument(
+                    parent_id=1,
+                    original_document=file_data,
+                ),
+                DocumentTask(
+                    data=json.dumps(
+                        {
+                            "type": "xliff",
+                            "doc_id": 1,
+                            "settings": json.dumps(
+                                {
+                                    "substitute_numbers": True,
+                                    "use_machine_translation": False,
+                                    "machine_translation_settings": None,
+                                    "tmx_file_ids": [1],
+                                    "tmx_usage": "newest",
+                                }
+                            ),
+                        }
+                    ),
+                    status="pending",
+                ),
+            ]
+        )
         s.commit()
 
-        s.add(
-            schema.XliffDocument(
-                name="uploaded_doc.xliff",
-                original_document=file_data,
-                processing_status=models.DocumentStatus.PENDING.value,
-                upload_time=(datetime.now() - timedelta(days=2)),
-                created_by=1,
-            )
-        )
-
-        task_data = {
-            "type": "xliff",
-            "doc_id": 1,
-            "settings": json.dumps(
-                {
-                    "substitute_numbers": True,
-                    "use_machine_translation": False,
-                    "machine_translation_settings": None,
-                    "tmx_file_ids": [1],
-                    "tmx_usage": "newest",
-                }
-            ),
-        }
-        s.add(
-            schema.DocumentTask(
-                data=json.dumps(task_data),
-                status="pending",
-            )
-        )
-        s.commit()
-
-        result = process_task(s, s.query(schema.DocumentTask).one())
+        result = process_task(s, s.query(DocumentTask).one())
         assert result
 
-        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
         assert len(doc.records) == 4
         # It substitutes numbers
         assert doc.records[3].id == 4
-        assert doc.records[3].segment_id == 675609
         assert doc.records[3].document_id == 1
         assert doc.records[3].source == "123456789"
         assert doc.records[3].target == "123456789"
+        xliff_record = (
+            s.query(XliffRecord)
+            .filter(XliffRecord.parent_id == doc.records[3].id)
+            .one()
+        )
+        assert xliff_record.segment_id == 675609
 
 
 def test_process_task_checks_task_data_attributes(session: Session):
@@ -331,22 +368,22 @@ def test_process_task_checks_task_data_attributes(session: Session):
         ]
 
         for data in datas:
-            s.add(schema.DocumentTask(data=json.dumps(data), status="pending"))
+            s.add(DocumentTask(data=json.dumps(data), status="pending"))
         s.commit()
 
-        tasks = s.query(schema.DocumentTask).all()
+        tasks = s.query(DocumentTask).all()
         for task in tasks:
             assert not process_task(session, task)
 
 
 def test_process_task_deletes_task_after_processing(session: Session):
     with session as s:
-        task = schema.DocumentTask(data=json.dumps({"doc_id": 1}), status="pending")
+        task = DocumentTask(data=json.dumps({"doc_id": 1}), status="pending")
         s.add(task)
         s.commit()
 
         process_task(s, task)
-        assert not s.query(schema.DocumentTask).first()
+        assert not s.query(DocumentTask).first()
 
 
 def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
@@ -354,37 +391,40 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
         file_data = fp.read()
 
     with session as s:
-        s.add(
-            schema.XliffDocument(
-                name="uploaded_doc.xliff",
-                original_document=file_data,
-                processing_status=models.DocumentStatus.PENDING.value,
-                upload_time=(datetime.now() - timedelta(days=2)),
-                created_by=1,
-            )
-        )
-
-        task_data = {
-            "type": "xliff",
-            "doc_id": 1,
-            "settings": json.dumps(
-                {
-                    "substitute_numbers": False,
-                    "use_machine_translation": True,
-                    "machine_translation_settings": {
-                        "folder_id": "12345",
-                        "oauth_token": "fake",
-                    },
-                    "tmx_file_ids": [],
-                    "tmx_usage": "newest",
-                }
-            ),
-        }
-        s.add(
-            schema.DocumentTask(
-                data=json.dumps(task_data),
-                status="pending",
-            )
+        s.add_all(
+            [
+                Document(
+                    name="small.xliff",
+                    created_by=1,
+                    processing_status=DocumentStatus.PENDING.value,
+                    upload_time=datetime.now(),
+                ),
+                XliffDocument(
+                    parent_id=1,
+                    original_document=file_data,
+                ),
+                DocumentTask(
+                    data=json.dumps(
+                        {
+                            "type": "xliff",
+                            "doc_id": 1,
+                            "settings": json.dumps(
+                                {
+                                    "substitute_numbers": False,
+                                    "use_machine_translation": True,
+                                    "machine_translation_settings": {
+                                        "folder_id": "12345",
+                                        "oauth_token": "fake",
+                                    },
+                                    "tmx_file_ids": [],
+                                    "tmx_usage": "newest",
+                                }
+                            ),
+                        }
+                    ),
+                    status="pending",
+                ),
+            ]
         )
         s.commit()
 
@@ -394,9 +434,9 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
         monkeypatch.setattr("app.translators.yandex.translate_lines", fake_translate)
 
         try:
-            process_task(s, s.query(schema.DocumentTask).one())
+            process_task(s, s.query(DocumentTask).one())
         except AttributeError:
             pass
 
-        doc = s.query(schema.XliffDocument).filter_by(id=1).one()
+        doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "error"

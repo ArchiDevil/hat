@@ -9,7 +9,11 @@ import time
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import db, models, schema
+from app import db, models
+from app.documents.models import Document, DocumentRecord
+from app.documents.query import GenericDocsQuery
+from app.documents.schema import DocumentProcessingSettings
+from app.schema import DocumentTask, TmxRecord, XliffRecord
 from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
 from app.xliff import extract_xliff_content
@@ -17,7 +21,7 @@ from app.xliff import extract_xliff_content
 
 def get_segment_translation(
     source: str,
-    settings: models.XliffProcessingSettings,
+    settings: DocumentProcessingSettings,
     session: Session,
 ):
     # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
@@ -32,15 +36,15 @@ def get_segment_translation(
             return substitutions[0].target
     else:
         selector = (
-            select(schema.TmxRecord.source, schema.TmxRecord.target)
-            .where(schema.TmxRecord.source == source)
-            .where(schema.TmxRecord.document_id.in_(settings.tmx_file_ids))
+            select(TmxRecord.source, TmxRecord.target)
+            .where(TmxRecord.source == source)
+            .where(TmxRecord.document_id.in_(settings.tmx_file_ids))
         )
         match settings.tmx_usage:
             case models.TmxUsage.NEWEST:
-                selector = selector.order_by(schema.TmxRecord.change_date.desc())
+                selector = selector.order_by(TmxRecord.change_date.desc())
             case models.TmxUsage.OLDEST:
-                selector = selector.order_by(schema.TmxRecord.change_date.asc())
+                selector = selector.order_by(TmxRecord.change_date.asc())
             case _:
                 logging.error("Unknown TMX usage option")
                 return None
@@ -54,11 +58,12 @@ def get_segment_translation(
 
 
 def process_xliff(
-    doc: schema.XliffDocument,
-    settings: models.XliffProcessingSettings,
+    doc: Document,
+    settings: DocumentProcessingSettings,
     session: Session,
 ):
-    xliff_data = extract_xliff_content(doc.original_document.encode())
+    xliff_document = doc.xliff
+    xliff_data = extract_xliff_content(xliff_document.original_document.encode())
     to_translate: list[int] = []
     for i, segment in enumerate(xliff_data.segments):
         if not segment.approved:
@@ -100,21 +105,33 @@ def process_xliff(
             logging.error("Yandex translation error %s", e)
             return False
 
+    doc_records = []
     for segment in xliff_data.segments:
-        doc.records.append(
-            schema.XliffRecord(
-                segment_id=segment.id_,
+        doc_records.append(
+            DocumentRecord(
+                document_id=doc.id,
                 source=segment.original,
                 target=segment.translation,
-                state=segment.state.value,
-                approved=segment.approved,
             )
         )
+    session.add_all(doc_records)
+    session.commit()
+
+    for i, segment in enumerate(xliff_data.segments):
+        xliff_record = XliffRecord(
+            parent_id=doc_records[i].id,
+            document_id=xliff_document.id,
+            segment_id=segment.id_,
+            state=segment.state.value,
+            approved=segment.approved,
+        )
+        session.add(xliff_record)
+    session.commit()
 
     return not machine_translation_failed
 
 
-def process_task(session: Session, task: schema.DocumentTask) -> bool:
+def process_task(session: Session, task: DocumentTask) -> bool:
     try:
         task.status = models.TaskStatus.PROCESSING.value
         session.commit()
@@ -139,20 +156,14 @@ def process_task(session: Session, task: schema.DocumentTask) -> bool:
             raise AttributeError("Task data is missing 'settings' field")
 
         document_id = task_data["doc_id"]
-        doc = (
-            session.query(schema.XliffDocument)
-            .filter(schema.XliffDocument.id == document_id)
-            .first()
-        )
+        doc = GenericDocsQuery(session).get_document(document_id)
 
         # TODO: what if the doc processing was started and left in a processing state?
         if not doc or doc.processing_status != models.DocumentStatus.PENDING.value:
             logging.error("Document not found or not in a pending state")
             return False
 
-        settings = models.XliffProcessingSettings.model_validate_json(
-            task_data["settings"]
-        )
+        settings = DocumentProcessingSettings.model_validate_json(task_data["settings"])
 
         doc.processing_status = models.DocumentStatus.PROCESSING.value
         session.commit()
@@ -181,7 +192,7 @@ def main():
 
     session = next(db.get_db())
     while True:
-        task = session.query(schema.DocumentTask).first()
+        task = session.query(DocumentTask).first()
         if not task:
             time.sleep(10)
             continue

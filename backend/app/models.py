@@ -69,26 +69,12 @@ class XliffRecordUpdate(BaseModel):
     target: str
 
 
-class XliffSubstitution(BaseModel):
-    source: str
-    target: str
-    similarity: float
-
-
 class MachineTranslationSettings(BaseModel):
     # Yandex only for now
     # source_language: str
     # target_language: str
     folder_id: str
     oauth_token: str
-
-
-class XliffProcessingSettings(BaseModel):
-    substitute_numbers: bool
-    machine_translation_settings: Optional[MachineTranslationSettings]
-    tmx_file_ids: list[int]
-    tmx_usage: TmxUsage
-    similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
 class StatusMessage(BaseModel):

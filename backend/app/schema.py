@@ -1,21 +1,15 @@
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, ForeignKey, Index, Table
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+from app.documents.models import doc_to_tmx_link
 
 if TYPE_CHECKING:
     from app.glossary.models import GlossaryDocument
-
-
-xliff_to_tmx_link = Table(
-    "xliff_record_to_tmx",
-    Base.metadata,
-    Column("xliff_id", ForeignKey("xliff_document.id"), nullable=False),
-    Column("tmx_id", ForeignKey("tmx_document.id"), nullable=False),
-)
+    from app.documents.models import Document, DocumentRecord
 
 
 class TmxDocument(Base):
@@ -29,8 +23,8 @@ class TmxDocument(Base):
         back_populates="document", cascade="all, delete-orphan", order_by="TmxRecord.id"
     )
     user: Mapped["User"] = relationship(back_populates="tmxs")
-    xliffs: Mapped[list["XliffDocument"]] = relationship(
-        secondary=xliff_to_tmx_link, back_populates="tmxs", order_by="XliffDocument.id"
+    docs: Mapped[list["Document"]] = relationship(
+        secondary=doc_to_tmx_link, back_populates="tmxs", order_by="Document.id"
     )
 
 
@@ -59,20 +53,16 @@ class XliffDocument(Base):
     __tablename__ = "xliff_document"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column()
-    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    parent_id: Mapped[int] = mapped_column(ForeignKey("document.id"))
     original_document: Mapped[str] = mapped_column()
-    processing_status: Mapped[str] = mapped_column()
-    upload_time: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
 
     records: Mapped[list["XliffRecord"]] = relationship(
         back_populates="document",
         cascade="all, delete-orphan",
         order_by="XliffRecord.id",
     )
-    user: Mapped["User"] = relationship(back_populates="xliffs")
-    tmxs: Mapped[list["TmxDocument"]] = relationship(
-        secondary=xliff_to_tmx_link, back_populates="xliffs", order_by="TmxDocument.id"
+    parent: Mapped["Document"] = relationship(
+        back_populates="xliff", single_parent=True
     )
 
 
@@ -80,13 +70,13 @@ class XliffRecord(Base):
     __tablename__ = "xliff_record"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    parent_id: Mapped[int] = mapped_column(ForeignKey("document_record.id"))
     segment_id: Mapped[int] = mapped_column()
     document_id: Mapped[int] = mapped_column(ForeignKey("xliff_document.id"))
-    source: Mapped[str] = mapped_column()
-    target: Mapped[str] = mapped_column()
     state: Mapped[str] = mapped_column()
     approved: Mapped[bool] = mapped_column()
 
+    parent: Mapped["DocumentRecord"] = relationship()
     document: Mapped["XliffDocument"] = relationship(back_populates="records")
 
 
@@ -111,8 +101,8 @@ class User(Base):
     tmxs: Mapped[list["TmxDocument"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", order_by="TmxDocument.id"
     )
-    xliffs: Mapped[list["XliffDocument"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan", order_by="XliffDocument.id"
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", order_by="Document.id"
     )
     glossaries: Mapped[list["GlossaryDocument"]] = relationship(
         back_populates="user",
