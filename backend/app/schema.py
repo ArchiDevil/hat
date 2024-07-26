@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy import Column, ForeignKey, Index, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -45,6 +45,14 @@ class TmxRecord(Base):
     change_date: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
 
     document: Mapped["TmxDocument"] = relationship(back_populates="records")
+
+
+Index(
+    "trgm_tmx_src_idx",
+    TmxRecord.source,
+    postgresql_using="gist",
+    postgresql_ops={"source": "gist_trgm_ops"},
+)
 
 
 class XliffDocument(Base):

@@ -22,8 +22,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.execute('CREATE EXTENSION pg_trgm')
-    op.execute('CREATE INDEX trgm_tmx_src_idx ON tmx_record USING gist (source gist_trgm_ops)')
+    op.create_index(
+        'trgm_tmx_src_idx',
+        'tmx_record',
+        ['source'],
+        postgresql_ops={'source': 'gist_trgm_ops'},
+        unique=False,
+        postgresql_using='gist'
+    )
 
 def downgrade() -> None:
-    op.execute('DROP INDEX trgm_tmx_src_idx')
+    op.drop_index('trgm_tmx_src_idx', 'tmx_record')
     op.execute('DROP EXTENSION pg_trgm')
