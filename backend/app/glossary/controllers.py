@@ -4,7 +4,8 @@ import openpyxl
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
-from app.glossary.query import GlossaryDocsQuery
+from app.glossary.query import GlossaryDocsQuery, NotFoundGlossaryDocExc
+from app.glossary.schema import GlossaryDocumentResponse
 
 
 def create_glossary_doc_from_file_controller(
@@ -19,4 +20,15 @@ def create_glossary_doc_from_file_controller(
 
 
 def list_glossary_docs_controller(db: Session):
-    return GlossaryDocsQuery(db).list_glossary_docs()
+    glossaries = GlossaryDocsQuery(db).list_glossary_docs()
+    return [
+        GlossaryDocumentResponse.model_validate(glossary) for glossary in glossaries
+    ]
+
+
+def retrieve_glossary_doc_controller(glossary_doc_id: int, db: Session):
+    try:
+        doc = GlossaryDocsQuery(db).get_glossary_doc(glossary_doc_id)
+        return GlossaryDocumentResponse.model_validate(doc)
+    except NotFoundGlossaryDocExc:
+        return None

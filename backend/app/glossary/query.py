@@ -3,7 +3,12 @@ from typing import Type
 from sqlalchemy.orm import Session
 
 from app import GlossaryDocument, GlossaryRecord
+from app.base.exceptions import BaseQueryException
 from app.glossary.models import ProcessingStatuses
+
+
+class NotFoundGlossaryDocExc(BaseQueryException):
+    """Not found glossary doc"""
 
 
 class GlossaryDocsQuery:
@@ -11,6 +16,16 @@ class GlossaryDocsQuery:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def get_glossary_doc(self, glossary_id: int) -> Type[GlossaryDocument]:
+        doc = (
+            self.db.query(GlossaryDocument)
+            .filter(GlossaryDocument.id == glossary_id)
+            .first()
+        )
+        if doc:
+            return doc
+        raise NotFoundGlossaryDocExc()
 
     def list_glossary_docs(self) -> list[Type[GlossaryDocument]]:
         return self.db.query(GlossaryDocument).order_by(GlossaryDocument.id).all()

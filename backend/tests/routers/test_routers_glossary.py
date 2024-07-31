@@ -46,7 +46,7 @@ def test_post_glossary_load_file(user_logged_client: TestClient, session: Sessio
 
 
 def test_get_glossary_list_docs(user_logged_client: TestClient, session: Session):
-    """GET /glossary"""
+    """GET /glossary/docs"""
 
     path = app.url_path_for("list_glossary_docs")
 
@@ -54,8 +54,7 @@ def test_get_glossary_list_docs(user_logged_client: TestClient, session: Session
     doc_2 = GlossaryDocsQuery(session).create_glossary_doc(user_id=2)
 
     response = user_logged_client.get(path)
-    response_json = response.json()
-    [resp_doc_1, resp_doc_2] = response_json["glossaries"]
+    [resp_doc_1, resp_doc_2] = response.json()
 
     assert response.status_code == status.HTTP_200_OK
 
@@ -64,3 +63,20 @@ def test_get_glossary_list_docs(user_logged_client: TestClient, session: Session
 
     assert resp_doc_2["processing_status"] == doc_2.processing_status
     assert resp_doc_2["user_id"] == doc_2.user_id
+
+
+def test_get_glossary_retrieve_doc(user_logged_client: TestClient, session: Session):
+    """GET /glossary/docs/{doc_id}"""
+
+    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(user_id=1)
+
+    path = app.url_path_for("retrieve_glossary_doc", **{"glossary_doc_id": doc_1.id})
+
+    response = user_logged_client.get(path)
+    response_json = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+
+    assert response_json["id"] == doc_1.id
+    assert response_json["processing_status"] == doc_1.processing_status
+    assert response_json["user_id"] == doc_1.user_id
