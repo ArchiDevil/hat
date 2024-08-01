@@ -16,10 +16,3 @@ class GlossaryDocumentResponse(IdentifiedTimestampedModel):
 
     class Config:
         from_attributes = True
-
-
-class GlossaryDocumentListResponse(BaseModel):
-    glossaries: list[GlossaryDocumentResponse]
-
-    class Config:
-        from_attributes = True
