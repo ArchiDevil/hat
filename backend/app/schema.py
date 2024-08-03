@@ -8,8 +8,8 @@ from app.db import Base
 from app.documents.models import doc_to_tmx_link
 
 if TYPE_CHECKING:
-    from app.glossary.models import GlossaryDocument
     from app.documents.models import Document, DocumentRecord
+    from app.glossary.models import GlossaryDocument
 
 
 class TmxDocument(Base):

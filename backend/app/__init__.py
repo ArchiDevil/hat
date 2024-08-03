@@ -1,6 +1,6 @@
 from app.db import Base
-from app.glossary.models import GlossaryDocument, GlossaryRecord
 from app.documents.models import Document, DocumentRecord
+from app.glossary.models import GlossaryDocument, GlossaryRecord
 from app.schema import (
     DocumentTask,
     TmxDocument,

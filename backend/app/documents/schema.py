@@ -2,8 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.models import MachineTranslationSettings, TmxUsage
-from app.models import DocumentStatus, Identified
+from app.models import DocumentStatus, Identified, MachineTranslationSettings, TmxUsage
 
 
 class Document(Identified):
