@@ -2,18 +2,18 @@
 # processes XLIFF files in it.
 # Tasks are stored in document_task table and encoded in JSON.
 
-import json
 import logging
 import time
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import db, models
-from app.documents.models import Document, DocumentRecord
+from app import db
+from app.documents.models import Document, DocumentRecord, XliffRecord
 from app.documents.query import GenericDocsQuery
-from app.documents.schema import DocumentProcessingSettings
-from app.schema import DocumentTask, TmxRecord, XliffRecord
+from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescription
+from app.models import DocumentStatus, TaskStatus, TmxUsage
+from app.schema import DocumentTask, TmxRecord
 from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
 from app.xliff import extract_xliff_content
@@ -41,9 +41,9 @@ def get_segment_translation(
             .where(TmxRecord.document_id.in_(settings.tmx_file_ids))
         )
         match settings.tmx_usage:
-            case models.TmxUsage.NEWEST:
+            case TmxUsage.NEWEST:
                 selector = selector.order_by(TmxRecord.change_date.desc())
-            case models.TmxUsage.OLDEST:
+            case TmxUsage.OLDEST:
                 selector = selector.order_by(TmxRecord.change_date.asc())
             case _:
                 logging.error("Unknown TMX usage option")
@@ -133,48 +133,34 @@ def process_xliff(
 
 def process_task(session: Session, task: DocumentTask) -> bool:
     try:
-        task.status = models.TaskStatus.PROCESSING.value
+        task.status = TaskStatus.PROCESSING.value
         session.commit()
 
         logging.info("New task found: %s", task.id)
 
-        task_data: dict = json.loads(task.data)
-        if "type" not in task_data:
-            logging.error("Task data is missing 'type' field")
-            raise AttributeError("Task data 'type' field")
+        task_data = DocumentTaskDescription.model_validate_json(task.data)
 
-        if task_data["type"] != "xliff":
+        if task_data.type != "xliff":
             logging.error("Task data 'type' field is not 'xliff'")
             raise AttributeError("Task data 'type' field is not 'xliff'")
 
-        if "doc_id" not in task_data:
-            logging.error("Task data is missing 'doc_id' field")
-            raise AttributeError("Task data 'doc_id' field")
-
-        if "settings" not in task_data or not task_data["settings"]:
-            logging.error("Task data is missing 'settings' field")
-            raise AttributeError("Task data is missing 'settings' field")
-
-        document_id = task_data["doc_id"]
-        doc = GenericDocsQuery(session).get_document(document_id)
+        doc = GenericDocsQuery(session).get_document(task_data.document_id)
 
         # TODO: what if the doc processing was started and left in a processing state?
-        if not doc or doc.processing_status != models.DocumentStatus.PENDING.value:
+        if not doc or doc.processing_status != DocumentStatus.PENDING.value:
             logging.error("Document not found or not in a pending state")
             return False
 
-        settings = DocumentProcessingSettings.model_validate_json(task_data["settings"])
-
-        doc.processing_status = models.DocumentStatus.PROCESSING.value
+        doc.processing_status = DocumentStatus.PROCESSING.value
         session.commit()
 
-        if not process_xliff(doc, settings, session):
-            doc.processing_status = models.DocumentStatus.ERROR.value
+        if not process_xliff(doc, task_data.settings, session):
+            doc.processing_status = DocumentStatus.ERROR.value
             session.commit()
             logging.error("Processing failed for document %d", doc.id)
             return False
 
-        doc.processing_status = models.DocumentStatus.DONE.value
+        doc.processing_status = DocumentStatus.DONE.value
         session.commit()
         return True
     except Exception as e:

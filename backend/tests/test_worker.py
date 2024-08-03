@@ -5,9 +5,14 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.documents.models import Document
-from app.models import DocumentStatus
-from app.schema import DocumentTask, TmxDocument, TmxRecord, XliffDocument, XliffRecord
+from app.documents.models import Document, DocumentType, XliffDocument, XliffRecord
+from app.documents.schema import (
+    DocumentTaskDescription,
+    DocumentProcessingSettings,
+    TmxUsage,
+)
+from app.models import DocumentStatus, MachineTranslationSettings
+from app.schema import DocumentTask, TmxDocument, TmxRecord
 from worker import process_task
 
 # pylint: disable=C0116
@@ -33,6 +38,7 @@ def test_process_task_sets_records(session: Session):
                 TmxDocument(name="test", records=tmx_records, created_by=1),
                 Document(
                     name="small.xliff",
+                    type=DocumentType.XLIFF,
                     created_by=1,
                     processing_status=DocumentStatus.PENDING.value,
                     upload_time=datetime.now(),
@@ -45,21 +51,16 @@ def test_process_task_sets_records(session: Session):
         )
 
         task = DocumentTask(
-            data=json.dumps(
-                {
-                    "type": "xliff",
-                    "doc_id": 1,
-                    "settings": json.dumps(
-                        {
-                            "substitute_numbers": False,
-                            "use_machine_translation": False,
-                            "machine_translation_settings": None,
-                            "tmx_file_ids": [1],
-                            "tmx_usage": "newest",
-                        }
-                    ),
-                }
-            ),
+            data=DocumentTaskDescription(
+                type="xliff",
+                document_id=1,
+                settings=DocumentProcessingSettings(
+                    substitute_numbers=False,
+                    machine_translation_settings=None,
+                    tmx_file_ids=[1],
+                    tmx_usage=TmxUsage.NEWEST,
+                ),
+            ).model_dump_json(),
             status="pending",
         )
         s.add(task)
@@ -143,6 +144,7 @@ def test_process_task_uses_correct_tmx_ids(session: Session):
                 TmxDocument(name="test2", records=tmx_records_2, created_by=1),
                 Document(
                     name="small.xliff",
+                    type=DocumentType.XLIFF,
                     created_by=1,
                     processing_status=DocumentStatus.PENDING.value,
                     upload_time=datetime.now(),
@@ -152,21 +154,16 @@ def test_process_task_uses_correct_tmx_ids(session: Session):
                     original_document=file_data,
                 ),
                 DocumentTask(
-                    data=json.dumps(
-                        {
-                            "type": "xliff",
-                            "doc_id": 1,
-                            "settings": json.dumps(
-                                {
-                                    "substitute_numbers": False,
-                                    "use_machine_translation": False,
-                                    "machine_translation_settings": None,
-                                    "tmx_file_ids": [2],
-                                    "tmx_usage": "newest",
-                                }
-                            ),
-                        }
-                    ),
+                    data=DocumentTaskDescription(
+                        type="xliff",
+                        document_id=1,
+                        settings=DocumentProcessingSettings(
+                            substitute_numbers=False,
+                            machine_translation_settings=None,
+                            tmx_file_ids=[2],
+                            tmx_usage=TmxUsage.NEWEST,
+                        ),
+                    ).model_dump_json(),
                     status="pending",
                 ),
             ]
@@ -223,6 +220,7 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
                 TmxDocument(name="test2", records=tmx_records_2, created_by=1),
                 Document(
                     name="small.xliff",
+                    type=DocumentType.XLIFF,
                     created_by=1,
                     processing_status=DocumentStatus.PENDING.value,
                     upload_time=datetime.now(),
@@ -232,21 +230,16 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
                     original_document=file_data,
                 ),
                 DocumentTask(
-                    data=json.dumps(
-                        {
-                            "type": "xliff",
-                            "doc_id": 1,
-                            "settings": json.dumps(
-                                {
-                                    "substitute_numbers": False,
-                                    "use_machine_translation": False,
-                                    "machine_translation_settings": None,
-                                    "tmx_file_ids": [1, 2],
-                                    "tmx_usage": mode,
-                                }
-                            ),
-                        }
-                    ),
+                    data=DocumentTaskDescription(
+                        type="xliff",
+                        document_id=1,
+                        settings=DocumentProcessingSettings(
+                            substitute_numbers=False,
+                            machine_translation_settings=None,
+                            tmx_file_ids=[1, 2],
+                            tmx_usage=TmxUsage(mode),
+                        ),
+                    ).model_dump_json(),
                     status="pending",
                 ),
             ]
@@ -272,6 +265,7 @@ def test_process_task_substitutes_numbers(session: Session):
                 TmxDocument(name="test", records=[], created_by=1),
                 Document(
                     name="small.xliff",
+                    type=DocumentType.XLIFF,
                     created_by=1,
                     processing_status=DocumentStatus.PENDING.value,
                     upload_time=datetime.now(),
@@ -281,21 +275,16 @@ def test_process_task_substitutes_numbers(session: Session):
                     original_document=file_data,
                 ),
                 DocumentTask(
-                    data=json.dumps(
-                        {
-                            "type": "xliff",
-                            "doc_id": 1,
-                            "settings": json.dumps(
-                                {
-                                    "substitute_numbers": True,
-                                    "use_machine_translation": False,
-                                    "machine_translation_settings": None,
-                                    "tmx_file_ids": [1],
-                                    "tmx_usage": "newest",
-                                }
-                            ),
-                        }
-                    ),
+                    data=DocumentTaskDescription(
+                        type="xliff",
+                        document_id=1,
+                        settings=DocumentProcessingSettings(
+                            substitute_numbers=True,
+                            machine_translation_settings=None,
+                            tmx_file_ids=[1],
+                            tmx_usage=TmxUsage.NEWEST,
+                        ),
+                    ).model_dump_json(),
                     status="pending",
                 ),
             ]
@@ -325,45 +314,39 @@ def test_process_task_checks_task_data_attributes(session: Session):
     with session as s:
         datas = [
             {
-                "doc_id": 1,
-                "settings": json.dumps(
-                    {
-                        "substitute_numbers": False,
-                        "use_machine_translation": False,
-                        "machine_translation_settings": None,
-                        "tmx_file_ids": [1],
-                        "tmx_usage": "newest",
-                    }
-                ),
+                "document_id": 1,
+                "settings": {
+                    "substitute_numbers": False,
+                    "use_machine_translation": False,
+                    "machine_translation_settings": None,
+                    "tmx_file_ids": [1],
+                    "tmx_usage": "newest",
+                },
             },
             {
                 "type": "xliff",
-                "settings": json.dumps(
-                    {
-                        "substitute_numbers": False,
-                        "use_machine_translation": False,
-                        "machine_translation_settings": None,
-                        "tmx_file_ids": [1],
-                        "tmx_usage": "newest",
-                    }
-                ),
+                "settings": {
+                    "substitute_numbers": False,
+                    "use_machine_translation": False,
+                    "machine_translation_settings": None,
+                    "tmx_file_ids": [1],
+                    "tmx_usage": "newest",
+                },
             },
             {
                 "type": "xliff",
-                "doc_id": 1,
+                "document_id": 1,
             },
             {
                 "type": "broken",
-                "doc_id": 1,
-                "settings": json.dumps(
-                    {
-                        "substitute_numbers": False,
-                        "use_machine_translation": False,
-                        "machine_translation_settings": None,
-                        "tmx_file_ids": [1],
-                        "tmx_usage": "newest",
-                    }
-                ),
+                "document_id": 1,
+                "settings": {
+                    "substitute_numbers": False,
+                    "use_machine_translation": False,
+                    "machine_translation_settings": None,
+                    "tmx_file_ids": [1],
+                    "tmx_usage": "newest",
+                },
             },
         ]
 
@@ -395,6 +378,7 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
             [
                 Document(
                     name="small.xliff",
+                    type=DocumentType.XLIFF,
                     created_by=1,
                     processing_status=DocumentStatus.PENDING.value,
                     upload_time=datetime.now(),
@@ -404,24 +388,18 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
                     original_document=file_data,
                 ),
                 DocumentTask(
-                    data=json.dumps(
-                        {
-                            "type": "xliff",
-                            "doc_id": 1,
-                            "settings": json.dumps(
-                                {
-                                    "substitute_numbers": False,
-                                    "use_machine_translation": True,
-                                    "machine_translation_settings": {
-                                        "folder_id": "12345",
-                                        "oauth_token": "fake",
-                                    },
-                                    "tmx_file_ids": [],
-                                    "tmx_usage": "newest",
-                                }
+                    data=DocumentTaskDescription(
+                        type="xliff",
+                        document_id=1,
+                        settings=DocumentProcessingSettings(
+                            substitute_numbers=False,
+                            machine_translation_settings=MachineTranslationSettings(
+                                folder_id="12345", oauth_token="fake"
                             ),
-                        }
-                    ),
+                            tmx_file_ids=[],
+                            tmx_usage=TmxUsage.NEWEST,
+                        ),
+                    ).model_dump_json(),
                     status="pending",
                 ),
             ]

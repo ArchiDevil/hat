@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -30,3 +30,9 @@ class DocumentProcessingSettings(BaseModel):
     tmx_file_ids: list[int]
     tmx_usage: TmxUsage
     similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class DocumentTaskDescription(BaseModel):
+    type: Literal["xliff", "txt"]
+    document_id: int
+    settings: DocumentProcessingSettings

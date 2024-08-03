@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timedelta
 from typing import Annotated
 
@@ -9,7 +8,14 @@ from sqlalchemy.orm import Session
 from app import models, schema
 from app.db import get_db
 from app.documents import schema as doc_schema
-from app.documents.models import Document
+from app.documents.models import (
+    Document,
+    DocumentType,
+    XliffDocument,
+    XliffRecord,
+    TxtDocument,
+    TxtRecord,
+)
 from app.documents.query import GenericDocsQuery
 from app.translation_memory.schema import MemorySubstitution
 from app.translation_memory.utils import get_substitutions
@@ -141,14 +147,20 @@ async def create_doc(
     file_data = await file.read()
     original_document = file_data.decode("utf-8")
 
-    ext = name.split(".")[-1]
+    ext = name.lower().split(".")[-1]
     if ext not in ["xliff", "txt"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file type"
         )
 
+    if ext == "xliff":
+        doc_type = DocumentType.XLIFF
+    elif ext == "txt":
+        doc_type = DocumentType.TXT
+
     doc = Document(
         name=name,
+        type=doc_type,
         processing_status=models.DocumentStatus.UPLOADED.value,
         upload_time=datetime.now(),
         created_by=current_user,
@@ -156,16 +168,14 @@ async def create_doc(
     query.add_document(doc)
 
     # quite simple logic, but it is fine for now
-    match name.split(".")[-1]:
-        case "xliff":
-            xliff_doc = schema.XliffDocument(
-                parent_id=doc.id, original_document=original_document
-            )
-            db.add(xliff_doc)
-            db.commit()
-        case "txt":
-            # TODO: implement TXT support
-            pass
+    if ext == "xliff":
+        xliff_doc = XliffDocument(parent_id=doc.id, original_document=original_document)
+        db.add(xliff_doc)
+        db.commit()
+    elif ext == "txt":
+        txt_doc = TxtDocument(parent_id=doc.id, original_document=original_document)
+        db.add(txt_doc)
+        db.commit()
 
     return doc_schema.Document(
         id=doc.id,
@@ -184,15 +194,12 @@ def process_doc(
     doc = get_doc_by_id(db, doc_id)
     GenericDocsQuery(db).enqueue_document(doc, settings.tmx_file_ids)
 
-    task_config = {
-        # TODO: select processing type based on file type (xliff/txt)
-        "type": "xliff",
-        "doc_id": doc_id,
-        "settings": settings.model_dump_json(),
-    }
+    task_config = doc_schema.DocumentTaskDescription(
+        type=doc.type.value, document_id=doc_id, settings=settings
+    )
     db.add(
         schema.DocumentTask(
-            data=json.dumps(task_config), status=models.TaskStatus.PENDING.value
+            data=task_config.model_dump_json(), status=models.TaskStatus.PENDING.value
         )
     )
     db.commit()
@@ -219,7 +226,7 @@ def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
     processed_document = extract_xliff_content(original_document)
 
     for segment in processed_document.segments:
-        record = db.query(schema.XliffRecord).filter_by(segment_id=segment.id_).first()
+        record = db.query(XliffRecord).filter_by(segment_id=segment.id_).first()
         if record and not segment.approved:
             segment.translation = record.parent.target
             segment.approved = record.approved

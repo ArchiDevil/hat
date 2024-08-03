@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.documents.models import Document, DocumentRecord
+from app.documents.models import Document, DocumentRecord, DocumentType
 
 # pylint: disable=C0116
 
@@ -21,6 +21,7 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
         s.add(
             Document(
                 name="test_doc.txt",
+                type=DocumentType.TXT,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -59,6 +60,7 @@ def test_doc_records_returns_second_page(
         s.add(
             Document(
                 name="test_doc.txt",
+                type=DocumentType.TXT,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -91,6 +93,7 @@ def test_doc_records_returns_empty_for_too_large_page(
         s.add(
             Document(
                 name="test_doc.txt",
+                type=DocumentType.TXT,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -125,6 +128,7 @@ def test_can_update_doc_record(user_logged_client: TestClient, session: Session)
         s.add(
             Document(
                 name="test_doc.txt",
+                type=DocumentType.TXT,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -159,6 +163,7 @@ def test_returns_404_for_nonexistent_record(
         s.add(
             Document(
                 name="test_doc.txt",
+                type=DocumentType.TXT,
                 records=[],
                 processing_status="pending",
                 created_by=1,

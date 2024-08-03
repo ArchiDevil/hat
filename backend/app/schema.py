@@ -8,7 +8,7 @@ from app.db import Base
 from app.documents.models import doc_to_tmx_link
 
 if TYPE_CHECKING:
-    from app.documents.models import Document, DocumentRecord
+    from app.documents.models import Document
     from app.glossary.models import GlossaryDocument
 
 
@@ -47,37 +47,6 @@ Index(
     postgresql_using="gist",
     postgresql_ops={"source": "gist_trgm_ops"},
 )
-
-
-class XliffDocument(Base):
-    __tablename__ = "xliff_document"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    parent_id: Mapped[int] = mapped_column(ForeignKey("document.id"))
-    original_document: Mapped[str] = mapped_column()
-
-    records: Mapped[list["XliffRecord"]] = relationship(
-        back_populates="document",
-        cascade="all, delete-orphan",
-        order_by="XliffRecord.id",
-    )
-    parent: Mapped["Document"] = relationship(
-        back_populates="xliff", single_parent=True
-    )
-
-
-class XliffRecord(Base):
-    __tablename__ = "xliff_record"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    parent_id: Mapped[int] = mapped_column(ForeignKey("document_record.id"))
-    segment_id: Mapped[int] = mapped_column()
-    document_id: Mapped[int] = mapped_column(ForeignKey("xliff_document.id"))
-    state: Mapped[str] = mapped_column()
-    approved: Mapped[bool] = mapped_column()
-
-    parent: Mapped["DocumentRecord"] = relationship()
-    document: Mapped["XliffDocument"] = relationship(back_populates="records")
 
 
 class DocumentTask(Base):
