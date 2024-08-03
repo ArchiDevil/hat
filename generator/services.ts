@@ -83,7 +83,15 @@ const getMethod = (method: ServiceMethod) => {
   const types: string[] = []
 
   // TODO: it is better to search for suitable response, not for a default
-  const responseData = method.description.responses['200']
+  const responseData = (() => {
+    for (const response in method.description.responses) {
+      if (response.startsWith('20')) {
+        return method.description.responses[response]
+      }
+    }
+    throw new Error('No suitable response found')
+  })()
+  // const responseData = method.description.responses['200']
   const paramsList = (method.description.parameters ?? [])
     .filter((param) => {
       return param.in == 'path' || param.in == 'query'
@@ -197,7 +205,7 @@ const getMethod = (method: ServiceMethod) => {
           .join(', ')
       }
 
-      const methodParams = !query ? "" : `, {query: {${query}}}`
+      const methodParams = !query ? '' : `, {query: {${query}}}`
       functionBody = [
         `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`${methodParams})`,
       ]
