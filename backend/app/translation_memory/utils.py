@@ -2,6 +2,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app import schema
+
 from .schema import MemorySubstitution
 
 
