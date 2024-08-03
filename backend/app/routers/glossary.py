@@ -73,12 +73,10 @@ def retrieve_glossary_doc(glossary_doc_id: int, db: Session = Depends(get_db)):
 def create_glossary_doc_from_file(
     user_id: Annotated[int, Depends(get_current_user_id)],
     background_tasks: BackgroundTasks,
-    uploaded_file: UploadFile,
+    file: UploadFile,
     db: Session = Depends(get_db),
 ):
-    sheet, glossary_doc = create_glossary_doc_from_file_controller(
-        db, uploaded_file, user_id
-    )
+    sheet, glossary_doc = create_glossary_doc_from_file_controller(db, file, user_id)
     background_tasks.add_task(
         create_glossary_doc_from_file_tasks,
         sheet=sheet,
