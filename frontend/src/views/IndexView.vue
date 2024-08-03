@@ -2,8 +2,8 @@
 import {onMounted, ref} from 'vue'
 
 import {deleteTmx, getTmxs} from '../client/services/TmxService'
-import {deleteXliff, getXliffs} from '../client/services/XliffService'
-import {XliffFile} from '../client/schemas/XliffFile'
+import {getDocs, deleteDoc} from '../client/services/DocumentService'
+import {Document} from '../client/schemas/Document'
 import {TmxFile} from '../client/schemas/TmxFile'
 
 import Panel from 'primevue/panel'
@@ -15,14 +15,14 @@ import XliffUploadingDialog from '../components/XliffUploadingDialog.vue'
 import SupportLinks from '../components/SupportLinks.vue'
 
 const tmxDocs = ref<TmxFile[]>([])
-const xliffDocs = ref<XliffFile[]>([])
+const xliffDocs = ref<Document[]>([])
 
 const getTmxDocs = async () => {
   tmxDocs.value = await getTmxs()
 }
 
 const getXliffDocs = async () => {
-  xliffDocs.value = await getXliffs()
+  xliffDocs.value = await getDocs()
 }
 
 onMounted(async () => {
@@ -85,7 +85,7 @@ onMounted(async () => {
         v-for="file in xliffDocs"
         :key="file.id"
         :file="file"
-        :delete-method="deleteXliff"
+        :delete-method="deleteDoc"
         type="xliff"
         @delete="getXliffDocs()"
       />

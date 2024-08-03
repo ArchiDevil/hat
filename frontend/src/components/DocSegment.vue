@@ -2,12 +2,12 @@
 import {ref, watchEffect} from 'vue'
 
 import {TmxFileRecord} from '../client/schemas/TmxFileRecord'
-import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
+import {DocumentRecord} from '../client/schemas/DocumentRecord'
 
 import {debounce} from '../utils'
 
 const props = defineProps<{
-  record: TmxFileRecord | XliffFileRecord
+  record: TmxFileRecord | DocumentRecord
   focusedId?: number
   editable?: boolean
   disabled?: boolean

@@ -3,7 +3,7 @@
 import {MachineTranslationSettings} from './MachineTranslationSettings'
 import {TmxUsage} from './TmxUsage'
 
-export interface XliffProcessingSettings {
+export interface DocumentProcessingSettings {
   substitute_numbers: boolean
   machine_translation_settings: MachineTranslationSettings | null
   tmx_file_ids: number[]

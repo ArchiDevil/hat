@@ -1,17 +1,17 @@
 import {acceptHMRUpdate, defineStore} from 'pinia'
 
-import {XliffFileRecord} from '../client/schemas/XliffFileRecord'
-import {XliffFileWithRecordsCount} from '../client/schemas/XliffFileWithRecordsCount'
-import {XliffSubstitution} from '../client/schemas/XliffSubstitution'
+import {DocumentRecord} from '../client/schemas/DocumentRecord'
+import {DocumentWithRecordsCount} from '../client/schemas/DocumentWithRecordsCount'
+import {MemorySubstitution} from '../client/schemas/MemorySubstitution'
 import {
-  getDownloadXliffLink,
+  getDownloadDocLink,
   getSegmentSubstitutions,
-  getXliff,
-  getXliffRecords,
-  updateXliffRecord,
-} from '../client/services/XliffService'
+  getDoc,
+  getDocRecords,
+  updateDocRecord,
+} from '../client/services/DocumentService'
 
-export interface XliffFileRecordWithStatus extends XliffFileRecord {
+export interface DocFileRecordWithStatus extends DocumentRecord {
   loading: boolean
 }
 
@@ -19,11 +19,11 @@ export const useXliffStore = defineStore('xliff', {
   state() {
     return {
       documentLoading: false,
-      document: undefined as XliffFileWithRecordsCount | undefined,
-      records: [] as XliffFileRecordWithStatus[],
+      document: undefined as DocumentWithRecordsCount | undefined,
+      records: [] as DocFileRecordWithStatus[],
       currentFocusIdx: undefined as number | undefined,
       downloadLink: undefined as string | undefined,
-      substitutions: [] as XliffSubstitution[],
+      substitutions: [] as MemorySubstitution[],
     }
   },
   actions: {
@@ -31,15 +31,15 @@ export const useXliffStore = defineStore('xliff', {
       this.documentLoading = true
       this.currentFocusIdx = undefined
       this.document = undefined
-      this.document = await getXliff(doc_id)
-      this.downloadLink = getDownloadXliffLink(this.document.id)
+      this.document = await getDoc(doc_id)
+      this.downloadLink = getDownloadDocLink(this.document.id)
       this.documentLoading = false
     },
     async loadRecords(page: number) {
       if (!this.document) {
         return
       }
-      this.records = (await getXliffRecords(this.document.id, page)).map(
+      this.records = (await getDocRecords(this.document.id, page)).map(
         (record) => ({...record, loading: false})
       )
     },
@@ -54,7 +54,7 @@ export const useXliffStore = defineStore('xliff', {
         return
       }
       this.records[idx].loading = true
-      await updateXliffRecord(this.document?.id, record_id, {
+      await updateDocRecord(this.document?.id, record_id, {
         target: content,
       })
       this.records[idx].loading = false
