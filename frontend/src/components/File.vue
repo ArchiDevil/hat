@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 
-import {XliffFile} from '../client/schemas/XliffFile'
+import {Document} from '../client/schemas/Document'
 import {TmxFile} from '../client/schemas/TmxFile'
 
 import Button from 'primevue/button'
@@ -12,7 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  file: XliffFile | TmxFile
+  file: Document | TmxFile
   type: 'xliff' | 'tmx'
   deleteMethod: (id: number) => Promise<any>
 }>()

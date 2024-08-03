@@ -2,8 +2,8 @@
 import {Ref, ref, computed, onMounted} from 'vue'
 import {MandeError} from 'mande'
 
-import {createXliff, processXliff} from '../client/services/XliffService'
-import {XliffFile} from '../client/schemas/XliffFile'
+import {createDoc, processDoc} from '../client/services/DocumentService'
+import {Document} from '../client/schemas/Document'
 import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSettings'
 
 import {useTmxStore} from '../stores/tmx'
@@ -23,7 +23,7 @@ defineProps<{
   title: string
 }>()
 
-const uploadedFile = ref(null) as Ref<XliffFile | null>
+const uploadedFile = ref(null) as Ref<Document | null>
 const uploading = ref(false)
 const status = ref('')
 
@@ -49,7 +49,7 @@ const createFile = async (event: FileUploadSelectEvent) => {
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    uploadedFile.value = await createXliff({file: selectedFile})
+    uploadedFile.value = await createDoc({file: selectedFile})
     uploading.value = false
     status.value = 'Ready for processing'
     emit('uploaded')
@@ -69,7 +69,7 @@ const startProcessing = async () => {
   try {
     uploading.value = true
     status.value = 'Processing...'
-    await processXliff(uploadedFile.value!.id, {
+    await processDoc(uploadedFile.value!.id, {
       substitute_numbers: substituteNumbers.value,
       machine_translation_settings: useMachineTranslation.value
         ? machineTranslationSettings.value

@@ -2,7 +2,7 @@
 
 import {DocumentStatus} from './DocumentStatus'
 
-export interface XliffFileWithRecordsCount {
+export interface DocumentWithRecordsCount {
   id: number
   name: string
   status: DocumentStatus
