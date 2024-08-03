@@ -17,7 +17,7 @@ def test_post_glossary_load_file(user_logged_client: TestClient, session: Sessio
 
     response = user_logged_client.post(
         url=path,
-        files={"uploaded_file": ("small_glossary.xlsx", file)},
+        files={"file": ("small_glossary.xlsx", file)},
     )
     response_json = response.json()
 

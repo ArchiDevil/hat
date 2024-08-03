@@ -9,9 +9,9 @@ from app.glossary.schema import GlossaryDocumentResponse
 
 
 def create_glossary_doc_from_file_controller(
-    db: Session, uploaded_file: UploadFile, user_id: int
+    db: Session, file: UploadFile, user_id: int
 ):
-    content = uploaded_file.file.read()
+    content = file.file.read()
     xlsx = io.BytesIO(content)
     workbook = openpyxl.load_workbook(xlsx)
     sheet = workbook["Sheet1"]
