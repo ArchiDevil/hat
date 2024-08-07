@@ -4,43 +4,57 @@
 
 import logging
 import time
+from typing import Iterable, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import db
-from app.documents.models import Document, DocumentRecord, XliffRecord
+from app.db import get_db
+from app.documents.models import (
+    Document,
+    DocumentRecord,
+    DocumentType,
+    XliffRecord,
+)
 from app.documents.query import GenericDocsQuery
 from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescription
-from app.models import DocumentStatus, TaskStatus, TmxUsage
+from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus, TmxUsage
 from app.schema import DocumentTask, TmxRecord
 from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
-from app.xliff import extract_xliff_content
+from app.formats.base import BaseSegment
+from app.formats.xliff import XliffSegment, extract_xliff_content
+
+
+def segment_needs_processing(segment: BaseSegment):
+    if isinstance(segment, XliffSegment):
+        return not segment.approved
+    return True
 
 
 def get_segment_translation(
     source: str,
-    settings: DocumentProcessingSettings,
+    threshold: float,
+    tm_ids: list[int],
+    tmx_usage: TmxUsage,
+    substitute_numbers: bool,
     session: Session,
-):
+) -> str | None:
     # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
-    if settings.substitute_numbers and source.isdigit():
+    if substitute_numbers and source.isdigit():
         return source
 
-    if settings.similarity_threshold < 1.0:
-        substitutions = get_substitutions(
-            source, settings.tmx_file_ids, session, settings.similarity_threshold, 1
-        )
+    if threshold < 1.0:
+        substitutions = get_substitutions(source, tm_ids, session, threshold, 1)
         if substitutions:
             return substitutions[0].target
     else:
         selector = (
             select(TmxRecord.source, TmxRecord.target)
             .where(TmxRecord.source == source)
-            .where(TmxRecord.document_id.in_(settings.tmx_file_ids))
+            .where(TmxRecord.document_id.in_(tm_ids))
         )
-        match settings.tmx_usage:
+        match tmx_usage:
             case TmxUsage.NEWEST:
                 selector = selector.order_by(TmxRecord.change_date.desc())
             case TmxUsage.OLDEST:
@@ -50,85 +64,123 @@ def get_segment_translation(
                 return None
 
         tmx_data = session.execute(selector.limit(1)).first()
-
-        if tmx_data:
-            return tmx_data.target
+        return tmx_data.target if tmx_data else None
 
     return None
 
 
-def process_xliff(
+def process_document(
     doc: Document,
     settings: DocumentProcessingSettings,
     session: Session,
-):
-    xliff_document = doc.xliff
-    xliff_data = extract_xliff_content(xliff_document.original_document.encode())
+) -> bool:
+    segments = extract_segments(doc)
+    translate_indices = substitute_segments(settings, session, segments)
+    mt_result = translate_segments(
+        segments, translate_indices, settings.machine_translation_settings
+    )
+    create_doc_segments(doc, session, segments)
+    return mt_result
+
+
+def extract_segments(doc: Document) -> Sequence[BaseSegment]:
+    if doc.type == DocumentType.XLIFF:
+        xliff_document = doc.xliff
+        xliff_data = extract_xliff_content(xliff_document.original_document.encode())
+        return xliff_data.segments
+    else:
+        logging.error("Unknown document type")
+        return []
+
+
+def substitute_segments(
+    settings: DocumentProcessingSettings,
+    session: Session,
+    segments: Iterable[BaseSegment],
+) -> list[int]:
+    """
+    Process what is possible to process, save segment indices for further machine
+    translation processing.
+    """
     to_translate: list[int] = []
-    for i, segment in enumerate(xliff_data.segments):
-        if not segment.approved:
-            translation = get_segment_translation(segment.original, settings, session)
-            if not translation:
-                # we cannot find translation for this segment
-                # save it to translate by Yandex
-                to_translate.append(i)
-                continue
+    for idx, segment in enumerate(segments):
+        if not segment_needs_processing(segment):
+            continue
 
-            segment.translation = translation if translation else ""
+        translation = get_segment_translation(
+            segment.original,
+            settings.similarity_threshold,
+            settings.tmx_file_ids,
+            settings.tmx_usage,
+            settings.substitute_numbers,
+            session,
+        )
+        if not translation:
+            to_translate.append(idx)
+            continue
 
-    # translate by Yandex if there is a setting to do so enabled
+        segment.translation = translation or ""
+    return to_translate
+
+
+def translate_segments(
+    segments: Sequence[BaseSegment],
+    translate_indices: Sequence[int],
+    mt_settings: MachineTranslationSettings | None,
+) -> bool:
     # TODO: it is better to make solution more translation service agnostic
-    machine_translation_failed = False
-    if settings.machine_translation_settings and len(to_translate) > 0:
-        if (
-            not settings.machine_translation_settings
-            or not settings.machine_translation_settings.folder_id
-            or not settings.machine_translation_settings.oauth_token
-        ):
-            # TODO: this should never happen, how to check it with Pydantic?
-            logging.error(
-                "Machine translation settings are not configured, %s", settings
-            )
-            return False
-
+    mt_failed = False
+    if mt_settings and translate_indices:
         try:
-            lines = [xliff_data.segments[i].original for i in to_translate]
-            translated, failed = yandex.translate_lines(
+            lines = [segments[idx].original for idx in translate_indices]
+            translated, mt_failed = yandex.translate_lines(
                 lines,
-                settings.machine_translation_settings,
+                mt_settings,
             )
-            machine_translation_failed = failed
-            for i, translated_line in enumerate(translated):
-                xliff_data.segments[to_translate[i]].translation = translated_line
+            for idx, translated_line in enumerate(translated):
+                segments[translate_indices[idx]].translation = translated_line
         # TODO: handle specific exceptions instead of a generic one
         except Exception as e:
             logging.error("Yandex translation error %s", e)
             return False
+    return not mt_failed
 
-    doc_records = []
-    for segment in xliff_data.segments:
-        doc_records.append(
-            DocumentRecord(
-                document_id=doc.id,
-                source=segment.original,
-                target=segment.translation,
-            )
+
+def create_doc_segments(
+    doc: Document,
+    session: Session,
+    segments: Iterable[BaseSegment],
+) -> None:
+    doc_records = [
+        DocumentRecord(
+            document_id=doc.id,
+            source=segment.original,
+            target=segment.translation,
         )
+        for segment in segments
+    ]
     session.add_all(doc_records)
     session.commit()
 
-    for i, segment in enumerate(xliff_data.segments):
-        xliff_record = XliffRecord(
-            parent_id=doc_records[i].id,
-            document_id=xliff_document.id,
-            segment_id=segment.id_,
-            state=segment.state.value,
-            approved=segment.approved,
-        )
-        session.add(xliff_record)
-    session.commit()
-
-    return not machine_translation_failed
+    # create document specific segments
+    # TODO: is this possible to make it better?
+    if doc.type == DocumentType.XLIFF:
+        xliff_records: Sequence[XliffRecord] = []
+        for idx, segment in enumerate(segments):
+            assert isinstance(segment, XliffSegment)
+            xliff_records.append(
+                XliffRecord(
+                    parent_id=doc_records[idx].id,
+                    document_id=doc.xliff.id,
+                    segment_id=segment.id_,
+                    state=segment.state.value,
+                    approved=segment.approved,
+                )
+            )
+        session.add_all(xliff_records)
+        session.commit()
+    else:
+        logging.error("Unsupported document type %s", doc.type)
 
 
 def process_task(session: Session, task: DocumentTask) -> bool:
@@ -154,7 +206,7 @@ def process_task(session: Session, task: DocumentTask) -> bool:
         doc.processing_status = DocumentStatus.PROCESSING.value
         session.commit()
 
-        if not process_xliff(doc, task_data.settings, session):
+        if not process_document(doc, task_data.settings, session):
             doc.processing_status = DocumentStatus.ERROR.value
             session.commit()
             logging.error("Processing failed for document %d", doc.id)
@@ -176,7 +228,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logging.info("Starting document processing")
 
-    session = next(db.get_db())
+    session = next(get_db())
     while True:
         task = session.query(DocumentTask).first()
         if not task:
