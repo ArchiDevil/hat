@@ -1,4 +1,4 @@
-from app.xliff import extract_xliff_content
+from app.formats.xliff import extract_xliff_content
 
 # pylint: disable=C0116
 

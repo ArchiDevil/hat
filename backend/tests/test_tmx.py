@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.tmx import extract_tmx_content
+from app.formats.tmx import extract_tmx_content
 
 # pylint: disable=C0116
 

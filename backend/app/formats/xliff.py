@@ -4,6 +4,8 @@ from typing import Optional
 
 from lxml import etree
 
+from .base import BaseSegment
+
 
 class SegmentState(Enum):
     # Indicates the terminating state.
@@ -37,7 +39,7 @@ class SegmentState(Enum):
     TRANSLATED = "translated"
 
 
-class XliffSegment:
+class XliffSegment(BaseSegment):
     def __init__(
         self,
         id_: int,
@@ -46,54 +48,44 @@ class XliffSegment:
         target: str,
         state: Optional[str],
     ) -> None:
-        self.__id = id_
-        self.__approved = approved if approved else False
-        self.__source = source
-        self.__target = target
-        self.__dirty = False
-        self.__state = SegmentState(state) if state else SegmentState.NEW
-
-    @property
-    def id_(self) -> int:
-        return self.__id
+        super().__init__(id_, source, target)
+        self._approved = approved if approved else False
+        self._dirty = False
+        self._state = SegmentState(state) if state else SegmentState.NEW
 
     @property
     def approved(self) -> bool:
-        return self.__approved
-
-    @property
-    def original(self) -> str:
-        return self.__source
-
-    @property
-    def translation(self) -> str:
-        return self.__target
+        return self._approved
 
     @property
     def state(self) -> SegmentState:
-        return self.__state
+        return self._state
 
     @property
     def dirty(self) -> bool:
-        return self.__dirty
+        return self._dirty
+
+    @property
+    def translation(self) -> str:
+        return super().translation
 
     @translation.setter
     def translation(self, value: str) -> None:
-        self.__target = value
-        self.__state = SegmentState.TRANSLATED
-        self.__dirty = True
+        self._target = value
+        self._state = SegmentState.TRANSLATED
+        self._dirty = True
 
     @approved.setter
     def approved(self, value: bool) -> None:
-        self.__approved = value
-        self.__dirty = True
+        self._approved = value
+        self._dirty = True
 
     @state.setter
     def state(self, value: SegmentState) -> None:
-        self.__state = value
+        self._state = value
 
     def __str__(self) -> str:
-        return f"XliffSegment({self.__id}, {self.__approved}, {self.__source}, {self.__target})"
+        return f"XliffSegment({self.id_}, {self._approved}, {self.original}, {self.translation})"
 
     def __repr__(self) -> str:
         return self.__str__()
