@@ -11,8 +11,6 @@ from app.documents import schema as doc_schema
 from app.documents.models import (
     Document,
     DocumentType,
-    TxtDocument,
-    XliffDocument,
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
@@ -146,16 +144,16 @@ async def create_doc(
     file_data = await file.read()
     original_document = file_data.decode("utf-8")
 
+    # quite simple logic, but it is fine for now
     ext = name.lower().split(".")[-1]
-    if ext not in ["xliff", "txt"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file type"
-        )
-
     if ext == "xliff":
         doc_type = DocumentType.XLIFF
     elif ext == "txt":
         doc_type = DocumentType.TXT
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file type"
+        )
 
     doc = Document(
         name=name,
@@ -164,18 +162,7 @@ async def create_doc(
         upload_time=datetime.now(),
         created_by=current_user,
     )
-    query.add_document(doc)
-
-    # quite simple logic, but it is fine for now
-    if ext == "xliff":
-        xliff_doc = XliffDocument(parent_id=doc.id, original_document=original_document)
-        db.add(xliff_doc)
-        db.commit()
-    elif ext == "txt":
-        txt_doc = TxtDocument(parent_id=doc.id, original_document=original_document)
-        db.add(txt_doc)
-        db.commit()
-
+    query.add_document(doc, original_document)
     return doc_schema.Document(
         id=doc.id,
         name=doc.name,
@@ -216,34 +203,37 @@ def process_doc(
     },
 )
 def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
-    # TODO: update to support XLIFF/TXT formats
-    doc = get_doc_by_id(db, doc_id)
-    if not doc.xliff:
-        raise HTTPException(status_code=404, detail="No XLIFF file found")
-
-    original_document = doc.xliff.original_document.encode("utf-8")
-    processed_document = extract_xliff_content(original_document)
-
-    for segment in processed_document.segments:
-        record = db.query(XliffRecord).filter_by(segment_id=segment.id_).first()
-        if record and not segment.approved:
-            segment.translation = record.parent.target
-            segment.approved = record.approved
-            segment.state = SegmentState(record.state)
-
     def encode_to_latin_1(original: str):
         output = ""
         for c in original:
             output += c if (c.isalnum() or c in "'().[] -") else "_"
         return output
 
-    processed_document.commit()
-    file = processed_document.write()
-    file.seek(0)
-    return StreamingResponse(
-        file,
-        media_type="application/octet-stream",
-        headers={
-            "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
-        },
-    )
+    # TODO: update to support XLIFF/TXT formats
+    doc = get_doc_by_id(db, doc_id)
+    if doc.type == DocumentType.XLIFF:
+        if not doc.xliff:
+            raise HTTPException(status_code=404, detail="No XLIFF file found")
+
+        original_document = doc.xliff.original_document.encode("utf-8")
+        processed_document = extract_xliff_content(original_document)
+
+        for segment in processed_document.segments:
+            record = db.query(XliffRecord).filter_by(segment_id=segment.id_).first()
+            if record and not segment.approved:
+                segment.translation = record.parent.target
+                segment.approved = record.approved
+                segment.state = SegmentState(record.state)
+
+        processed_document.commit()
+        file = processed_document.write()
+        file.seek(0)
+        return StreamingResponse(
+            file,
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
+            },
+        )
+    else:
+        raise HTTPException(status_code=404, detail="No document found")

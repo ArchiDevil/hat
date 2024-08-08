@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import DocumentStatus
 from app.schema import TmxDocument
 
-from .models import Document, DocumentRecord
+from .models import Document, DocumentRecord, DocumentType, TxtDocument, XliffDocument
 
 
 class GenericDocsQuery:
@@ -44,8 +44,21 @@ class GenericDocsQuery:
             self.__db.delete(document)
         self.__db.commit()
 
-    def add_document(self, document: Document):
+    def add_document(self, document: Document, original_document: str):
         self.__db.add(document)
+        self.__db.commit()
+
+        if document.type == DocumentType.XLIFF:
+            xliff_doc = XliffDocument(
+                parent_id=document.id, original_document=original_document
+            )
+            self.__db.add(xliff_doc)
+        elif document.type == DocumentType.TXT:
+            txt_doc = TxtDocument(
+                parent_id=document.id, original_document=original_document
+            )
+            self.__db.add(txt_doc)
+
         self.__db.commit()
 
     def enqueue_document(self, document: Document, tmx_file_ids: list[int]):
