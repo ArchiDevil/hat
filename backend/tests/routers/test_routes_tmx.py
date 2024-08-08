@@ -148,7 +148,7 @@ def test_returns_404_when_deleting_nonexistent_tmx_doc(user_logged_client: TestC
 
 
 def test_can_upload_tmx(user_logged_client: TestClient, session: Session):
-    with open("tests/small.tmx", "rb") as f:
+    with open("tests/fixtures/small.tmx", "rb") as f:
         response = user_logged_client.post(
             "/tmx",
             files={"file": f},

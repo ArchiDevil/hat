@@ -147,7 +147,7 @@ def test_returns_404_when_deleting_nonexistent_doc(
 
 # TODO: check that TXT and XLIFF are possible to upload
 def test_upload_xliff(user_logged_client: TestClient, session: Session):
-    with open("tests/small.xliff", "rb") as fp:
+    with open("tests/fixtures/small.xliff", "rb") as fp:
         response = user_logged_client.post("/document/", files={"file": fp})
     assert response.status_code == 200
 
@@ -168,7 +168,7 @@ def test_upload_xliff(user_logged_client: TestClient, session: Session):
 
 
 def test_upload_txt(user_logged_client: TestClient, session: Session):
-    with open("tests/small.txt", "rb") as fp:
+    with open("tests/fixtures/small.txt", "rb") as fp:
         response = user_logged_client.post("/document/", files={"file": fp})
     assert response.status_code == 200
 
@@ -195,7 +195,7 @@ def test_upload_no_file(user_logged_client: TestClient):
 
 
 def test_upload_fails_with_unknown_type(user_logged_client: TestClient):
-    with open("tests/small.tmx", "rb") as fp:
+    with open("tests/fixtures/small.tmx", "rb") as fp:
         response = user_logged_client.post("/document/", files={"file": fp})
     assert response.status_code == 400
 
@@ -213,7 +213,7 @@ def test_upload_removes_old_files(user_logged_client: TestClient, session: Sessi
         )
         s.commit()
 
-    with open("tests/small.txt", "rb") as fp:
+    with open("tests/fixtures/small.txt", "rb") as fp:
         response = user_logged_client.post("/document/", files={"file": fp})
     assert response.status_code == 200
 
@@ -246,7 +246,7 @@ def test_upload_removes_only_uploaded_documents(
         )
         s.commit()
 
-    with open("tests/small.txt", "rb") as fp:
+    with open("tests/fixtures/small.txt", "rb") as fp:
         response = user_logged_client.post("/document/", files={"file": fp})
     assert response.status_code == 200
 
@@ -260,7 +260,7 @@ def test_upload_removes_only_uploaded_documents(
 def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
     user_logged_client: TestClient, session: Session
 ):
-    with open("tests/small.xliff", "rb") as fp:
+    with open("tests/fixtures/small.xliff", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
     response = user_logged_client.post(
@@ -283,7 +283,7 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
 def test_process_sets_document_in_pending_stage_and_creates_task_txt(
     user_logged_client: TestClient, session: Session
 ):
-    with open("tests/small.txt", "rb") as fp:
+    with open("tests/fixtures/small.txt", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
     response = user_logged_client.post(
@@ -309,7 +309,7 @@ def test_process_creates_task_for_xliff(
     with session as s:
         s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
 
-    with open("tests/small.xliff", "rb") as fp:
+    with open("tests/fixtures/small.xliff", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
     response = user_logged_client.post(
@@ -345,7 +345,7 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
     with session as s:
         s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
 
-    with open("tests/small.txt", "rb") as fp:
+    with open("tests/fixtures/small.txt", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
     response = user_logged_client.post(
@@ -385,7 +385,7 @@ def test_process_creates_xliff_doc_tmx_link(
         s.add(schema.TmxDocument(name="another_doc.tmx", created_by=1))
         s.commit()
 
-    with open("tests/small.xliff", "rb") as fp:
+    with open("tests/fixtures/small.xliff", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
     response = user_logged_client.post(
@@ -415,7 +415,7 @@ def test_process_creates_txt_doc_tmx_link(
         s.add(schema.TmxDocument(name="another_doc.tmx", created_by=1))
         s.commit()
 
-    with open("tests/small.txt", "rb") as fp:
+    with open("tests/fixtures/small.txt", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
     response = user_logged_client.post(
@@ -453,7 +453,7 @@ def test_returns_404_when_processing_nonexistent_doc(
 
 
 def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
-    with open("tests/small.xliff", "rb") as fp:
+    with open("tests/fixtures/small.xliff", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
     with session as s:
@@ -511,7 +511,7 @@ def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
 
 
 # def test_download_txt_doc(user_logged_client: TestClient, session: Session):
-#     with open("tests/small.txt", "rb") as fp:
+#     with open("tests/fixtures/small.txt", "rb") as fp:
 #         user_logged_client.post("/document/", files={"file": fp})
 
 #     with session as s:

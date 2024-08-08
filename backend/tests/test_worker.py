@@ -23,7 +23,7 @@ def get_session() -> Session:
 
 
 def test_process_task_sets_records(session: Session):
-    with open("tests/small.xliff", "r", encoding="utf-8") as fp:
+    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
 
     with session as s:
@@ -127,7 +127,7 @@ def test_process_task_sets_records(session: Session):
 
 
 def test_process_task_uses_correct_tmx_ids(session: Session):
-    with open("tests/small.xliff", "r", encoding="utf-8") as fp:
+    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
 
     with session as s:
@@ -194,7 +194,7 @@ def test_process_task_uses_correct_tmx_ids(session: Session):
     [("newest", "Another translation"), ("oldest", "Translation")],
 )
 def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Session):
-    with open("tests/small.xliff", "r", encoding="utf-8") as fp:
+    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
 
     with session as s:
@@ -256,7 +256,7 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
 
 
 def test_process_task_substitutes_numbers(session: Session):
-    with open("tests/small.xliff", "r", encoding="utf-8") as fp:
+    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
 
     with session as s:
@@ -370,7 +370,7 @@ def test_process_task_deletes_task_after_processing(session: Session):
 
 
 def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
-    with open("tests/small.xliff", "r", encoding="utf-8") as fp:
+    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
 
     with session as s:
