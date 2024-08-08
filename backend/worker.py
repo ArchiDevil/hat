@@ -1,5 +1,5 @@
 # This is a worker that takes tasks from the database every 10 seconds and
-# processes XLIFF files in it.
+# processes files in it.
 # Tasks are stored in document_task table and encoded in JSON.
 
 import logging
@@ -14,19 +14,21 @@ from app.documents.models import (
     Document,
     DocumentRecord,
     DocumentType,
+    TxtRecord,
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
 from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescription
+from app.formats.base import BaseSegment
+from app.formats.txt import TxtSegment, extract_txt_content
+from app.formats.xliff import XliffSegment, extract_xliff_content
 from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus, TmxUsage
 from app.schema import DocumentTask, TmxRecord
 from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
-from app.formats.base import BaseSegment
-from app.formats.xliff import XliffSegment, extract_xliff_content
 
 
-def segment_needs_processing(segment: BaseSegment):
+def segment_needs_processing(segment: BaseSegment) -> bool:
     if isinstance(segment, XliffSegment):
         return not segment.approved
     return True
@@ -88,9 +90,13 @@ def extract_segments(doc: Document) -> Sequence[BaseSegment]:
         xliff_document = doc.xliff
         xliff_data = extract_xliff_content(xliff_document.original_document.encode())
         return xliff_data.segments
-    else:
-        logging.error("Unknown document type")
-        return []
+    if doc.type == DocumentType.TXT:
+        txt_document = doc.txt
+        txt_data = extract_txt_content(txt_document.original_document)
+        return txt_data.segments
+
+    logging.error("Unknown document type")
+    return []
 
 
 def substitute_segments(
@@ -179,6 +185,19 @@ def create_doc_segments(
             )
         session.add_all(xliff_records)
         session.commit()
+    elif doc.type == DocumentType.TXT:
+        txt_records: Sequence[TxtRecord] = []
+        for idx, segment in enumerate(segments):
+            assert isinstance(segment, TxtSegment)
+            txt_records.append(
+                TxtRecord(
+                    parent_id=doc_records[idx].id,
+                    document_id=doc.txt.id,
+                    offset=segment.offset,
+                )
+            )
+        session.add_all(txt_records)
+        session.commit()
     else:
         logging.error("Unsupported document type %s", doc.type)
 
@@ -192,9 +211,9 @@ def process_task(session: Session, task: DocumentTask) -> bool:
 
         task_data = DocumentTaskDescription.model_validate_json(task.data)
 
-        if task_data.type != "xliff":
-            logging.error("Task data 'type' field is not 'xliff'")
-            raise AttributeError("Task data 'type' field is not 'xliff'")
+        if task_data.type not in ["txt", "xliff"]:
+            logging.error("Task data 'type' field is not 'txt' or 'xliff'")
+            raise AttributeError("Task data 'type' field is not 'txt' or 'xliff'")
 
         doc = GenericDocsQuery(session).get_document(task_data.document_id)
 
