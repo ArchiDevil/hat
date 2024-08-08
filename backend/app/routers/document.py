@@ -11,16 +11,15 @@ from app.documents import schema as doc_schema
 from app.documents.models import (
     Document,
     DocumentType,
+    TxtDocument,
     XliffDocument,
     XliffRecord,
-    TxtDocument,
-    TxtRecord,
 )
 from app.documents.query import GenericDocsQuery
+from app.formats.xliff import SegmentState, extract_xliff_content
 from app.translation_memory.schema import MemorySubstitution
 from app.translation_memory.utils import get_substitutions
 from app.user.depends import get_current_user_id, has_user_role
-from app.formats.xliff import SegmentState, extract_xliff_content
 
 router = APIRouter(
     prefix="/document", tags=["document"], dependencies=[Depends(has_user_role)]
