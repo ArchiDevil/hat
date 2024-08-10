@@ -21,8 +21,8 @@ doc_to_tmx_link = Table(
 
 
 class DocumentType(Enum):
-    XLIFF = "xliff"
-    TXT = "txt"
+    xliff = "xliff"
+    txt = "txt"
 
 
 class Document(Base):

@@ -48,12 +48,12 @@ class GenericDocsQuery:
         self.__db.add(document)
         self.__db.commit()
 
-        if document.type == DocumentType.XLIFF:
+        if document.type == DocumentType.xliff:
             xliff_doc = XliffDocument(
                 parent_id=document.id, original_document=original_document
             )
             self.__db.add(xliff_doc)
-        elif document.type == DocumentType.TXT:
+        elif document.type == DocumentType.txt:
             txt_doc = TxtDocument(
                 parent_id=document.id, original_document=original_document
             )

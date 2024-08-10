@@ -86,11 +86,11 @@ def process_document(
 
 
 def extract_segments(doc: Document) -> Sequence[BaseSegment]:
-    if doc.type == DocumentType.XLIFF:
+    if doc.type == DocumentType.xliff:
         xliff_document = doc.xliff
         xliff_data = extract_xliff_content(xliff_document.original_document.encode())
         return xliff_data.segments
-    if doc.type == DocumentType.TXT:
+    if doc.type == DocumentType.txt:
         txt_document = doc.txt
         txt_data = extract_txt_content(txt_document.original_document)
         return txt_data.segments
@@ -170,7 +170,7 @@ def create_doc_segments(
 
     # create document specific segments
     # TODO: is this possible to make it better?
-    if doc.type == DocumentType.XLIFF:
+    if doc.type == DocumentType.xliff:
         xliff_records: Sequence[XliffRecord] = []
         for idx, segment in enumerate(segments):
             assert isinstance(segment, XliffSegment)
@@ -185,7 +185,7 @@ def create_doc_segments(
             )
         session.add_all(xliff_records)
         session.commit()
-    elif doc.type == DocumentType.TXT:
+    elif doc.type == DocumentType.txt:
         txt_records: Sequence[TxtRecord] = []
         for idx, segment in enumerate(segments):
             assert isinstance(segment, TxtSegment)

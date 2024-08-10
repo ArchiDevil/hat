@@ -21,7 +21,7 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
         s.add(
             Document(
                 name="test_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -60,7 +60,7 @@ def test_doc_records_returns_second_page(
         s.add(
             Document(
                 name="test_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -93,7 +93,7 @@ def test_doc_records_returns_empty_for_too_large_page(
         s.add(
             Document(
                 name="test_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -128,7 +128,7 @@ def test_can_update_doc_record(user_logged_client: TestClient, session: Session)
         s.add(
             Document(
                 name="test_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -163,7 +163,7 @@ def test_returns_404_for_nonexistent_record(
         s.add(
             Document(
                 name="test_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 records=[],
                 processing_status="pending",
                 created_by=1,

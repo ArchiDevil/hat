@@ -24,13 +24,13 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
             [
                 Document(
                     name="first_doc.txt",
-                    type=DocumentType.TXT,
+                    type=DocumentType.txt,
                     processing_status="pending",
                     created_by=1,
                 ),
                 Document(
                     name="another_doc.xliff",
-                    type=DocumentType.XLIFF,
+                    type=DocumentType.xliff,
                     processing_status="done",
                     created_by=1,
                 ),
@@ -61,7 +61,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         s.add(
             Document(
                 name="test_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 records=records,
                 processing_status="pending",
                 created_by=1,
@@ -96,7 +96,7 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
         s.add(
             Document(
                 name="first_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 processing_status="waiting",
                 created_by=1,
             )
@@ -123,7 +123,7 @@ def test_can_delete_txt_doc(user_logged_client: TestClient, session: Session):
         s.add(
             Document(
                 name="first_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 processing_status="waiting",
                 created_by=1,
             )
@@ -156,7 +156,7 @@ def test_upload_xliff(user_logged_client: TestClient, session: Session):
         generic_doc = s.query(Document).filter_by(name="small.xliff").first()
         assert generic_doc is not None
         assert generic_doc.name == "small.xliff"
-        assert generic_doc.type == DocumentType.XLIFF
+        assert generic_doc.type == DocumentType.xliff
         assert generic_doc.processing_status == "uploaded"
         assert generic_doc.user.id == 1
         assert not generic_doc.records
@@ -177,7 +177,7 @@ def test_upload_txt(user_logged_client: TestClient, session: Session):
         generic_doc = s.query(Document).filter_by(id=1).first()
         assert generic_doc is not None
         assert generic_doc.name == "small.txt"
-        assert generic_doc.type == DocumentType.TXT
+        assert generic_doc.type == DocumentType.txt
         assert generic_doc.created_by == 1
         assert generic_doc.processing_status == "uploaded"
         assert not generic_doc.records
@@ -206,7 +206,7 @@ def test_upload_removes_old_files(user_logged_client: TestClient, session: Sessi
         s.add(
             Document(
                 name="some_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 processing_status=models.DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
@@ -230,7 +230,7 @@ def test_upload_removes_only_uploaded_documents(
         s.add(
             Document(
                 name="uploaded_doc.txt",
-                type=DocumentType.TXT,
+                type=DocumentType.txt,
                 processing_status=models.DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
@@ -239,7 +239,7 @@ def test_upload_removes_only_uploaded_documents(
         s.add(
             Document(
                 name="processed_doc.xliff",
-                type=DocumentType.XLIFF,
+                type=DocumentType.xliff,
                 processing_status=models.DocumentStatus.DONE.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,

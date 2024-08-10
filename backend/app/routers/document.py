@@ -148,9 +148,9 @@ async def create_doc(
     # quite simple logic, but it is fine for now
     ext = name.lower().split(".")[-1]
     if ext == "xliff":
-        doc_type = DocumentType.XLIFF
+        doc_type = DocumentType.xliff
     elif ext == "txt":
-        doc_type = DocumentType.TXT
+        doc_type = DocumentType.txt
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported file type"
@@ -211,7 +211,7 @@ def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
         return output
 
     doc = get_doc_by_id(db, doc_id)
-    if doc.type == DocumentType.XLIFF:
+    if doc.type == DocumentType.xliff:
         if not doc.xliff:
             raise HTTPException(status_code=404, detail="No XLIFF file found")
 
@@ -235,7 +235,7 @@ def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
             },
         )
 
-    if doc.type == DocumentType.TXT:
+    if doc.type == DocumentType.txt:
         if not doc.txt:
             raise HTTPException(status_code=404, detail="No TXT file found")
 

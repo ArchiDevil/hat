@@ -81,7 +81,7 @@ def test_process_task_sets_xliff_records(session: Session):
         s.add_all(
             [
                 TmxDocument(name="test", records=tmx_records, created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.XLIFF),
+                create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
             ]
         )
@@ -163,7 +163,7 @@ def test_process_task_sets_txt_records(session: Session):
                     ],
                     created_by=1,
                 ),
-                create_doc(name="small.txt", type_=DocumentType.TXT),
+                create_doc(name="small.txt", type_=DocumentType.txt),
                 TxtDocument(parent_id=1, original_document=file_data),
             ]
         )
@@ -261,7 +261,7 @@ def test_process_task_uses_correct_tmx_ids(session: Session):
             [
                 TmxDocument(name="test1", records=tmx_records_1, created_by=1),
                 TmxDocument(name="test2", records=tmx_records_2, created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.XLIFF),
+                create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(tmx_ids=[2]),
             ]
@@ -305,7 +305,7 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
             [
                 TmxDocument(name="test1", records=tmx_records_1, created_by=1),
                 TmxDocument(name="test2", records=tmx_records_2, created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.XLIFF),
+                create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(tmx_ids=[1, 2], usage=TmxUsage(mode)),
             ]
@@ -329,7 +329,7 @@ def test_process_task_substitutes_numbers(session: Session):
         s.add_all(
             [
                 TmxDocument(name="test", records=[], created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.XLIFF),
+                create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(substitute_numbers=True),
             ]
@@ -413,7 +413,7 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
     with session as s:
         s.add_all(
             [
-                create_doc(name="small.xliff", type_=DocumentType.XLIFF),
+                create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(
                     tmx_ids=[],
