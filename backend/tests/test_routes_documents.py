@@ -10,6 +10,7 @@ from app.documents.models import (
     DocumentRecord,
     DocumentType,
     TxtDocument,
+    TxtRecord,
     XliffDocument,
     XliffRecord,
 )
@@ -510,58 +511,83 @@ def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
     assert "final" in data
 
 
-# def test_download_txt_doc(user_logged_client: TestClient, session: Session):
-#     with open("tests/fixtures/small.txt", "rb") as fp:
-#         user_logged_client.post("/document/", files={"file": fp})
+def test_download_txt_doc(user_logged_client: TestClient, session: Session):
+    with open("tests/fixtures/small.txt", "rb") as fp:
+        user_logged_client.post("/document/", files={"file": fp})
 
-#     with session as s:
-#         xliff_records = [
-#             XliffRecord(
-#                 segment_id=675606,
-#                 document_id=1,
-#                 source="Regional Effects",
-#                 target="Some",
-#                 state="needs-translation",
-#                 approved=False,
-#             ),
-#             XliffRecord(
-#                 segment_id=675607,
-#                 document_id=1,
-#                 source="Other Effects",
-#                 target="",
-#                 state="needs-translation",
-#                 approved=True,
-#             ),
-#             XliffRecord(
-#                 segment_id=675608,
-#                 document_id=1,
-#                 source="Regional Effects",
-#                 target="Региональные эффекты",
-#                 state="translated",
-#                 approved=True,
-#             ),
-#             XliffRecord(
-#                 segment_id=675609,
-#                 document_id=1,
-#                 source="123456789",
-#                 target="",
-#                 state="final",
-#                 approved=False,
-#             ),
-#         ]
-#         s.add_all(xliff_records)
-#         s.commit()
+    with session as s:
+        txt_records = [
+            DocumentRecord(
+                document_id=1,
+                source="Soon after the characters enter Camp Greenbriar, read or paraphrase the following text:",
+                target="Вскоре после того, как персонажи войдут в Лагерь Гринбрайар, прочитайте или перефразируйте следующий текст:",
+            ),
+            DocumentRecord(
+                document_id=1,
+                source="“Hello, travelers!” calls an energetic giant sloth wearing a bracelet of claws and feathers.",
+                target="«Здравствуйте, путешественники!» зовет энергичного гигантского ленивца с браслетом из когтей и перьев.",
+            ),
+            DocumentRecord(
+                document_id=1,
+                source="The creature dangles from a nearby tree and waves a three-clawed paw.",
+                target="Существо свисает с ближайшего дерева и машет трехкогтевой лапой.",
+            ),
+            DocumentRecord(
+                document_id=1,
+                source="“Fresh faces are always welcome in Camp Greenbriar!”",
+                target="«В лагере Гринбрайар всегда приветствуются свежие лица!»",
+            ),
+            DocumentRecord(
+                document_id=1,
+                source="The sloth is named Razak.",
+                target="Ленивца зовут Разак.",
+            ),
+            DocumentRecord(
+                document_id=1,
+                source="He uses black bear stat block, with the following adjustments:",
+                target="Он использует блок характеристик черного медведя со следующими изменениями:",
+            ),
+            TxtRecord(
+                parent_id=1,
+                document_id=1,
+                offset=0,
+            ),
+            TxtRecord(
+                parent_id=2,
+                document_id=1,
+                offset=89,
+            ),
+            TxtRecord(
+                parent_id=3,
+                document_id=1,
+                offset=192,
+            ),
+            TxtRecord(
+                parent_id=4,
+                document_id=1,
+                offset=252,
+            ),
+            TxtRecord(
+                parent_id=5,
+                document_id=1,
+                offset=306,
+            ),
+            TxtRecord(
+                parent_id=6,
+                document_id=1,
+                offset=332,
+            ),
+        ]
+        s.add_all(txt_records)
+        s.commit()
 
-#     response = user_logged_client.get("/document/1/download")
-#     assert response.status_code == 200
+    response = user_logged_client.get("/document/1/download")
+    assert response.status_code == 200
 
-#     data = response.read().decode("utf-8")
-#     assert data.startswith("<?xml version=")
-#     assert "Regional Effects" in data
-#     assert "Региональные эффекты" in data
-#     assert 'approved="yes"' in data
-#     assert "translated" in data
-#     assert "final" in data
+    data = response.read().decode("utf-8")
+    assert data.startswith("Вскоре после того, как персонажи")
+    assert "Ленивца зовут Разак" in data
+    assert "Он использует блок характеристик" in data
 
 
 def test_download_shows_404_for_unknown_doc(user_logged_client: TestClient):

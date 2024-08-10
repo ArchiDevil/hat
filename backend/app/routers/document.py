@@ -14,6 +14,7 @@ from app.documents.models import (
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
+from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
 from app.translation_memory.schema import MemorySubstitution
 from app.translation_memory.utils import get_substitutions
@@ -209,7 +210,6 @@ def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
             output += c if (c.isalnum() or c in "'().[] -") else "_"
         return output
 
-    # TODO: update to support XLIFF/TXT formats
     doc = get_doc_by_id(db, doc_id)
     if doc.type == DocumentType.XLIFF:
         if not doc.xliff:
@@ -227,7 +227,6 @@ def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
 
         processed_document.commit()
         file = processed_document.write()
-        file.seek(0)
         return StreamingResponse(
             file,
             media_type="application/octet-stream",
@@ -235,5 +234,28 @@ def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
                 "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
             },
         )
-    else:
-        raise HTTPException(status_code=404, detail="No document found")
+
+    if doc.type == DocumentType.TXT:
+        if not doc.txt:
+            raise HTTPException(status_code=404, detail="No TXT file found")
+
+        original_document = doc.txt.original_document
+        processed_document = extract_txt_content(original_document)
+
+        txt_records = doc.txt.records
+        for i, segment in enumerate(processed_document.segments):
+            record = txt_records[i]
+            if record:
+                segment.translation = record.parent.target
+
+        processed_document.commit()
+        file = processed_document.write()
+        return StreamingResponse(
+            file,
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
+            },
+        )
+
+    raise HTTPException(status_code=404, detail="Unknown document type")
