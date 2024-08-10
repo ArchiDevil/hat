@@ -161,7 +161,7 @@ def create_doc_segments(
         DocumentRecord(
             document_id=doc.id,
             source=segment.original,
-            target=segment.translation,
+            target=segment.translation or "",
         )
         for segment in segments
     ]

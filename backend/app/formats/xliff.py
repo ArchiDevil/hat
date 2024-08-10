@@ -66,7 +66,7 @@ class XliffSegment(BaseSegment):
         return self._dirty
 
     @property
-    def translation(self) -> str:
+    def translation(self) -> str | None:
         return super().translation
 
     @translation.setter
@@ -125,13 +125,14 @@ class XliffData:
             for child in target_node.getchildren():
                 target_node.remove(child)
 
-            target_node.text = segment.translation
+            target_node.text = segment.translation or ""
             target_node.attrib["state"] = segment.state.value
 
     def write(self) -> BytesIO:
         output = BytesIO()
         et: etree._ElementTree = etree.ElementTree(self.__root)
         et.write(output, pretty_print=True, xml_declaration=True, encoding="utf-8")
+        output.seek(0)
         return output
 
 
