@@ -95,7 +95,7 @@ def get_segment_substitutions(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
         )
 
-    tmx_ids = [tmx.id for tmx in doc.tmxs]
+    tmx_ids = [tmx.id for tmx in doc.tms]
     if not tmx_ids:
         return []
 

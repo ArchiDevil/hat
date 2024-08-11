@@ -23,7 +23,8 @@ from app.formats.base import BaseSegment
 from app.formats.txt import TxtSegment, extract_txt_content
 from app.formats.xliff import XliffSegment, extract_xliff_content
 from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus, TmxUsage
-from app.schema import DocumentTask, TmxRecord
+from app.schema import DocumentTask
+from app.translation_memory.models import TranslationMemoryRecord
 from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
 
@@ -52,15 +53,15 @@ def get_segment_translation(
             return substitutions[0].target
     else:
         selector = (
-            select(TmxRecord.source, TmxRecord.target)
-            .where(TmxRecord.source == source)
-            .where(TmxRecord.document_id.in_(tm_ids))
+            select(TranslationMemoryRecord.source, TranslationMemoryRecord.target)
+            .where(TranslationMemoryRecord.source == source)
+            .where(TranslationMemoryRecord.document_id.in_(tm_ids))
         )
         match tmx_usage:
             case TmxUsage.NEWEST:
-                selector = selector.order_by(TmxRecord.change_date.desc())
+                selector = selector.order_by(TranslationMemoryRecord.change_date.desc())
             case TmxUsage.OLDEST:
-                selector = selector.order_by(TmxRecord.change_date.asc())
+                selector = selector.order_by(TranslationMemoryRecord.change_date.asc())
             case _:
                 logging.error("Unknown TMX usage option")
                 return None

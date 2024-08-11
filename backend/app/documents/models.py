@@ -9,14 +9,14 @@ from app.db import Base
 
 if TYPE_CHECKING:
     from app.models import User
-    from app.schema import TmxDocument
+    from app.translation_memory.models import TranslationMemory
 
 
-doc_to_tmx_link = Table(
-    "doc_to_tmx",
+doc_to_tm_link = Table(
+    "doc_to_tm",
     Base.metadata,
     Column("doc_id", ForeignKey("document.id"), nullable=False),
-    Column("tmx_id", ForeignKey("tmx_document.id"), nullable=False),
+    Column("tm_id", ForeignKey("translation_memory.id"), nullable=False),
 )
 
 
@@ -41,8 +41,8 @@ class Document(Base):
         order_by="DocumentRecord.id",
     )
     user: Mapped["User"] = relationship("User", back_populates="documents")
-    tmxs: Mapped[list["TmxDocument"]] = relationship(
-        secondary=doc_to_tmx_link, back_populates="docs", order_by="TmxDocument.id"
+    tms: Mapped[list["TranslationMemory"]] = relationship(
+        secondary=doc_to_tm_link, back_populates="docs", order_by="TranslationMemory.id"
     )
     xliff: Mapped["XliffDocument"] = relationship(
         back_populates="parent", cascade="all, delete-orphan"

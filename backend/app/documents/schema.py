@@ -9,7 +9,7 @@ class Document(Identified):
     name: str
     status: DocumentStatus
     created_by: int
-    type: Literal['xliff', 'txt']
+    type: Literal["xliff", "txt"]
 
 
 class DocumentWithRecordsCount(Document):

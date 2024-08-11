@@ -11,16 +11,15 @@ from app.documents.models import (
 from app.glossary.models import GlossaryDocument, GlossaryRecord
 from app.schema import (
     DocumentTask,
-    TmxDocument,
-    TmxRecord,
     User,
 )
+from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 
 __all__ = [
     "Base",
     "DocumentTask",
-    "TmxDocument",
-    "TmxRecord",
+    "TranslationMemory",
+    "TranslationMemoryRecord",
     "User",
     "XliffDocument",
     "XliffRecord",

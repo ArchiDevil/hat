@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import DocumentStatus
-from app.schema import TmxDocument
+from app.translation_memory.models import TranslationMemory
 
 from .models import Document, DocumentRecord, DocumentType, TxtDocument, XliffDocument
 
@@ -63,9 +63,9 @@ class GenericDocsQuery:
 
     def enqueue_document(self, document: Document, tmx_file_ids: list[int]):
         document.processing_status = DocumentStatus.PENDING.value
-        document.tmxs = list(
+        document.tms = list(
             self.__db.execute(
-                select(TmxDocument).filter(TmxDocument.id.in_(tmx_file_ids))
+                select(TranslationMemory).filter(TranslationMemory.id.in_(tmx_file_ids))
             ).scalars()
         )
         self.__db.commit()

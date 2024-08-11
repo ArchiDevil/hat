@@ -20,7 +20,8 @@ from app.documents.schema import (
     TmxUsage,
 )
 from app.models import DocumentStatus, MachineTranslationSettings
-from app.schema import DocumentTask, TmxDocument, TmxRecord
+from app.schema import DocumentTask
+from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 from worker import process_task
 
 # pylint: disable=C0116
@@ -73,14 +74,14 @@ def test_process_task_sets_xliff_records(session: Session):
 
     with session as s:
         tmx_records = [
-            TmxRecord(
+            TranslationMemoryRecord(
                 source="Regional Effects",
                 target="Translation",
             )
         ]
         s.add_all(
             [
-                TmxDocument(name="test", records=tmx_records, created_by=1),
+                TranslationMemory(name="test", records=tmx_records, created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
             ]
@@ -154,10 +155,10 @@ def test_process_task_sets_txt_records(session: Session):
     with session as s:
         s.add_all(
             [
-                TmxDocument(
+                TranslationMemory(
                     name="test",
                     records=[
-                        TmxRecord(
+                        TranslationMemoryRecord(
                             source="The sloth is named Razak.", target="Translation"
                         )
                     ],
@@ -251,16 +252,18 @@ def test_process_task_uses_correct_tmx_ids(session: Session):
 
     with session as s:
         tmx_records_1 = [
-            TmxRecord(source="Regional Effects", target="Translation"),
-            TmxRecord(source="Test", target="Segment"),
+            TranslationMemoryRecord(source="Regional Effects", target="Translation"),
+            TranslationMemoryRecord(source="Test", target="Segment"),
         ]
         tmx_records_2 = [
-            TmxRecord(source="Regional Effects", target="Another translation")
+            TranslationMemoryRecord(
+                source="Regional Effects", target="Another translation"
+            )
         ]
         s.add_all(
             [
-                TmxDocument(name="test1", records=tmx_records_1, created_by=1),
-                TmxDocument(name="test2", records=tmx_records_2, created_by=1),
+                TranslationMemory(name="test1", records=tmx_records_1, created_by=1),
+                TranslationMemory(name="test2", records=tmx_records_2, created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(tmx_ids=[2]),
@@ -286,7 +289,7 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
 
     with session as s:
         tmx_records_1 = [
-            TmxRecord(
+            TranslationMemoryRecord(
                 source="Regional Effects",
                 target="Translation",
                 creation_date=datetime(2020, 1, 1, 0, 0, 0),
@@ -294,7 +297,7 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
             )
         ]
         tmx_records_2 = [
-            TmxRecord(
+            TranslationMemoryRecord(
                 source="Regional Effects",
                 target="Another translation",
                 creation_date=datetime(2021, 1, 1, 0, 0, 0),
@@ -303,8 +306,8 @@ def test_process_task_uses_tmx_mode(mode: str, trans_result: str, session: Sessi
         ]
         s.add_all(
             [
-                TmxDocument(name="test1", records=tmx_records_1, created_by=1),
-                TmxDocument(name="test2", records=tmx_records_2, created_by=1),
+                TranslationMemory(name="test1", records=tmx_records_1, created_by=1),
+                TranslationMemory(name="test2", records=tmx_records_2, created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(tmx_ids=[1, 2], usage=TmxUsage(mode)),
@@ -328,7 +331,7 @@ def test_process_task_substitutes_numbers(session: Session):
     with session as s:
         s.add_all(
             [
-                TmxDocument(name="test", records=[], created_by=1),
+                TranslationMemory(name="test", records=[], created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(substitute_numbers=True),

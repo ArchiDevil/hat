@@ -3,9 +3,10 @@ from typing import Annotated, Final
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app import models, schema
+from app import models
 from app.db import get_db
 from app.formats.tmx import extract_tmx_content
+from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(prefix="/tmx", tags=["tmx"], dependencies=[Depends(has_user_role)])
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/tmx", tags=["tmx"], dependencies=[Depends(has_user_r
 
 @router.get("/")
 def get_tmxs(db: Annotated[Session, Depends(get_db)]) -> list[models.TmxFile]:
-    docs = db.query(schema.TmxDocument).order_by(schema.TmxDocument.id).all()
+    docs = db.query(TranslationMemory).order_by(TranslationMemory.id).all()
     return [
         models.TmxFile(id=doc.id, name=doc.name, created_by=doc.created_by)
         for doc in docs
@@ -24,14 +25,16 @@ def get_tmxs(db: Annotated[Session, Depends(get_db)]) -> list[models.TmxFile]:
 def get_tmx(
     tmx_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> models.TmxFileWithRecordsCount:
-    doc = db.query(schema.TmxDocument).filter(schema.TmxDocument.id == tmx_id).first()
+    doc = db.query(TranslationMemory).filter(TranslationMemory.id == tmx_id).first()
     if not doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
     records_count = (
-        db.query(schema.TmxRecord).filter(schema.TmxRecord.document == doc).count()
+        db.query(TranslationMemoryRecord)
+        .filter(TranslationMemoryRecord.document == doc)
+        .count()
     )
 
     return models.TmxFileWithRecordsCount(
@@ -49,16 +52,16 @@ def get_tmx_records(
     if not page:
         page = 0
 
-    doc = db.query(schema.TmxDocument).filter(schema.TmxDocument.id == tmx_id).first()
+    doc = db.query(TranslationMemory).filter(TranslationMemory.id == tmx_id).first()
     if not doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
     records = (
-        db.query(schema.TmxRecord)
-        .filter(schema.TmxRecord.document_id == tmx_id)
-        .order_by(schema.TmxRecord.id)
+        db.query(TranslationMemoryRecord)
+        .filter(TranslationMemoryRecord.document_id == tmx_id)
+        .order_by(TranslationMemoryRecord.id)
         .offset(page_records * page)
         .limit(page_records)
         .all()
@@ -79,7 +82,7 @@ async def create_tmx(
     tmx_data = await file.read()
     segments = extract_tmx_content(tmx_data)
 
-    doc = schema.TmxDocument(
+    doc = TranslationMemory(
         name=name,
         created_by=current_user,
     )
@@ -88,7 +91,7 @@ async def create_tmx(
 
     for segment in segments:
         doc.records.append(
-            schema.TmxRecord(
+            TranslationMemoryRecord(
                 source=segment.original,
                 target=segment.translation,
                 creation_date=segment.creation_date if segment.creation_date else None,
@@ -97,9 +100,7 @@ async def create_tmx(
         )
     db.commit()
 
-    new_doc = (
-        db.query(schema.TmxDocument).filter(schema.TmxDocument.id == doc.id).first()
-    )
+    new_doc = db.query(TranslationMemory).filter(TranslationMemory.id == doc.id).first()
     assert new_doc
 
     return models.TmxFile(id=new_doc.id, name=new_doc.name, created_by=doc.created_by)
@@ -109,7 +110,7 @@ async def create_tmx(
 def delete_tmx(
     tmx_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> models.StatusMessage:
-    doc = db.query(schema.TmxDocument).filter(schema.TmxDocument.id == tmx_id).first()
+    doc = db.query(TranslationMemory).filter(TranslationMemory.id == tmx_id).first()
     if not doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"

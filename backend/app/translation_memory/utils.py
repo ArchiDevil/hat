@@ -1,8 +1,7 @@
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app import schema
-
+from .models import TranslationMemoryRecord
 from .schema import MemorySubstitution
 
 
@@ -13,15 +12,19 @@ def get_substitutions(
     threshold: float = 0.7,
     count: int = 10,
 ) -> list[MemorySubstitution]:
-    similarity_func = func.similarity(schema.TmxRecord.source, source)
+    similarity_func = func.similarity(TranslationMemoryRecord.source, source)
     db.execute(
         text("SET pg_trgm.similarity_threshold TO :threshold"), {"threshold": threshold}
     )
     records = db.execute(
-        select(schema.TmxRecord.source, schema.TmxRecord.target, similarity_func)
+        select(
+            TranslationMemoryRecord.source,
+            TranslationMemoryRecord.target,
+            similarity_func,
+        )
         .filter(
-            schema.TmxRecord.source.op("%")(source),
-            schema.TmxRecord.document_id.in_(tmx_ids),
+            TranslationMemoryRecord.source.op("%")(source),
+            TranslationMemoryRecord.document_id.in_(tmx_ids),
         )
         .order_by(similarity_func.desc())
         .limit(count),

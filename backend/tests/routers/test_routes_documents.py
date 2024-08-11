@@ -14,6 +14,7 @@ from app.documents.models import (
     XliffDocument,
     XliffRecord,
 )
+from app.translation_memory.models import TranslationMemory
 
 # pylint: disable=C0116
 
@@ -89,7 +90,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         "status": "pending",
         "created_by": 1,
         "records_count": 2,
-        "type": "txt"
+        "type": "txt",
     }
 
 
@@ -321,7 +322,7 @@ def test_process_creates_task_for_xliff(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
@@ -357,7 +358,7 @@ def test_process_creates_task_for_xliff(
 
 def test_process_creates_task_for_txt(user_logged_client: TestClient, session: Session):
     with session as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
 
     with open("tests/fixtures/small.txt", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
@@ -395,8 +396,8 @@ def test_process_creates_xliff_doc_tmx_link(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
-        s.add(schema.TmxDocument(name="another_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
         s.commit()
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
@@ -416,17 +417,17 @@ def test_process_creates_xliff_doc_tmx_link(
 
     with session as s:
         doc = s.query(Document).filter_by(id=1).one()
-        assert len(doc.tmxs) == 2
-        assert doc.tmxs[0].id == 1
-        assert doc.tmxs[1].id == 2
+        assert len(doc.tms) == 2
+        assert doc.tms[0].id == 1
+        assert doc.tms[1].id == 2
 
 
 def test_process_creates_txt_doc_tmx_link(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
-        s.add(schema.TmxDocument(name="another_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
         s.commit()
 
     with open("tests/fixtures/small.txt", "rb") as fp:
@@ -446,9 +447,9 @@ def test_process_creates_txt_doc_tmx_link(
 
     with session as s:
         doc = s.query(Document).filter_by(id=1).one()
-        assert len(doc.tmxs) == 2
-        assert doc.tmxs[0].id == 1
-        assert doc.tmxs[1].id == 2
+        assert len(doc.tms) == 2
+        assert doc.tms[0].id == 1
+        assert doc.tms[1].id == 2
 
 
 def test_returns_404_when_processing_nonexistent_doc(

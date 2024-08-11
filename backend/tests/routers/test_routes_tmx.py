@@ -3,15 +3,15 @@ from datetime import datetime
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app import schema
+from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 
 # pylint: disable=C0116
 
 
 def test_can_return_list_of_tmx_docs(user_logged_client: TestClient, session: Session):
     with session as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
-        s.add(schema.TmxDocument(name="another_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
         s.commit()
 
     response = user_logged_client.get("/tmx/")
@@ -32,13 +32,11 @@ def test_can_return_list_of_tmx_docs(user_logged_client: TestClient, session: Se
 
 def test_can_get_tmx_file(user_logged_client: TestClient, session: Session):
     tmx_records = [
-        schema.TmxRecord(source="Regional Effects", target="Translation"),
-        schema.TmxRecord(source="User Interface", target="UI"),
+        TranslationMemoryRecord(source="Regional Effects", target="Translation"),
+        TranslationMemoryRecord(source="User Interface", target="UI"),
     ]
     with session as s:
-        s.add(
-            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
-        )
+        s.add(TranslationMemory(name="test_doc.tmx", records=tmx_records, created_by=1))
         s.commit()
     response = user_logged_client.get("/tmx/1")
     assert response.status_code == 200
@@ -52,17 +50,15 @@ def test_can_get_tmx_file(user_logged_client: TestClient, session: Session):
 
 def test_can_get_tmx_records(user_logged_client: TestClient, session: Session):
     tmx_records = [
-        schema.TmxRecord(source="Regional Effects", target="Translation"),
-        schema.TmxRecord(source="User Interface", target="UI"),
+        TranslationMemoryRecord(source="Regional Effects", target="Translation"),
+        TranslationMemoryRecord(source="User Interface", target="UI"),
     ]
     with session as s:
-        s.add(
-            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
-        )
+        s.add(TranslationMemory(name="test_doc.tmx", records=tmx_records, created_by=1))
         s.commit()
 
     with session as s:
-        docs = s.query(schema.TmxDocument).all()
+        docs = s.query(TranslationMemory).all()
         assert len(docs) == 1
 
     response = user_logged_client.get("/tmx/1/records")
@@ -77,16 +73,15 @@ def test_can_get_tmx_records_with_page(
     user_logged_client: TestClient, session: Session
 ):
     tmx_records = [
-        schema.TmxRecord(source=f"line{x}", target=f"line{x}") for x in range(150)
+        TranslationMemoryRecord(source=f"line{x}", target=f"line{x}")
+        for x in range(150)
     ]
     with session as s:
-        s.add(
-            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
-        )
+        s.add(TranslationMemory(name="test_doc.tmx", records=tmx_records, created_by=1))
         s.commit()
 
     with session as s:
-        docs = s.query(schema.TmxDocument).all()
+        docs = s.query(TranslationMemory).all()
         assert len(docs) == 1
 
     response = user_logged_client.get("/tmx/1/records", params={"page": "1"})
@@ -99,16 +94,15 @@ def test_tmx_records_are_empty_for_too_large_page(
     user_logged_client: TestClient, session: Session
 ):
     tmx_records = [
-        schema.TmxRecord(source=f"line{x}", target=f"line{x}") for x in range(150)
+        TranslationMemoryRecord(source=f"line{x}", target=f"line{x}")
+        for x in range(150)
     ]
     with session as s:
-        s.add(
-            schema.TmxDocument(name="test_doc.tmx", records=tmx_records, created_by=1)
-        )
+        s.add(TranslationMemory(name="test_doc.tmx", records=tmx_records, created_by=1))
         s.commit()
 
     with session as s:
-        docs = s.query(schema.TmxDocument).all()
+        docs = s.query(TranslationMemory).all()
         assert len(docs) == 1
 
     response = user_logged_client.get("/tmx/1/records", params={"page": "20"})
@@ -130,7 +124,7 @@ def test_returns_404_when_tmx_file_not_found(user_logged_client: TestClient):
 
 def test_can_delete_tmx_doc(user_logged_client: TestClient, session: Session):
     with session as s:
-        s.add(schema.TmxDocument(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
         s.commit()
 
     response = user_logged_client.delete("/tmx/1")
@@ -138,7 +132,7 @@ def test_can_delete_tmx_doc(user_logged_client: TestClient, session: Session):
     assert response.json() == {"message": "Deleted"}
 
     with session as s:
-        doc = s.query(schema.TmxDocument).filter_by(id=1).first()
+        doc = s.query(TranslationMemory).filter_by(id=1).first()
         assert doc is None
 
 
@@ -156,7 +150,7 @@ def test_can_upload_tmx(user_logged_client: TestClient, session: Session):
     assert response.status_code == 200
 
     with session as s:
-        doc = s.query(schema.TmxDocument).filter_by(id=1).first()
+        doc = s.query(TranslationMemory).filter_by(id=1).first()
         assert doc
         assert doc.name == "small.tmx"
         assert doc.created_by == 1
