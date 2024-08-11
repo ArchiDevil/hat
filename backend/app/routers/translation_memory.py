@@ -3,11 +3,12 @@ from typing import Annotated, Final
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
+import app.translation_memory.models as tm_models
+import app.translation_memory.schema as tm_schema
 from app import models
 from app.db import get_db
 from app.formats.tmx import extract_tmx_content
-import app.translation_memory.models as tm_models
-import app.translation_memory.schema as tm_schema
+from app.translation_memory.query import TranslationMemoryQuery
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -15,49 +16,41 @@ router = APIRouter(
 )
 
 
-@router.get("/")
-def get_tmxs(
-    db: Annotated[Session, Depends(get_db)],
-) -> list[tm_schema.TranslationMemory]:
-    docs = (
-        db.query(tm_models.TranslationMemory)
-        .order_by(tm_models.TranslationMemory.id)
-        .all()
-    )
-    return [
-        tm_schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
-        for doc in docs
-    ]
-
-
-@router.get("/{tmx_id}")
-def get_tmx(
-    tmx_id: int, db: Annotated[Session, Depends(get_db)]
-) -> tm_schema.TranslationMemoryWithRecordsCount:
-    doc = (
-        db.query(tm_models.TranslationMemory)
-        .filter(tm_models.TranslationMemory.id == tmx_id)
-        .first()
-    )
+def get_memory_by_id(db: Session, memory_id: int):
+    doc = TranslationMemoryQuery(db).get_memory(memory_id)
     if not doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
+    return doc
 
-    records_count = (
-        db.query(tm_models.TranslationMemoryRecord)
-        .filter(tm_models.TranslationMemoryRecord.document == doc)
-        .count()
-    )
 
+@router.get("/")
+def get_translation_memories(
+    db: Annotated[Session, Depends(get_db)],
+) -> list[tm_schema.TranslationMemory]:
+    return [
+        tm_schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
+        for doc in TranslationMemoryQuery(db).get_memories()
+    ]
+
+
+@router.get("/{tm_id}")
+def get_translation_memory(
+    tm_id: int, db: Annotated[Session, Depends(get_db)]
+) -> tm_schema.TranslationMemoryWithRecordsCount:
+    doc = get_memory_by_id(db, tm_id)
     return tm_schema.TranslationMemoryWithRecordsCount(
-        id=doc.id, name=doc.name, created_by=doc.created_by, records_count=records_count
+        id=doc.id,
+        name=doc.name,
+        created_by=doc.created_by,
+        records_count=TranslationMemoryQuery(db).get_memory_records_count(tm_id),
     )
 
 
-@router.get("/{tmx_id}/records")
-def get_tmx_records(
-    tmx_id: int,
+@router.get("/{tm_id}/records")
+def get_translation_memory_records(
+    tm_id: int,
     db: Annotated[Session, Depends(get_db)],
     page: Annotated[int | None, Query(ge=0)] = None,
 ) -> list[tm_schema.TranslationMemoryRecord]:
@@ -65,86 +58,49 @@ def get_tmx_records(
     if not page:
         page = 0
 
-    doc = (
-        db.query(tm_models.TranslationMemory)
-        .filter(tm_models.TranslationMemory.id == tmx_id)
-        .first()
-    )
-    if not doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
-
-    records = (
-        db.query(tm_models.TranslationMemoryRecord)
-        .filter(tm_models.TranslationMemoryRecord.document_id == tmx_id)
-        .order_by(tm_models.TranslationMemoryRecord.id)
-        .offset(page_records * page)
-        .limit(page_records)
-        .all()
-    )
+    get_memory_by_id(db, tm_id)
     return [
         tm_schema.TranslationMemoryRecord(
             id=record.id, source=record.source, target=record.target
         )
-        for record in records
+        for record in TranslationMemoryQuery(db).get_memory_records_paged(
+            tm_id, page, page_records
+        )
     ]
 
 
 @router.post("/")
-async def create_tmx(
+async def create_translation_memory(
     file: Annotated[UploadFile, File()],
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> tm_schema.TranslationMemory:
     name = file.filename
-    tmx_data = await file.read()
-    segments = extract_tmx_content(tmx_data)
+    tm_data = await file.read()
+    segments = extract_tmx_content(tm_data)
 
-    doc = tm_models.TranslationMemory(
-        name=name,
-        created_by=current_user,
-    )
-    db.add(doc)
-    db.commit()
-
-    for segment in segments:
-        doc.records.append(
+    doc = TranslationMemoryQuery(db).add_memory(
+        name or "",
+        current_user,
+        [
             tm_models.TranslationMemoryRecord(
                 source=segment.original,
                 target=segment.translation,
-                creation_date=segment.creation_date if segment.creation_date else None,
-                change_date=segment.change_date if segment.change_date else None,
+                creation_date=segment.creation_date,
+                change_date=segment.change_date,
             )
-        )
-    db.commit()
-
-    new_doc = (
-        db.query(tm_models.TranslationMemory)
-        .filter(tm_models.TranslationMemory.id == doc.id)
-        .first()
+            for segment in segments
+        ],
     )
-    assert new_doc
 
     return tm_schema.TranslationMemory(
-        id=new_doc.id, name=new_doc.name, created_by=doc.created_by
+        id=doc.id, name=doc.name, created_by=doc.created_by
     )
 
 
-@router.delete("/{tmx_id}")
-def delete_tmx(
-    tmx_id: int, db: Annotated[Session, Depends(get_db)]
+@router.delete("/{tm_id}")
+def delete_translation_memory(
+    tm_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> models.StatusMessage:
-    doc = (
-        db.query(tm_models.TranslationMemory)
-        .filter(tm_models.TranslationMemory.id == tmx_id)
-        .first()
-    )
-    if not doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
-
-    db.delete(doc)
-    db.commit()
+    TranslationMemoryQuery(db).delete_memory(get_memory_by_id(db, tm_id))
     return models.StatusMessage(message="Deleted")

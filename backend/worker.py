@@ -25,8 +25,8 @@ from app.formats.xliff import XliffSegment, extract_xliff_content
 from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
+from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import TranslationMemoryUsage
-from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
 
 
@@ -49,7 +49,9 @@ def get_segment_translation(
         return source
 
     if threshold < 1.0:
-        substitutions = get_substitutions(source, tm_ids, session, threshold, 1)
+        substitutions = TranslationMemoryQuery(session).get_substitutions(
+            source, tm_ids, threshold, 1
+        )
         if substitutions:
             return substitutions[0].target
     else:

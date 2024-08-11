@@ -69,9 +69,7 @@ def test_can_get_tm_records(user_logged_client: TestClient, session: Session):
     ]
 
 
-def test_can_get_tm_records_with_page(
-    user_logged_client: TestClient, session: Session
-):
+def test_can_get_tm_records_with_page(user_logged_client: TestClient, session: Session):
     tm_records = [
         TranslationMemoryRecord(source=f"line{x}", target=f"line{x}")
         for x in range(150)

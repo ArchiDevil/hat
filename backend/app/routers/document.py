@@ -16,8 +16,8 @@ from app.documents.models import (
 from app.documents.query import GenericDocsQuery
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
+from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import MemorySubstitution
-from app.translation_memory.utils import get_substitutions
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -99,7 +99,7 @@ def get_segment_substitutions(
     if not tm_ids:
         return []
 
-    return get_substitutions(original_segment.source, tm_ids, db)
+    return TranslationMemoryQuery(db).get_substitutions(original_segment.source, tm_ids)
 
 
 @router.put("/{doc_id}/record/{record_id}")
