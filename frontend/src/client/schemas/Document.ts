@@ -7,4 +7,5 @@ export interface Document {
   name: string
   status: DocumentStatus
   created_by: number
+  type: string
 }

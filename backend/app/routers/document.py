@@ -41,6 +41,7 @@ def get_docs(db: Annotated[Session, Depends(get_db)]) -> list[doc_schema.Documen
             name=doc.name,
             status=models.DocumentStatus(doc.processing_status),
             created_by=doc.created_by,
+            type=doc.type.value,
         )
         for doc in docs
     ]
@@ -58,6 +59,7 @@ def get_doc(
         status=models.DocumentStatus(doc.processing_status),
         created_by=doc.created_by,
         records_count=records_count,
+        type=doc.type.value,
     )
 
 
@@ -169,6 +171,7 @@ async def create_doc(
         name=doc.name,
         status=models.DocumentStatus(doc.processing_status),
         created_by=doc.created_by,
+        type=doc.type.value,
     )
 
 
