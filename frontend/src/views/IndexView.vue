@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
 
-import {deleteTmx, getTmxs} from '../client/services/TmxService'
+import {
+  deleteTranslationMemory,
+  getTranslationMemories,
+} from '../client/services/TmsService'
 import {getDocs} from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
-import {TmxFile} from '../client/schemas/TmxFile'
+import {TranslationMemory} from '../client/schemas/TranslationMemory'
 
 import Panel from 'primevue/panel'
 
@@ -15,11 +18,11 @@ import PageNav from '../components/PageNav.vue'
 import SupportLinks from '../components/SupportLinks.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 
-const tmxDocs = ref<TmxFile[]>([])
+const tmxDocs = ref<TranslationMemory[]>([])
 const docs = ref<Document[]>([])
 
 const getTmxDocs = async () => {
-  tmxDocs.value = await getTmxs()
+  tmxDocs.value = await getTranslationMemories()
 }
 
 const getDocuments = async () => {
@@ -65,7 +68,7 @@ onMounted(async () => {
         v-for="file in tmxDocs"
         :key="file.id"
         :file="file"
-        :delete-method="deleteTmx"
+        :delete-method="deleteTranslationMemory"
         @delete="getTmxDocs()"
       />
     </Panel>

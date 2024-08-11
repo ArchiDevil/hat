@@ -74,8 +74,8 @@ const startProcessing = async () => {
       machine_translation_settings: useMachineTranslation.value
         ? machineTranslationSettings.value
         : null,
-      tmx_file_ids: tmxStore.selectedIds,
-      tmx_usage: tmxStore.tmxMode,
+      tm_ids: tmxStore.selectedIds,
+      tm_usage: tmxStore.tmxMode,
       similarity_threshold: similarityThreshold.value,
     })
     uploading.value = false

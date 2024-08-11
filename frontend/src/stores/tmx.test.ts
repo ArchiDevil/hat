@@ -1,7 +1,6 @@
 import {it, expect} from 'vitest'
 import {createPinia} from 'pinia'
 
-import {TmxFile} from '../client/schemas/TmxFile'
 import {useTmxStore} from './tmx'
 
 it('filters selected ids', async () => {

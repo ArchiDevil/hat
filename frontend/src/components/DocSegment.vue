@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import {ref, watchEffect} from 'vue'
 
-import {TmxFileRecord} from '../client/schemas/TmxFileRecord'
+import {TranslationMemoryRecord} from '../client/schemas/TranslationMemoryRecord'
 import {DocumentRecord} from '../client/schemas/DocumentRecord'
 
 import {debounce} from '../utils'
 
 const props = defineProps<{
-  record: TmxFileRecord | DocumentRecord
+  record: TranslationMemoryRecord | DocumentRecord
   focusedId?: number
   editable?: boolean
   disabled?: boolean

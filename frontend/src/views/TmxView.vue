@@ -2,9 +2,12 @@
 import {computed, onMounted, ref, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 
-import {getTmx, getTmxRecords} from '../client/services/TmxService'
-import {TmxFileWithRecordsCount} from '../client/schemas/TmxFileWithRecordsCount'
-import {TmxFileRecord} from '../client/schemas/TmxFileRecord'
+import {
+  getTranslationMemory,
+  getTranslationMemoryRecords,
+} from '../client/services/TmsService'
+import {TranslationMemoryWithRecordsCount} from '../client/schemas/TranslationMemoryWithRecordsCount'
+import {TranslationMemoryRecord} from '../client/schemas/TranslationMemoryRecord'
 
 import Paginator, {PageState} from 'primevue/paginator'
 
@@ -17,8 +20,8 @@ import PageNav from '../components/PageNav.vue'
 
 const route = useRoute()
 const router = useRouter()
-const document = ref<TmxFileWithRecordsCount>()
-const records = ref<TmxFileRecord[]>()
+const document = ref<TranslationMemoryWithRecordsCount>()
+const records = ref<TranslationMemoryRecord[]>()
 
 const page = computed(() => {
   return Number(route.query['page'] ?? '0')
@@ -36,12 +39,15 @@ watchEffect(async () => {
   if (!document.value) {
     return
   }
-  records.value = await getTmxRecords(document.value.id, page.value)
+  records.value = await getTranslationMemoryRecords(
+    document.value.id,
+    page.value
+  )
 })
 
 onMounted(async () => {
   const route = useRoute()
-  document.value = await getTmx(Number(route.params.id))
+  document.value = await getTranslationMemory(Number(route.params.id))
 })
 </script>
 

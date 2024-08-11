@@ -2,7 +2,7 @@
 import {ref} from 'vue'
 
 import {Document} from '../client/schemas/Document'
-import {TmxFile} from '../client/schemas/TmxFile'
+import {TranslationMemory} from '../client/schemas/TranslationMemory'
 
 import Button from 'primevue/button'
 import RoutingLink from './RoutingLink.vue'
@@ -12,7 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  file: Document | TmxFile
+  file: Document | TranslationMemory
   deleteMethod: (id: number) => Promise<any>
 }>()
 

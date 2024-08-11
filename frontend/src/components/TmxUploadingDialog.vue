@@ -2,7 +2,7 @@
 import {ref} from 'vue'
 import {MandeError} from 'mande'
 
-import {createTmx} from '../client/services/TmxService'
+import {createTranslationMemory} from '../client/services/TmsService'
 
 import FileUpload, {FileUploadUploaderEvent} from 'primevue/fileupload'
 
@@ -26,7 +26,7 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    await createTmx({file: files[0]})
+    await createTranslationMemory({file: files[0]})
     uploading.value = false
     status.value = 'Uploading finished!'
     emit('uploaded')
@@ -51,9 +51,7 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
         <div v-else>{{ status }}</div>
       </template>
       <template #empty>
-        <span v-if="!status">
-          Choose TMX file to upload.
-        </span>
+        <span v-if="!status">Choose TMX file to upload.</span>
       </template>
     </FileUpload>
   </div>
