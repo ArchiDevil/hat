@@ -97,7 +97,7 @@ onMounted(async () => {
     <FileUpload
       mode="advanced"
       custom-upload
-      accept=".xliff"
+      accept=".xliff,.txt"
       :disabled="uploading"
       @select="(event: FileUploadSelectEvent) => createFile(event)"
       @uploader="startProcessing"
@@ -218,7 +218,7 @@ onMounted(async () => {
         <div v-else>{{ status }}</div>
       </template>
       <template #empty>
-        <span v-if="!status">Choose XLIFF file to upload.</span>
+        <span v-if="!status">Choose a file to upload.</span>
       </template>
     </FileUpload>
   </div>

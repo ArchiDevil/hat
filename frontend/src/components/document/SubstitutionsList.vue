@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {useXliffStore} from '../../stores/xliff'
+import {useDocStore} from '../../stores/document'
 
-const store = useXliffStore()
+const store = useDocStore()
 </script>
 
 <template>

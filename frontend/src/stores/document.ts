@@ -15,7 +15,7 @@ export interface DocFileRecordWithStatus extends DocumentRecord {
   loading: boolean
 }
 
-export const useXliffStore = defineStore('xliff', {
+export const useDocStore = defineStore('document', {
   state() {
     return {
       documentLoading: false,
@@ -95,5 +95,5 @@ export const useXliffStore = defineStore('xliff', {
 })
 
 if (import.meta.hot) {
-  import.meta.hot.accept(acceptHMRUpdate(useXliffStore, import.meta.hot))
+  import.meta.hot.accept(acceptHMRUpdate(useDocStore, import.meta.hot))
 }

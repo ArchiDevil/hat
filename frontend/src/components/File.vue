@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   file: Document | TmxFile
-  type: 'xliff' | 'tmx'
+  type: 'doc' | 'tmx'
   deleteMethod: (id: number) => Promise<any>
 }>()
 

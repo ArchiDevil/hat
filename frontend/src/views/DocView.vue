@@ -2,16 +2,16 @@
 import {computed, onMounted, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 
-import {useXliffStore} from '../stores/xliff'
+import {useDocStore} from '../stores/document'
 
 import Paginator, {PageState} from 'primevue/paginator'
 import Skeleton from 'primevue/skeleton'
 
 import Link from '../components/Link.vue'
 import DocSegment from '../components/DocSegment.vue'
-import SubstitutionsList from '../components/xliff/SubstitutionsList.vue'
-import LoadingMessage from '../components/xliff/LoadingMessage.vue'
-import ProcessingErrorMessage from '../components/xliff/ProcessingErrorMessage.vue'
+import SubstitutionsList from '../components/document/SubstitutionsList.vue'
+import LoadingMessage from '../components/document/LoadingMessage.vue'
+import ProcessingErrorMessage from '../components/document/ProcessingErrorMessage.vue'
 import RoutingLink from '../components/RoutingLink.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
@@ -19,7 +19,7 @@ import RoutingLink from '../components/RoutingLink.vue'
 
 const route = useRoute()
 const router = useRouter()
-const store = useXliffStore()
+const store = useDocStore()
 
 const documentId = computed(() => {
   return Number(route.params.id)

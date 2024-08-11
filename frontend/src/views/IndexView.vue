@@ -11,23 +11,23 @@ import Panel from 'primevue/panel'
 import PageNav from '../components/PageNav.vue'
 import File from '../components/File.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
-import XliffUploadingDialog from '../components/XliffUploadingDialog.vue'
+import DocUploadingDialog from '../components/DocUploadingDialog.vue'
 import SupportLinks from '../components/SupportLinks.vue'
 
 const tmxDocs = ref<TmxFile[]>([])
-const xliffDocs = ref<Document[]>([])
+const docs = ref<Document[]>([])
 
 const getTmxDocs = async () => {
   tmxDocs.value = await getTmxs()
 }
 
-const getXliffDocs = async () => {
-  xliffDocs.value = await getDocs()
+const getDocuments = async () => {
+  docs.value = await getDocs()
 }
 
 onMounted(async () => {
   await getTmxDocs()
-  await getXliffDocs()
+  await getDocuments()
 })
 </script>
 
@@ -72,22 +72,22 @@ onMounted(async () => {
 
     <Panel
       class="mt-4"
-      header="XLIFF documents list"
+      header="Documents list"
       toggleable
     >
-      <XliffUploadingDialog
-        title="Select a XLIFF file:"
+      <DocUploadingDialog
+        title="Select a file to upload:"
         @processed="
-          (fileId) => $router.push({name: 'xliff', params: {id: fileId}})
+          (fileId) => $router.push({name: 'document', params: {id: fileId}})
         "
       />
       <File
-        v-for="file in xliffDocs"
+        v-for="file in docs"
         :key="file.id"
         :file="file"
         :delete-method="deleteDoc"
-        type="xliff"
-        @delete="getXliffDocs()"
+        type="doc"
+        @delete="getDocuments()"
       />
     </Panel>
   </div>
