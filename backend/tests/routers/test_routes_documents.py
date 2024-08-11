@@ -41,8 +41,20 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
     response = user_logged_client.get("/document")
     assert response.status_code == 200
     assert response.json() == [
-        {"id": 1, "name": "first_doc.txt", "status": "pending", "created_by": 1},
-        {"id": 2, "name": "another_doc.xliff", "status": "done", "created_by": 1},
+        {
+            "id": 1,
+            "name": "first_doc.txt",
+            "status": "pending",
+            "created_by": 1,
+            "type": "txt",
+        },
+        {
+            "id": 2,
+            "name": "another_doc.xliff",
+            "status": "done",
+            "created_by": 1,
+            "type": "xliff",
+        },
     ]
 
 
@@ -77,6 +89,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         "status": "pending",
         "created_by": 1,
         "records_count": 2,
+        "type": "txt"
     }
 
 
