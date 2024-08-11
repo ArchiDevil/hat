@@ -22,9 +22,10 @@ from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescrip
 from app.formats.base import BaseSegment
 from app.formats.txt import TxtSegment, extract_txt_content
 from app.formats.xliff import XliffSegment, extract_xliff_content
-from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus, TmxUsage
+from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
+from app.translation_memory.schema import TranslationMemoryUsage
 from app.translation_memory.utils import get_substitutions
 from app.translators import yandex
 
@@ -39,7 +40,7 @@ def get_segment_translation(
     source: str,
     threshold: float,
     tm_ids: list[int],
-    tmx_usage: TmxUsage,
+    tm_usage: TranslationMemoryUsage,
     substitute_numbers: bool,
     session: Session,
 ) -> str | None:
@@ -57,17 +58,17 @@ def get_segment_translation(
             .where(TranslationMemoryRecord.source == source)
             .where(TranslationMemoryRecord.document_id.in_(tm_ids))
         )
-        match tmx_usage:
-            case TmxUsage.NEWEST:
+        match tm_usage:
+            case TranslationMemoryUsage.NEWEST:
                 selector = selector.order_by(TranslationMemoryRecord.change_date.desc())
-            case TmxUsage.OLDEST:
+            case TranslationMemoryUsage.OLDEST:
                 selector = selector.order_by(TranslationMemoryRecord.change_date.asc())
             case _:
-                logging.error("Unknown TMX usage option")
+                logging.error("Unknown translation memory usage option")
                 return None
 
-        tmx_data = session.execute(selector.limit(1)).first()
-        return tmx_data.target if tmx_data else None
+        tm_data = session.execute(selector.limit(1)).first()
+        return tm_data.target if tm_data else None
 
     return None
 
@@ -117,8 +118,8 @@ def substitute_segments(
         translation = get_segment_translation(
             segment.original,
             settings.similarity_threshold,
-            settings.tmx_file_ids,
-            settings.tmx_usage,
+            settings.tm_ids,
+            settings.tm_usage,
             settings.substitute_numbers,
             session,
         )

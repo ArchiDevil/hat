@@ -95,11 +95,11 @@ def get_segment_substitutions(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
         )
 
-    tmx_ids = [tmx.id for tmx in doc.tms]
-    if not tmx_ids:
+    tm_ids = [tm.id for tm in doc.tms]
+    if not tm_ids:
         return []
 
-    return get_substitutions(original_segment.source, tmx_ids, db)
+    return get_substitutions(original_segment.source, tm_ids, db)
 
 
 @router.put("/{doc_id}/record/{record_id}")
@@ -182,7 +182,7 @@ def process_doc(
     db: Annotated[Session, Depends(get_db)],
 ) -> models.StatusMessage:
     doc = get_doc_by_id(db, doc_id)
-    GenericDocsQuery(db).enqueue_document(doc, settings.tmx_file_ids)
+    GenericDocsQuery(db).enqueue_document(doc, settings.tm_ids)
 
     task_config = doc_schema.DocumentTaskDescription(
         type=doc.type.value, document_id=doc_id, settings=settings

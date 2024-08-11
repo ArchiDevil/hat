@@ -18,11 +18,6 @@ class TaskStatus(Enum):
     PROCESSING = "processing"
 
 
-class TmxUsage(Enum):
-    NEWEST = "newest"
-    OLDEST = "oldest"
-
-
 class UserRole(Enum):
     USER = "user"
     ADMIN = "admin"
@@ -30,42 +25,6 @@ class UserRole(Enum):
     @classmethod
     def get_values(cls):
         return tuple(role.value for role in cls)
-
-
-class TmxFile(Identified):
-    name: str
-    created_by: int
-
-
-class TmxFileWithRecordsCount(TmxFile):
-    records_count: int
-
-
-class TmxFileRecord(Identified):
-    source: str
-    target: str
-
-
-class XliffFile(Identified):
-    name: str
-    status: DocumentStatus
-    created_by: int
-
-
-class XliffFileWithRecordsCount(XliffFile):
-    records_count: int
-
-
-class XliffFileRecord(Identified):
-    segment_id: int
-    source: str
-    target: str
-    state: str
-    approved: bool
-
-
-class XliffRecordUpdate(BaseModel):
-    target: str
 
 
 class MachineTranslationSettings(BaseModel):

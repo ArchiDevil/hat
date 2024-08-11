@@ -7,7 +7,7 @@ from .schema import MemorySubstitution
 
 def get_substitutions(
     source: str,
-    tmx_ids: list[int],
+    tm_ids: list[int],
     db: Session,
     threshold: float = 0.7,
     count: int = 10,
@@ -24,7 +24,7 @@ def get_substitutions(
         )
         .filter(
             TranslationMemoryRecord.source.op("%")(source),
-            TranslationMemoryRecord.document_id.in_(tmx_ids),
+            TranslationMemoryRecord.document_id.in_(tm_ids),
         )
         .order_by(similarity_func.desc())
         .limit(count),

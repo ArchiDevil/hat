@@ -160,7 +160,6 @@ def test_returns_404_when_deleting_nonexistent_doc(
     assert response.status_code == 404
 
 
-# TODO: check that TXT and XLIFF are possible to upload
 def test_upload_xliff(user_logged_client: TestClient, session: Session):
     with open("tests/fixtures/small.xliff", "rb") as fp:
         response = user_logged_client.post("/document/", files={"file": fp})
@@ -283,8 +282,8 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [],
-            "tmx_usage": "newest",
+            "tm_ids": [],
+            "tm_usage": "newest",
         },
     )
 
@@ -306,8 +305,8 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [],
-            "tmx_usage": "newest",
+            "tm_ids": [],
+            "tm_usage": "newest",
         },
     )
 
@@ -332,8 +331,8 @@ def test_process_creates_task_for_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [1],
-            "tmx_usage": "newest",
+            "tm_ids": [1],
+            "tm_usage": "newest",
         },
     )
 
@@ -349,8 +348,8 @@ def test_process_creates_task_for_xliff(
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "tmx_file_ids": [1],
-                "tmx_usage": "newest",
+                "tm_ids": [1],
+                "tm_usage": "newest",
                 "similarity_threshold": 1.0,
             },
         }
@@ -368,8 +367,8 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [1],
-            "tmx_usage": "newest",
+            "tm_ids": [1],
+            "tm_usage": "newest",
         },
     )
 
@@ -385,14 +384,14 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "tmx_file_ids": [1],
-                "tmx_usage": "newest",
+                "tm_ids": [1],
+                "tm_usage": "newest",
                 "similarity_threshold": 1.0,
             },
         }
 
 
-def test_process_creates_xliff_doc_tmx_link(
+def test_process_creates_xliff_doc_tm_link(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
@@ -408,8 +407,8 @@ def test_process_creates_xliff_doc_tmx_link(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [1, 2],
-            "tmx_usage": "newest",
+            "tm_ids": [1, 2],
+            "tm_usage": "newest",
         },
     )
 
@@ -422,7 +421,7 @@ def test_process_creates_xliff_doc_tmx_link(
         assert doc.tms[1].id == 2
 
 
-def test_process_creates_txt_doc_tmx_link(
+def test_process_creates_txt_doc_tm_link(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
@@ -438,8 +437,8 @@ def test_process_creates_txt_doc_tmx_link(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [1, 2],
-            "tmx_usage": "newest",
+            "tm_ids": [1, 2],
+            "tm_usage": "newest",
         },
     )
 
@@ -460,8 +459,8 @@ def test_returns_404_when_processing_nonexistent_doc(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tmx_file_ids": [],
-            "tmx_usage": "newest",
+            "tm_ids": [],
+            "tm_usage": "newest",
         },
     )
     assert response.status_code == 404

@@ -61,11 +61,11 @@ class GenericDocsQuery:
 
         self.__db.commit()
 
-    def enqueue_document(self, document: Document, tmx_file_ids: list[int]):
+    def enqueue_document(self, document: Document, tm_ids: list[int]):
         document.processing_status = DocumentStatus.PENDING.value
         document.tms = list(
             self.__db.execute(
-                select(TranslationMemory).filter(TranslationMemory.id.in_(tmx_file_ids))
+                select(TranslationMemory).filter(TranslationMemory.id.in_(tm_ids))
             ).scalars()
         )
         self.__db.commit()
