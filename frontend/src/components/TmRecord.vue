@@ -13,7 +13,6 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   file: Document | TmxFile
-  type: 'doc' | 'tmx'
   deleteMethod: (id: number) => Promise<any>
 }>()
 
@@ -38,32 +37,27 @@ const deleteFile = async () => {
 
 <template>
   <div
-    class="my-1 py-1 px-2 border flex items-baseline rounded-border border-surface bg-surface-50"
+    class="my-1 py-1 px-2 border flex gap-8 items-baseline rounded-border border-surface bg-surface-50"
   >
     <div
-      class="w-60 text-ellipsis whitespace-nowrap overflow-hidden"
+      class="w-[24rem] text-ellipsis whitespace-nowrap overflow-hidden"
       :title="file.name"
     >
       #{{ file.id }} {{ file.name }}
     </div>
     <RoutingLink
-      class="ml-2"
-      :name="type"
+      name="tmx"
       :params="{id: file.id}"
       :disabled="busy"
       title="Open"
     />
     <Button
       label="Delete"
-      class="ml-2"
       severity="secondary"
       :disabled="busy"
       @click="deleteFile()"
     />
-    <span
-      class="ml-2"
-      v-if="status"
-    >
+    <span v-if="status">
       {{ status }}
     </span>
   </div>

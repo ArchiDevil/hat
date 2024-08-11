@@ -2,17 +2,18 @@
 import {onMounted, ref} from 'vue'
 
 import {deleteTmx, getTmxs} from '../client/services/TmxService'
-import {getDocs, deleteDoc} from '../client/services/DocumentService'
+import {getDocs} from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
 import {TmxFile} from '../client/schemas/TmxFile'
 
 import Panel from 'primevue/panel'
 
-import PageNav from '../components/PageNav.vue'
-import File from '../components/File.vue'
-import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
+import DocumentList from '../components/DocumentList.vue'
 import DocUploadingDialog from '../components/DocUploadingDialog.vue'
+import TmRecord from '../components/TmRecord.vue'
+import PageNav from '../components/PageNav.vue'
 import SupportLinks from '../components/SupportLinks.vue'
+import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 
 const tmxDocs = ref<TmxFile[]>([])
 const docs = ref<Document[]>([])
@@ -60,12 +61,11 @@ onMounted(async () => {
         title="Select a TMX file:"
         @uploaded="getTmxDocs()"
       />
-      <File
+      <TmRecord
         v-for="file in tmxDocs"
         :key="file.id"
         :file="file"
         :delete-method="deleteTmx"
-        type="tmx"
         @delete="getTmxDocs()"
       />
     </Panel>
@@ -81,12 +81,8 @@ onMounted(async () => {
           (fileId) => $router.push({name: 'document', params: {id: fileId}})
         "
       />
-      <File
-        v-for="file in docs"
-        :key="file.id"
-        :file="file"
-        :delete-method="deleteDoc"
-        type="doc"
+      <DocumentList
+        :documents="docs"
         @delete="getDocuments()"
       />
     </Panel>
