@@ -1,11 +1,4 @@
-.venv/
-__pycache__/
-backend/instance/
-.pytest_cache/
-.env.*
-.coverage
+.env*
 frontend/node_modules/
 frontend/dist/
-.env
-backend/var
 frontend/package-lock.json
