@@ -63,11 +63,13 @@ class TranslationMemoryQuery:
             )
             .order_by(similarity_func.desc())
             .limit(count),
-        ).scalars()
+        ).all()
 
         return [
-            MemorySubstitution(source=source, target=target, similarity=similarity)
-            for (source, target, similarity) in records
+            MemorySubstitution(
+                source=record.source, target=record.target, similarity=record.similarity
+            )
+            for record in records
         ]
 
     def add_memory(
