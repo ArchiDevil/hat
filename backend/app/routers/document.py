@@ -17,7 +17,10 @@ from app.documents.query import GenericDocsQuery
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
 from app.translation_memory.query import TranslationMemoryQuery
-from app.translation_memory.schema import MemorySubstitution
+from app.translation_memory.schema import (
+    MemorySubstitution,
+    TranslationMemory,
+)
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -95,7 +98,7 @@ def get_segment_substitutions(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
         )
 
-    tm_ids = [tm.id for tm in doc.tms]
+    tm_ids = [tm.id for tm in doc.memories]
     if not tm_ids:
         return []
 
@@ -119,6 +122,24 @@ def update_doc_record(
 
     GenericDocsQuery(db).update_record_target(found_record, record.target)
     return models.StatusMessage(message="Record updated")
+
+
+@router.get("/{doc_id}/memories")
+def get_translation_memories(
+    doc_id: int, db: Annotated[Session, Depends(get_db)]
+) -> list[doc_schema.DocTranslationMemory]:
+    return [
+        doc_schema.DocTranslationMemory(
+            doc_id=association.document.id,
+            memory=TranslationMemory(
+                id=association.memory.id,
+                name=association.memory.name,
+                created_by=association.memory.created_by,
+            ),
+            mode=association.mode,
+        )
+        for association in get_doc_by_id(db, doc_id).memory_associations
+    ]
 
 
 @router.delete("/{doc_id}")
@@ -182,7 +203,14 @@ def process_doc(
     db: Annotated[Session, Depends(get_db)],
 ) -> models.StatusMessage:
     doc = get_doc_by_id(db, doc_id)
-    GenericDocsQuery(db).enqueue_document(doc, settings.tm_ids)
+    memories = list(TranslationMemoryQuery(db).get_memories_by_id(settings.memory_ids))
+    if len(memories) != len(settings.memory_ids):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid translation memory ids",
+        )
+
+    GenericDocsQuery(db).enqueue_document(doc, memories)
 
     task_config = doc_schema.DocumentTaskDescription(
         type=doc.type.value, document_id=doc_id, settings=settings

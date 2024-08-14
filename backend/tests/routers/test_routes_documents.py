@@ -4,17 +4,21 @@ from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app import models, schema
 from app.documents.models import (
+    DocMemoryAssociation,
     Document,
     DocumentRecord,
     DocumentType,
+    TmMode,
     TxtDocument,
     TxtRecord,
     XliffDocument,
     XliffRecord,
 )
+from app.models import DocumentStatus
+from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory
+from app.translation_memory.schema import TranslationMemoryUsage
 
 # pylint: disable=C0116
 
@@ -220,7 +224,7 @@ def test_upload_removes_old_files(user_logged_client: TestClient, session: Sessi
             Document(
                 name="some_doc.txt",
                 type=DocumentType.txt,
-                processing_status=models.DocumentStatus.UPLOADED.value,
+                processing_status=DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
             )
@@ -232,8 +236,7 @@ def test_upload_removes_old_files(user_logged_client: TestClient, session: Sessi
     assert response.status_code == 200
 
     with session as s:
-        doc = s.query(Document).filter_by(name="some_doc.txt").first()
-        assert not doc
+        assert not s.query(Document).filter_by(name="some_doc.txt").first()
 
 
 def test_upload_removes_only_uploaded_documents(
@@ -244,7 +247,7 @@ def test_upload_removes_only_uploaded_documents(
             Document(
                 name="uploaded_doc.txt",
                 type=DocumentType.txt,
-                processing_status=models.DocumentStatus.UPLOADED.value,
+                processing_status=DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
             )
@@ -253,7 +256,7 @@ def test_upload_removes_only_uploaded_documents(
             Document(
                 name="processed_doc.xliff",
                 type=DocumentType.xliff,
-                processing_status=models.DocumentStatus.DONE.value,
+                processing_status=DocumentStatus.DONE.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
             )
@@ -265,10 +268,8 @@ def test_upload_removes_only_uploaded_documents(
     assert response.status_code == 200
 
     with session as s:
-        doc = s.query(Document).filter_by(name="uploaded_doc.txt").first()
-        assert not doc
-        doc = s.query(Document).filter_by(name="processed_doc.xliff").first()
-        assert doc
+        assert not s.query(Document).filter_by(name="uploaded_doc.txt").first()
+        assert s.query(Document).filter_by(name="processed_doc.xliff").first()
 
 
 def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
@@ -282,8 +283,8 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tm_ids": [],
-            "tm_usage": "newest",
+            "memory_ids": [],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
@@ -305,8 +306,8 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tm_ids": [],
-            "tm_usage": "newest",
+            "memory_ids": [],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
@@ -322,6 +323,7 @@ def test_process_creates_task_for_xliff(
 ):
     with session as s:
         s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.commit()
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
@@ -331,15 +333,15 @@ def test_process_creates_task_for_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tm_ids": [1],
-            "tm_usage": "newest",
+            "memory_ids": [1],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
     assert response.status_code == 200
 
     with session as s:
-        task = s.query(schema.DocumentTask).filter_by(id=1).one()
+        task = s.query(DocumentTask).filter_by(id=1).one()
         assert task.status == "pending"
         loaded_data = json.loads(task.data)
         assert loaded_data == {
@@ -348,8 +350,8 @@ def test_process_creates_task_for_xliff(
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "tm_ids": [1],
-                "tm_usage": "newest",
+                "memory_ids": [1],
+                "memory_usage": "newest",
                 "similarity_threshold": 1.0,
             },
         }
@@ -358,6 +360,7 @@ def test_process_creates_task_for_xliff(
 def test_process_creates_task_for_txt(user_logged_client: TestClient, session: Session):
     with session as s:
         s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.commit()
 
     with open("tests/fixtures/small.txt", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
@@ -367,15 +370,15 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tm_ids": [1],
-            "tm_usage": "newest",
+            "memory_ids": [1],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
     assert response.status_code == 200
 
     with session as s:
-        task = s.query(schema.DocumentTask).filter_by(id=1).one()
+        task = s.query(DocumentTask).filter_by(id=1).one()
         assert task.status == "pending"
         loaded_data = json.loads(task.data)
         assert loaded_data == {
@@ -384,8 +387,8 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "tm_ids": [1],
-                "tm_usage": "newest",
+                "memory_ids": [1],
+                "memory_usage": "newest",
                 "similarity_threshold": 1.0,
             },
         }
@@ -407,18 +410,17 @@ def test_process_creates_xliff_doc_tm_link(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tm_ids": [1, 2],
-            "tm_usage": "newest",
+            "memory_ids": [1, 2],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
-
     assert response.status_code == 200
 
     with session as s:
         doc = s.query(Document).filter_by(id=1).one()
-        assert len(doc.tms) == 2
-        assert doc.tms[0].id == 1
-        assert doc.tms[1].id == 2
+        assert len(doc.memories) == 2
+        assert doc.memories[0].id == 1
+        assert doc.memories[1].id == 2
 
 
 def test_process_creates_txt_doc_tm_link(
@@ -437,18 +439,45 @@ def test_process_creates_txt_doc_tm_link(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tm_ids": [1, 2],
-            "tm_usage": "newest",
+            "memory_ids": [1, 2],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
-
     assert response.status_code == 200
 
     with session as s:
         doc = s.query(Document).filter_by(id=1).one()
-        assert len(doc.tms) == 2
-        assert doc.tms[0].id == 1
-        assert doc.tms[1].id == 2
+        assert len(doc.memories) == 2
+        assert doc.memories[0].id == 1
+        assert doc.memories[1].id == 2
+
+
+def test_process_checks_for_nonexisting_memories(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.commit()
+
+    with open("tests/fixtures/small.txt", "rb") as fp:
+        user_logged_client.post("/document/", files={"file": fp})
+
+    response = user_logged_client.post(
+        "/document/1/process",
+        json={
+            "substitute_numbers": False,
+            "machine_translation_settings": None,
+            "memory_ids": [1, 42],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
+        },
+    )
+
+    assert response.status_code == 400
+
+    with session as s:
+        doc = s.query(Document).filter_by(id=1).one()
+        assert doc.processing_status == DocumentStatus.UPLOADED.value
+        assert not len(doc.memories)
 
 
 def test_returns_404_when_processing_nonexistent_doc(
@@ -459,8 +488,8 @@ def test_returns_404_when_processing_nonexistent_doc(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "tm_ids": [],
-            "tm_usage": "newest",
+            "memory_ids": [],
+            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
     assert response.status_code == 404
@@ -560,36 +589,12 @@ def test_download_txt_doc(user_logged_client: TestClient, session: Session):
                 source="He uses black bear stat block, with the following adjustments:",
                 target="Он использует блок характеристик черного медведя со следующими изменениями:",
             ),
-            TxtRecord(
-                parent_id=1,
-                document_id=1,
-                offset=0,
-            ),
-            TxtRecord(
-                parent_id=2,
-                document_id=1,
-                offset=89,
-            ),
-            TxtRecord(
-                parent_id=3,
-                document_id=1,
-                offset=192,
-            ),
-            TxtRecord(
-                parent_id=4,
-                document_id=1,
-                offset=252,
-            ),
-            TxtRecord(
-                parent_id=5,
-                document_id=1,
-                offset=306,
-            ),
-            TxtRecord(
-                parent_id=6,
-                document_id=1,
-                offset=332,
-            ),
+            TxtRecord(parent_id=1, document_id=1, offset=0),
+            TxtRecord(parent_id=2, document_id=1, offset=89),
+            TxtRecord(parent_id=3, document_id=1, offset=192),
+            TxtRecord(parent_id=4, document_id=1, offset=252),
+            TxtRecord(parent_id=5, document_id=1, offset=306),
+            TxtRecord(parent_id=6, document_id=1, offset=332),
         ]
         s.add_all(txt_records)
         s.commit()
@@ -606,3 +611,35 @@ def test_download_txt_doc(user_logged_client: TestClient, session: Session):
 def test_download_shows_404_for_unknown_doc(user_logged_client: TestClient):
     response = user_logged_client.get("/document/1/download")
     assert response.status_code == 404
+
+
+def test_returns_linked_tms(user_logged_client: TestClient, session: Session):
+    with session as s:
+        s.add(
+            Document(
+                name="small.xliff",
+                type=DocumentType.xliff,
+                created_by=1,
+                processing_status="UPLOADED",
+            )
+        )
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
+        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode=TmMode.read))
+        s.add(DocMemoryAssociation(doc_id=1, tm_id=2, mode=TmMode.read))
+        s.commit()
+
+    response = user_logged_client.get("/document/1/memories")
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "doc_id": 1,
+            "memory": {"id": 1, "name": "first_doc.tmx", "created_by": 1},
+            "mode": "read",
+        },
+        {
+            "doc_id": 1,
+            "memory": {"id": 2, "name": "another_doc.tmx", "created_by": 1},
+            "mode": "read",
+        },
+    ]

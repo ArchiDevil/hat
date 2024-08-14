@@ -3,11 +3,10 @@ from typing import Annotated, Final
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
-import app.translation_memory.models as tm_models
-import app.translation_memory.schema as tm_schema
-from app import models
 from app.db import get_db
 from app.formats.tmx import extract_tmx_content
+from app.models import StatusMessage
+from app.translation_memory import models, schema
 from app.translation_memory.query import TranslationMemoryQuery
 from app.user.depends import get_current_user_id, has_user_role
 
@@ -26,21 +25,21 @@ def get_memory_by_id(db: Session, memory_id: int):
 
 
 @router.get("/")
-def get_translation_memories(
+def get_memories(
     db: Annotated[Session, Depends(get_db)],
-) -> list[tm_schema.TranslationMemory]:
+) -> list[schema.TranslationMemory]:
     return [
-        tm_schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
+        schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
         for doc in TranslationMemoryQuery(db).get_memories()
     ]
 
 
 @router.get("/{tm_id}")
-def get_translation_memory(
+def get_memory(
     tm_id: int, db: Annotated[Session, Depends(get_db)]
-) -> tm_schema.TranslationMemoryWithRecordsCount:
+) -> schema.TranslationMemoryWithRecordsCount:
     doc = get_memory_by_id(db, tm_id)
-    return tm_schema.TranslationMemoryWithRecordsCount(
+    return schema.TranslationMemoryWithRecordsCount(
         id=doc.id,
         name=doc.name,
         created_by=doc.created_by,
@@ -49,18 +48,18 @@ def get_translation_memory(
 
 
 @router.get("/{tm_id}/records")
-def get_translation_memory_records(
+def get_memory_records(
     tm_id: int,
     db: Annotated[Session, Depends(get_db)],
     page: Annotated[int | None, Query(ge=0)] = None,
-) -> list[tm_schema.TranslationMemoryRecord]:
+) -> list[schema.TranslationMemoryRecord]:
     page_records: Final = 100
     if not page:
         page = 0
 
     get_memory_by_id(db, tm_id)
     return [
-        tm_schema.TranslationMemoryRecord(
+        schema.TranslationMemoryRecord(
             id=record.id, source=record.source, target=record.target
         )
         for record in TranslationMemoryQuery(db).get_memory_records_paged(
@@ -69,12 +68,12 @@ def get_translation_memory_records(
     ]
 
 
-@router.post("/")
-async def create_translation_memory(
+@router.post("/upload")
+async def create_memory_from_file(
     file: Annotated[UploadFile, File()],
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[int, Depends(get_current_user_id)],
-) -> tm_schema.TranslationMemory:
+) -> schema.TranslationMemory:
     name = file.filename
     tm_data = await file.read()
     segments = extract_tmx_content(tm_data)
@@ -83,7 +82,7 @@ async def create_translation_memory(
         name or "",
         current_user,
         [
-            tm_models.TranslationMemoryRecord(
+            models.TranslationMemoryRecord(
                 source=segment.original,
                 target=segment.translation,
                 creation_date=segment.creation_date,
@@ -93,14 +92,24 @@ async def create_translation_memory(
         ],
     )
 
-    return tm_schema.TranslationMemory(
-        id=doc.id, name=doc.name, created_by=doc.created_by
-    )
+    return schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
+
+
+@router.post(
+    "/",
+    response_model=schema.TranslationMemory,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_translation_memory(
+    settings: schema.TranslationMemoryCreationSettings,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[int, Depends(get_current_user_id)],
+):
+    doc = TranslationMemoryQuery(db).add_memory(settings.name, current_user, [])
+    return schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
 
 
 @router.delete("/{tm_id}")
-def delete_translation_memory(
-    tm_id: int, db: Annotated[Session, Depends(get_db)]
-) -> models.StatusMessage:
+def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
     TranslationMemoryQuery(db).delete_memory(get_memory_by_id(db, tm_id))
-    return models.StatusMessage(message="Deleted")
+    return StatusMessage(message="Deleted")

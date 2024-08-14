@@ -148,7 +148,7 @@ def test_returns_404_when_deleting_nonexistent_tm_doc(user_logged_client: TestCl
 def test_can_upload_tm(user_logged_client: TestClient, session: Session):
     with open("tests/fixtures/small.tmx", "rb") as f:
         response = user_logged_client.post(
-            "/translation_memory",
+            "/translation_memory/upload",
             files={"file": f},
         )
     assert response.status_code == 200
@@ -165,5 +165,21 @@ def test_can_upload_tm(user_logged_client: TestClient, session: Session):
 
 
 def test_shows_422_when_no_file_uploaded(user_logged_client: TestClient):
-    response = user_logged_client.post("/translation_memory")
+    response = user_logged_client.post("/translation_memory/upload")
     assert response.status_code == 422
+
+
+def test_can_create_tm(user_logged_client: TestClient, session: Session):
+    response = user_logged_client.post(
+        "/translation_memory",
+        json={"name": "test"},
+    )
+
+    assert response.status_code == 201
+
+    with session as s:
+        tm = s.query(TranslationMemory).filter_by(id=response.json()["id"]).first()
+        assert tm
+        assert tm.name == "test"
+        assert tm.created_by == 1
+        assert len(tm.records) == 0

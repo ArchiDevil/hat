@@ -2,7 +2,9 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import ForeignKey
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -12,12 +14,24 @@ if TYPE_CHECKING:
     from app.translation_memory.models import TranslationMemory
 
 
-doc_to_tm_link = Table(
-    "doc_to_tm",
-    Base.metadata,
-    Column("doc_id", ForeignKey("document.id"), nullable=False),
-    Column("tm_id", ForeignKey("translation_memory.id"), nullable=False),
-)
+class TmMode(Enum):
+    read = "read"
+    write = "write"
+
+
+class DocMemoryAssociation(Base):
+    __tablename__ = "doc_to_tm"
+
+    doc_id: Mapped[int] = mapped_column(ForeignKey("document.id"), primary_key=True)
+    tm_id: Mapped[int] = mapped_column(
+        ForeignKey("translation_memory.id"), primary_key=True
+    )
+    mode: Mapped[TmMode] = mapped_column(type_=SqlEnum(TmMode))
+
+    document: Mapped["Document"] = relationship(back_populates="memory_associations")
+    memory: Mapped["TranslationMemory"] = relationship(
+        back_populates="document_associations"
+    )
 
 
 class DocumentType(Enum):
@@ -41,14 +55,21 @@ class Document(Base):
         order_by="DocumentRecord.id",
     )
     user: Mapped["User"] = relationship("User", back_populates="documents")
-    tms: Mapped[list["TranslationMemory"]] = relationship(
-        secondary=doc_to_tm_link, back_populates="docs", order_by="TranslationMemory.id"
-    )
     xliff: Mapped["XliffDocument"] = relationship(
         back_populates="parent", cascade="all, delete-orphan"
     )
     txt: Mapped["TxtDocument"] = relationship(
         back_populates="parent", cascade="all, delete-orphan"
+    )
+
+    memory_associations: Mapped[list[DocMemoryAssociation]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
+    memories: AssociationProxy[list["TranslationMemory"]] = association_proxy(
+        "memory_associations",
+        "memory",
+        creator=lambda memory: DocMemoryAssociation(memory=memory, mode="read"),
     )
 
 

@@ -16,6 +16,11 @@ class TranslationMemoryQuery:
             select(TranslationMemory).order_by(TranslationMemory.id)
         ).scalars()
 
+    def get_memories_by_id(self, ids: Iterable[int]) -> Iterable[TranslationMemory]:
+        return self.__db.execute(
+            select(TranslationMemory).where(TranslationMemory.id.in_(ids))
+        ).scalars()
+
     def get_memory(self, id_: int) -> TranslationMemory | None:
         return self.__db.execute(
             select(TranslationMemory).where(TranslationMemory.id == id_)

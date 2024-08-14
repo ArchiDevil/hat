@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.base.schema import Identified
 
@@ -28,3 +28,7 @@ class TranslationMemoryWithRecordsCount(TranslationMemory):
 class TranslationMemoryRecord(Identified):
     source: str
     target: str
+
+
+class TranslationMemoryCreationSettings(BaseModel):
+    name: str = Field(min_length=1)

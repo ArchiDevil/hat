@@ -120,8 +120,8 @@ def substitute_segments(
         translation = get_segment_translation(
             segment.original,
             settings.similarity_threshold,
-            settings.tm_ids,
-            settings.tm_usage,
+            settings.memory_ids,
+            settings.memory_usage,
             settings.substitute_numbers,
             session,
         )

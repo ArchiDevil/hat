@@ -2,13 +2,13 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Index
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
-from app.documents.models import doc_to_tm_link
+from app.documents.models import DocMemoryAssociation, Document
 
 if TYPE_CHECKING:
-    from app.documents.models import Document
     from app.schema import User
 
 
@@ -25,8 +25,14 @@ class TranslationMemory(Base):
         order_by="TranslationMemoryRecord.id",
     )
     user: Mapped["User"] = relationship(back_populates="tms")
-    docs: Mapped[list["Document"]] = relationship(
-        secondary=doc_to_tm_link, back_populates="tms", order_by="Document.id"
+
+    document_associations: Mapped[list["DocMemoryAssociation"]] = relationship(
+        back_populates="memory", cascade="all, delete-orphan"
+    )
+    document: AssociationProxy[list["Document"]] = association_proxy(
+        "document_associations",
+        "document",
+        creator=lambda document: DocMemoryAssociation(document=document, mode="read"),
     )
 
 

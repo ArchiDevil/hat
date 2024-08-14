@@ -7,7 +7,14 @@ from sqlalchemy.orm import Session
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
 
-from .models import Document, DocumentRecord, DocumentType, TxtDocument, XliffDocument
+from .models import (
+    DocMemoryAssociation,
+    Document,
+    DocumentRecord,
+    DocumentType,
+    TxtDocument,
+    XliffDocument,
+)
 
 
 class GenericDocsQuery:
@@ -61,12 +68,15 @@ class GenericDocsQuery:
 
         self.__db.commit()
 
-    def enqueue_document(self, document: Document, tm_ids: list[int]):
+    def enqueue_document(
+        self, document: Document, memories: Iterable[TranslationMemory]
+    ):
         document.processing_status = DocumentStatus.PENDING.value
-        document.tms = list(
-            self.__db.execute(
-                select(TranslationMemory).filter(TranslationMemory.id.in_(tm_ids))
-            ).scalars()
+        self.__db.add_all(
+            [
+                DocMemoryAssociation(doc_id=document.id, tm_id=memory.id, mode="read")
+                for memory in memories
+            ]
         )
         self.__db.commit()
 
