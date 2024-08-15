@@ -11,6 +11,7 @@ from app.documents import schema as doc_schema
 from app.documents.models import (
     Document,
     DocumentType,
+    TmMode,
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
@@ -130,7 +131,7 @@ def get_translation_memories(
 ) -> list[doc_schema.DocTranslationMemory]:
     return [
         doc_schema.DocTranslationMemory(
-            doc_id=association.document.id,
+            document_id=doc_id,
             memory=TranslationMemory(
                 id=association.memory.id,
                 name=association.memory.name,
@@ -140,6 +141,46 @@ def get_translation_memories(
         )
         for association in get_doc_by_id(db, doc_id).memory_associations
     ]
+
+
+@router.post("/{doc_id}/memories")
+def set_translation_memories(
+    doc_id: int,
+    settings: doc_schema.DocTranslationMemoryUpdate,
+    db: Annotated[Session, Depends(get_db)],
+) -> models.StatusMessage:
+    # check writes count
+    write_count = 0
+    for memory in settings.memories:
+        write_count += memory.mode == TmMode.write
+
+    if write_count > 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Not all memories were found",
+        )
+
+    # check that all memories are available
+    doc = get_doc_by_id(db, doc_id)
+    memory_ids = {memory.id for memory in settings.memories}
+    memories = list(TranslationMemoryQuery(db).get_memories_by_id(memory_ids))
+    if len(memory_ids) != len(memories):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not all memories were found",
+        )
+
+    def find_memory(id_: int, memories):
+        for memory in memories:
+            if memory.id == id_:
+                return memory
+        return None
+
+    mem_to_mode = [
+        (find_memory(memory.id, memories), memory.mode) for memory in settings.memories
+    ]
+    GenericDocsQuery(db).set_document_memories(doc, mem_to_mode)
+    return models.StatusMessage(message="Memories updated")
 
 
 @router.delete("/{doc_id}")

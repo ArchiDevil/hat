@@ -42,6 +42,14 @@ class DocumentTaskDescription(BaseModel):
 
 
 class DocTranslationMemory(BaseModel):
-    doc_id: int
+    document_id: int
     memory: TranslationMemory
     mode: TmMode
+
+
+class TranslationMemoryWithMode(Identified):
+    mode: TmMode
+
+
+class DocTranslationMemoryUpdate(BaseModel):
+    memories: list[TranslationMemoryWithMode]

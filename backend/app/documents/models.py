@@ -3,7 +3,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, PrimaryKeyConstraint
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,12 +26,13 @@ class DocMemoryAssociation(Base):
     tm_id: Mapped[int] = mapped_column(
         ForeignKey("translation_memory.id"), primary_key=True
     )
-    mode: Mapped[TmMode] = mapped_column(type_=SqlEnum(TmMode))
+    mode: Mapped[TmMode] = mapped_column(type_=SqlEnum(TmMode), primary_key=True)
 
     document: Mapped["Document"] = relationship(back_populates="memory_associations")
     memory: Mapped["TranslationMemory"] = relationship(
         back_populates="document_associations"
     )
+    PrimaryKeyConstraint(doc_id, tm_id, mode)
 
 
 class DocumentType(Enum):

@@ -12,6 +12,7 @@ from .models import (
     Document,
     DocumentRecord,
     DocumentType,
+    TmMode,
     TxtDocument,
     XliffDocument,
 )
@@ -107,4 +108,14 @@ class GenericDocsQuery:
 
     def update_record_target(self, record: DocumentRecord, target: str):
         record.target = target
+        self.__db.commit()
+
+    def set_document_memories(
+        self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]
+    ):
+        associations = [
+            DocMemoryAssociation(document=document, memory=memory[0], mode=memory[1])
+            for memory in memories
+        ]
+        document.memory_associations = associations
         self.__db.commit()

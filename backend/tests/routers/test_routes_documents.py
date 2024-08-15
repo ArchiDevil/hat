@@ -633,13 +633,169 @@ def test_returns_linked_tms(user_logged_client: TestClient, session: Session):
     assert response.status_code == 200
     assert response.json() == [
         {
-            "doc_id": 1,
+            "document_id": 1,
             "memory": {"id": 1, "name": "first_doc.tmx", "created_by": 1},
             "mode": "read",
         },
         {
-            "doc_id": 1,
+            "document_id": 1,
             "memory": {"id": 2, "name": "another_doc.tmx", "created_by": 1},
             "mode": "read",
         },
     ]
+
+
+def test_sets_new_linked_tms(user_logged_client: TestClient, session: Session):
+    with session as s:
+        s.add(
+            Document(
+                name="small.xliff",
+                type=DocumentType.xliff,
+                created_by=1,
+                processing_status="UPLOADED",
+            )
+        )
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
+        s.commit()
+
+    response = user_logged_client.post(
+        "/document/1/memories",
+        json={"memories": [{"id": 1, "mode": "read"}, {"id": 2, "mode": "write"}]},
+    )
+    assert response.status_code == 200
+
+    with session as s:
+        associations = s.query(DocMemoryAssociation).all()
+        assert len(associations) == 2
+
+        assert associations[0].doc_id == 1
+        assert associations[0].tm_id == 1
+        assert associations[0].mode == TmMode.read
+
+        assert associations[1].doc_id == 1
+        assert associations[1].tm_id == 2
+        assert associations[1].mode == TmMode.write
+
+
+def test_new_linked_tms_work_with_duplicated_ids(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(
+            Document(
+                name="small.xliff",
+                type=DocumentType.xliff,
+                created_by=1,
+                processing_status="UPLOADED",
+            )
+        )
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
+        s.commit()
+
+    response = user_logged_client.post(
+        "/document/1/memories",
+        json={
+            "memories": [
+                {"id": 1, "mode": "read"},
+                {"id": 2, "mode": "read"},
+                {"id": 2, "mode": "write"},
+            ]
+        },
+    )
+    assert response.status_code == 200
+
+    with session as s:
+        associations = s.query(DocMemoryAssociation).all()
+        assert len(associations) == 3
+
+        assert associations[0].doc_id == 1
+        assert associations[0].tm_id == 1
+        assert associations[0].mode == TmMode.read
+
+        assert associations[1].doc_id == 1
+        assert associations[1].tm_id == 2
+        assert associations[1].mode == TmMode.read
+
+        assert associations[2].doc_id == 1
+        assert associations[2].tm_id == 2
+        assert associations[2].mode == TmMode.write
+
+
+def test_new_linked_tms_replaces_old_ones(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(
+            Document(
+                name="small.xliff",
+                type=DocumentType.xliff,
+                created_by=1,
+                processing_status="UPLOADED",
+            )
+        )
+        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
+        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
+        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"))
+        s.commit()
+
+    response = user_logged_client.post(
+        "/document/1/memories",
+        json={"memories": [{"id": 2, "mode": "write"}]},
+    )
+    assert response.status_code == 200
+
+    with session as s:
+        associations = s.query(DocMemoryAssociation).all()
+        assert len(associations) == 1
+
+        assert associations[0].doc_id == 1
+        assert associations[0].tm_id == 2
+        assert associations[0].mode == TmMode.write
+
+
+def test_set_linked_tms_fail_if_not_exists(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(
+            Document(
+                name="small.xliff",
+                type=DocumentType.xliff,
+                created_by=1,
+                processing_status="UPLOADED",
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.post(
+        "/document/1/memories",
+        json={"memories": [{"id": 42, "mode": "read"}]},
+    )
+    assert response.status_code == 404
+
+
+def test_set_linked_tms_fail_with_multiple_writes(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add_all(
+            [
+                Document(
+                    name="small.xliff",
+                    type=DocumentType.xliff,
+                    created_by=1,
+                    processing_status="UPLOADED",
+                ),
+                TranslationMemory(name="first_doc.tmx", created_by=1),
+                TranslationMemory(name="another_doc.tmx", created_by=1),
+            ]
+        )
+        s.commit()
+
+    response = user_logged_client.post(
+        "/document/1/memories",
+        json={"memories": [{"id": 1, "mode": "write"}, {"id": 2, "mode": "write"}]},
+    )
+    assert response.status_code == 400

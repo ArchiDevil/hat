@@ -28,6 +28,7 @@ def upgrade() -> None:
     op.add_column('doc_to_tm', sa.Column('mode', modetype, nullable=True))
     op.execute(sa.update(sa.table('doc_to_tm', sa.Column('mode'))).values(mode='read'))
     op.alter_column('doc_to_tm', 'mode', nullable=False)
+    op.create_primary_key(None, 'doc_to_tm', ['doc_id', 'tm_id', 'mode'])
 
 
 def downgrade() -> None:
