@@ -30,13 +30,27 @@ class GlossaryDocsQuery:
     def list_glossary_docs(self) -> list[Type[GlossaryDocument]]:
         return self.db.query(GlossaryDocument).order_by(GlossaryDocument.id).all()
 
-    def create_glossary_doc(self, user_id: int) -> GlossaryDocument:
+    def create_glossary_doc(self, user_id: int, document_name: str) -> GlossaryDocument:
         glossary_doc = GlossaryDocument(
             user_id=user_id,
+            name=document_name,
         )
         self.db.add(glossary_doc)
         self.db.commit()
         return glossary_doc
+
+    def update_doc(
+        self, document_id: int, document: GlossaryDocument
+    ) -> Type[GlossaryDocument]:
+        result = (
+            self.db.query(GlossaryDocument)
+            .filter(GlossaryDocument.id == document_id)
+            .update(document.model_dump())
+        )
+        if result:
+            self.db.commit()
+            return self.get_glossary_doc(document_id)
+        raise NotFoundGlossaryDocExc()
 
     def update_glossary_doc_processing_status(
         self, doc_id: int
