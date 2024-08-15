@@ -14,6 +14,7 @@ from app.db import get_db
 from app.glossary.controllers import (
     create_glossary_doc_from_file_controller,
     list_glossary_docs_controller,
+    list_glossary_records_controller,
     retrieve_glossary_doc_controller,
     update_glossary_doc_controller,
 )
@@ -21,6 +22,7 @@ from app.glossary.schema import (
     GlossaryDocument,
     GlossaryDocumentResponse,
     GlossaryLoadFileResponse,
+    GlossaryRecord,
 )
 from app.glossary.tasks import create_glossary_doc_from_file_tasks
 from app.user.depends import get_current_user_id, has_user_role
@@ -94,6 +96,16 @@ def update_glossary_doc(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Glossary document id:{glossary_doc_id}, not found",
     )
+
+
+@router.get(
+    "/records",
+    description="Get list glossary record ",
+    response_model=list[GlossaryRecord],
+    status_code=status.HTTP_200_OK,
+)
+def list_records_docs(document_id: int | None = None, db: Session = Depends(get_db)):
+    return list_glossary_records_controller(db, document_id)
 
 
 @router.post(

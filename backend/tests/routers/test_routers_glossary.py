@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import GlossaryDocument
-from app.glossary.query import GlossaryDocsQuery
+from app.glossary.query import GlossaryQuery
 from main import app
 
 
@@ -51,10 +51,10 @@ def test_get_glossary_list_docs(user_logged_client: TestClient, session: Session
 
     path = app.url_path_for("list_glossary_docs")
 
-    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(
+    doc_1 = GlossaryQuery(session).create_glossary_doc(
         user_id=1, document_name="Document name"
     )
-    doc_2 = GlossaryDocsQuery(session).create_glossary_doc(
+    doc_2 = GlossaryQuery(session).create_glossary_doc(
         user_id=2, document_name="Document name"
     )
 
@@ -73,7 +73,7 @@ def test_get_glossary_list_docs(user_logged_client: TestClient, session: Session
 def test_get_glossary_retrieve_doc(user_logged_client: TestClient, session: Session):
     """GET /glossary/docs/{doc_id}"""
 
-    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(
+    doc_1 = GlossaryQuery(session).create_glossary_doc(
         user_id=1, document_name="Document name"
     )
 
@@ -94,7 +94,7 @@ def test_update_glossary_doc(user_logged_client: TestClient, session: Session):
 
     expected_name = "New document name"
 
-    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(
+    doc_1 = GlossaryQuery(session).create_glossary_doc(
         user_id=1, document_name="Document name"
     )
     path = app.url_path_for("update_glossary_doc", **{"glossary_doc_id": doc_1.id})
@@ -103,3 +103,77 @@ def test_update_glossary_doc(user_logged_client: TestClient, session: Session):
     response_json = response.json()
 
     assert response_json["name"] == expected_name
+
+
+def test_list_glossary_records(user_logged_client: TestClient, session: Session):
+    """GET /glossary/records"""
+
+    doc = GlossaryQuery(session).create_glossary_doc(
+        user_id=1, document_name="Document name"
+    )
+    rec = GlossaryQuery(session).create_glossary_record(
+        author="Test",
+        comment="Comment",
+        source="Test",
+        target="Тест",
+        document_id=doc.id,
+    )
+
+    path = app.url_path_for("list_records_docs")
+
+    response = user_logged_client.get(path)
+    [resp_rec] = response.json()
+
+    assert resp_rec["author"] == rec.author
+    assert resp_rec["comment"] == rec.comment
+    assert resp_rec["source"] == rec.source
+    assert resp_rec["target"] == rec.target
+    assert resp_rec["document_id"] == rec.document_id
+
+
+def test_list_glossary_records_doc_filter(
+    user_logged_client: TestClient, session: Session
+):
+    """GET /glossary/records?document_id={document_id}"""
+
+    doc_1 = GlossaryQuery(session).create_glossary_doc(
+        user_id=1, document_name="Document name"
+    )
+    doc_2 = GlossaryQuery(session).create_glossary_doc(
+        user_id=1, document_name="Document name"
+    )
+    rec_1 = GlossaryQuery(session).create_glossary_record(
+        author="Test",
+        comment="Comment",
+        source="Test",
+        target="Тест",
+        document_id=doc_1.id,
+    )
+
+    rec_2 = GlossaryQuery(session).create_glossary_record(
+        author="Test 1",
+        comment="Comment 1",
+        source="Test 1",
+        target="Тест 1",
+        document_id=doc_2.id,
+    )
+
+    path = app.url_path_for("list_records_docs")
+
+    response_doc_1, response_doc_2 = (
+        user_logged_client.get(path, params={"document_id": doc_1.id}),
+        user_logged_client.get(path, params={"document_id": doc_2.id}),
+    )
+    [resp_rec_1], [resp_rec_2] = (response_doc_1.json(), response_doc_2.json())
+
+    assert resp_rec_1["author"] == rec_1.author
+    assert resp_rec_1["comment"] == rec_1.comment
+    assert resp_rec_1["source"] == rec_1.source
+    assert resp_rec_1["target"] == rec_1.target
+    assert resp_rec_1["document_id"] == rec_1.document_id
+
+    assert resp_rec_2["author"] == rec_2.author
+    assert resp_rec_2["comment"] == rec_2.comment
+    assert resp_rec_2["source"] == rec_2.source
+    assert resp_rec_2["target"] == rec_2.target
+    assert resp_rec_2["document_id"] == rec_2.document_id

@@ -11,7 +11,7 @@ class NotFoundGlossaryDocExc(BaseQueryException):
     """Not found glossary doc"""
 
 
-class GlossaryDocsQuery:
+class GlossaryQuery:
     """Contain query to GlossaryDocument"""
 
     def __init__(self, db: Session):
@@ -30,6 +30,18 @@ class GlossaryDocsQuery:
     def list_glossary_docs(self) -> list[Type[GlossaryDocument]]:
         return self.db.query(GlossaryDocument).order_by(GlossaryDocument.id).all()
 
+    def list_glossary_records(
+        self, document_id: int | None = None
+    ) -> list[Type[GlossaryDocument]]:
+        if document_id:
+            return (
+                self.db.query(GlossaryRecord)
+                .filter(GlossaryRecord.document_id == document_id)
+                .order_by(GlossaryRecord.id)
+                .all()
+            )
+        return self.db.query(GlossaryRecord).order_by(GlossaryRecord.id).all()
+
     def create_glossary_doc(self, user_id: int, document_name: str) -> GlossaryDocument:
         glossary_doc = GlossaryDocument(
             user_id=user_id,
@@ -38,6 +50,25 @@ class GlossaryDocsQuery:
         self.db.add(glossary_doc)
         self.db.commit()
         return glossary_doc
+
+    def create_glossary_record(
+        self,
+        author: str,
+        source: str,
+        target: str,
+        document_id: int,
+        comment: str | None = None,
+    ) -> GlossaryRecord:
+        glossary_record = GlossaryRecord(
+            author=author,
+            comment=comment,
+            source=source,
+            target=target,
+            document_id=document_id,
+        )
+        self.db.add(glossary_record)
+        self.db.commit()
+        return glossary_record
 
     def update_doc(
         self, document_id: int, document: GlossaryDocument
