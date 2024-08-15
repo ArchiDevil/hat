@@ -15,8 +15,10 @@ from app.glossary.controllers import (
     create_glossary_doc_from_file_controller,
     list_glossary_docs_controller,
     retrieve_glossary_doc_controller,
+    update_glossary_doc_controller,
 )
 from app.glossary.schema import (
+    GlossaryDocument,
     GlossaryDocumentResponse,
     GlossaryLoadFileResponse,
 )
@@ -39,8 +41,8 @@ def list_glossary_docs(db: Session = Depends(get_db)):
 
 
 @router.get(
-    "/docs/{glossary_doc_id}",
-    description="Get a single glossary documents",
+    path="/docs/{glossary_doc_id}",
+    description="Get a single glossary document",
     response_model=GlossaryDocumentResponse,
     status_code=status.HTTP_200_OK,
     responses={
@@ -64,6 +66,36 @@ def retrieve_glossary_doc(glossary_doc_id: int, db: Session = Depends(get_db)):
     )
 
 
+@router.put(
+    path="/docs/{glossary_doc_id}",
+    description="Update a single glossary document",
+    response_model=GlossaryDocumentResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        404: {
+            "description": "Glossary docs requested by id",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Glossary document id: 1, not found"}
+                }
+            },
+        },
+    },
+)
+def update_glossary_doc(
+    glossary_doc_id: int, document: GlossaryDocument, db: Session = Depends(get_db)
+):
+    glossary_doc_response = update_glossary_doc_controller(
+        db=db, document_id=glossary_doc_id, document=document
+    )
+    if glossary_doc_response:
+        return glossary_doc_response
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Glossary document id:{glossary_doc_id}, not found",
+    )
+
+
 @router.post(
     "/load_file",
     description="Load xlsx glossary file",
@@ -72,11 +104,14 @@ def retrieve_glossary_doc(glossary_doc_id: int, db: Session = Depends(get_db)):
 )
 def create_glossary_doc_from_file(
     user_id: Annotated[int, Depends(get_current_user_id)],
+    document_name: str,
     background_tasks: BackgroundTasks,
     file: UploadFile,
     db: Session = Depends(get_db),
 ):
-    sheet, glossary_doc = create_glossary_doc_from_file_controller(db, file, user_id)
+    sheet, glossary_doc = create_glossary_doc_from_file_controller(
+        db, file, user_id, document_name
+    )
     background_tasks.add_task(
         create_glossary_doc_from_file_tasks,
         sheet=sheet,

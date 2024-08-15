@@ -18,6 +18,7 @@ def test_post_glossary_load_file(user_logged_client: TestClient, session: Sessio
     response = user_logged_client.post(
         url=path,
         files={"file": ("small_glossary.xlsx", file)},
+        params={"document_name": "Document name"},
     )
     response_json = response.json()
 
@@ -50,8 +51,12 @@ def test_get_glossary_list_docs(user_logged_client: TestClient, session: Session
 
     path = app.url_path_for("list_glossary_docs")
 
-    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(user_id=1)
-    doc_2 = GlossaryDocsQuery(session).create_glossary_doc(user_id=2)
+    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(
+        user_id=1, document_name="Document name"
+    )
+    doc_2 = GlossaryDocsQuery(session).create_glossary_doc(
+        user_id=2, document_name="Document name"
+    )
 
     response = user_logged_client.get(path)
     [resp_doc_1, resp_doc_2] = response.json()
@@ -68,7 +73,9 @@ def test_get_glossary_list_docs(user_logged_client: TestClient, session: Session
 def test_get_glossary_retrieve_doc(user_logged_client: TestClient, session: Session):
     """GET /glossary/docs/{doc_id}"""
 
-    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(user_id=1)
+    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(
+        user_id=1, document_name="Document name"
+    )
 
     path = app.url_path_for("retrieve_glossary_doc", **{"glossary_doc_id": doc_1.id})
 
@@ -80,3 +87,19 @@ def test_get_glossary_retrieve_doc(user_logged_client: TestClient, session: Sess
     assert response_json["id"] == doc_1.id
     assert response_json["processing_status"] == doc_1.processing_status
     assert response_json["user_id"] == doc_1.user_id
+
+
+def test_update_glossary_doc(user_logged_client: TestClient, session: Session):
+    """PUT /glossary/docs/{doc_id}"""
+
+    expected_name = "New document name"
+
+    doc_1 = GlossaryDocsQuery(session).create_glossary_doc(
+        user_id=1, document_name="Document name"
+    )
+    path = app.url_path_for("update_glossary_doc", **{"glossary_doc_id": doc_1.id})
+
+    response = user_logged_client.put(url=path, json={"name": expected_name})
+    response_json = response.json()
+
+    assert response_json["name"] == expected_name
