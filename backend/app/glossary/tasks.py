@@ -5,7 +5,7 @@ from typing import Optional, Self
 from sqlalchemy.orm import Session
 
 from app.glossary.models import GlossaryRecord
-from app.glossary.query import GlossaryDocsQuery
+from app.glossary.query import GlossaryQuery
 
 
 @dataclass
@@ -52,6 +52,6 @@ def extract_from_xlsx(sheet, glossary_doc_id) -> list[GlossaryRecord]:
 def bulk_save_doc_update_processing_status(
     db: Session, record_for_save: list[GlossaryRecord], glossary_doc_id: int
 ):
-    glossary_doc_query = GlossaryDocsQuery(db)
+    glossary_doc_query = GlossaryQuery(db)
     glossary_doc_query.bulk_create_glossary_record(record_for_save)
     glossary_doc_query.update_glossary_doc_processing_status(glossary_doc_id)
