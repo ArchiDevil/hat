@@ -1,11 +1,11 @@
 import {it, expect} from 'vitest'
 import {createPinia} from 'pinia'
 
-import {useTmxStore} from './tmx'
+import {useTmStore} from './tm'
 
 it('filters selected ids', async () => {
-  const store = useTmxStore(createPinia())
-  store.selectedTmxFiles = [
+  const store = useTmStore(createPinia())
+  store.selectedMemories = [
     {
       id: 123,
       name: 'abc',

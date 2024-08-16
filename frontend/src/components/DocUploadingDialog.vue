@@ -6,7 +6,7 @@ import {createDoc, processDoc} from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
 import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSettings'
 
-import {useTmxStore} from '../stores/tmx'
+import {useTmStore} from '../stores/tm'
 
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
@@ -36,7 +36,7 @@ const machineTranslationSettings = ref<MachineTranslationSettings>({
 const similarityThreshold = ref<number>(1.0)
 
 const processingAvailable = computed(() => uploadedFile.value != null)
-const tmxStore = useTmxStore()
+const store = useTmStore()
 
 const createFile = async (event: FileUploadSelectEvent) => {
   status.value = ''
@@ -74,8 +74,8 @@ const startProcessing = async () => {
       machine_translation_settings: useMachineTranslation.value
         ? machineTranslationSettings.value
         : null,
-      memory_ids: tmxStore.selectedIds,
-      memory_usage: tmxStore.tmxMode,
+      memory_ids: store.selectedIds,
+      memory_usage: store.memoryMode,
       similarity_threshold: similarityThreshold.value,
     })
     uploading.value = false
@@ -88,7 +88,7 @@ const startProcessing = async () => {
 }
 
 onMounted(async () => {
-  await tmxStore.getTmx()
+  await store.fetchMemories()
 })
 </script>
 
@@ -109,9 +109,9 @@ onMounted(async () => {
             <label>TMX files to use:</label>
             <MultiSelect
               class="w-96"
-              v-model="tmxStore.selectedTmxFiles"
+              v-model="store.selectedMemories"
               placeholder="Select TMX files to use"
-              :options="tmxStore.tmxFiles"
+              :options="store.memories"
               optionLabel="name"
               filter
               filterPlaceholder="Search TMX files..."
@@ -120,7 +120,7 @@ onMounted(async () => {
           <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
             <label>When segment is found in multiple TMXs:</label>
             <Select
-              v-model="tmxStore.tmxMode"
+              v-model="store.memoryMode"
               :options="[
                 {name: 'Use newest TM', value: 'newest'},
                 {name: 'Use oldest TM', value: 'oldest'},
