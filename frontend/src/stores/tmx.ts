@@ -2,7 +2,7 @@ import {acceptHMRUpdate, defineStore} from 'pinia'
 
 import {TranslationMemory} from '../client/schemas/TranslationMemory'
 import {TranslationMemoryUsage} from '../client/schemas/TranslationMemoryUsage'
-import {getTranslationMemories} from '../client/services/TmsService'
+import {getMemories} from '../client/services/TmsService'
 
 export const useTmxStore = defineStore('tmx', {
   state() {
@@ -16,7 +16,7 @@ export const useTmxStore = defineStore('tmx', {
     async getTmx() {
       this.tmxFiles = []
       this.selectedTmxFiles = []
-      this.tmxFiles = await getTranslationMemories()
+      this.tmxFiles = await getMemories()
       this.selectedTmxFiles = this.tmxFiles
     },
   },

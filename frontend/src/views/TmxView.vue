@@ -2,10 +2,7 @@
 import {computed, onMounted, ref, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 
-import {
-  getTranslationMemory,
-  getTranslationMemoryRecords,
-} from '../client/services/TmsService'
+import {getMemory, getMemoryRecords} from '../client/services/TmsService'
 import {TranslationMemoryWithRecordsCount} from '../client/schemas/TranslationMemoryWithRecordsCount'
 import {TranslationMemoryRecord} from '../client/schemas/TranslationMemoryRecord'
 
@@ -39,15 +36,12 @@ watchEffect(async () => {
   if (!document.value) {
     return
   }
-  records.value = await getTranslationMemoryRecords(
-    document.value.id,
-    page.value
-  )
+  records.value = await getMemoryRecords(document.value.id, page.value)
 })
 
 onMounted(async () => {
   const route = useRoute()
-  document.value = await getTranslationMemory(Number(route.params.id))
+  document.value = await getMemory(Number(route.params.id))
 })
 </script>
 

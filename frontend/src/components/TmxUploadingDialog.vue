@@ -2,7 +2,7 @@
 import {ref} from 'vue'
 import {MandeError} from 'mande'
 
-import {createTranslationMemory} from '../client/services/TmsService'
+import {createMemoryFromFile} from '../client/services/TmsService'
 
 import FileUpload, {FileUploadUploaderEvent} from 'primevue/fileupload'
 
@@ -26,7 +26,7 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    await createTranslationMemory({file: files[0]})
+    await createMemoryFromFile({file: files[0]})
     uploading.value = false
     status.value = 'Uploading finished!'
     emit('uploaded')

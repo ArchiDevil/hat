@@ -9,6 +9,8 @@ import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentRecord} from '../schemas/DocumentRecord'
 import {MemorySubstitution} from '../schemas/MemorySubstitution'
 import {DocumentRecordUpdate} from '../schemas/DocumentRecordUpdate'
+import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
+import {DocTranslationMemoryUpdate} from '../schemas/DocTranslationMemoryUpdate'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
 
 export const getDocs = async (): Promise<Document[]> => {
@@ -33,6 +35,12 @@ export const getSegmentSubstitutions = async (doc_id: number, segment_id: number
 }
 export const updateDocRecord = async (doc_id: number, record_id: number, content: DocumentRecordUpdate): Promise<StatusMessage> => {
   return await api.put<StatusMessage>(`/document/${doc_id}/record/${record_id}`, content)
+}
+export const getTranslationMemories = async (doc_id: number): Promise<DocTranslationMemory[]> => {
+  return await api.get<DocTranslationMemory[]>(`/document/${doc_id}/memories`)
+}
+export const setTranslationMemories = async (doc_id: number, content: DocTranslationMemoryUpdate): Promise<StatusMessage> => {
+  return await api.post<StatusMessage>(`/document/${doc_id}/memories`, content)
 }
 export const processDoc = async (doc_id: number, content: DocumentProcessingSettings): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/document/${doc_id}/process`, content)

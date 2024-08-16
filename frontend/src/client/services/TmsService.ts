@@ -3,25 +3,29 @@
 import {getApiBase, api} from '../defaults'
 
 import {TranslationMemory} from '../schemas/TranslationMemory'
-import {Body_create_translation_memory_translation_memory__post} from '../schemas/Body_create_translation_memory_translation_memory__post'
+import {TranslationMemoryCreationSettings} from '../schemas/TranslationMemoryCreationSettings'
 import {TranslationMemoryWithRecordsCount} from '../schemas/TranslationMemoryWithRecordsCount'
 import {StatusMessage} from '../schemas/StatusMessage'
 import {TranslationMemoryRecord} from '../schemas/TranslationMemoryRecord'
+import {Body_create_memory_from_file_translation_memory_upload_post} from '../schemas/Body_create_memory_from_file_translation_memory_upload_post'
 
-export const getTranslationMemories = async (): Promise<TranslationMemory[]> => {
+export const getMemories = async (): Promise<TranslationMemory[]> => {
   return await api.get<TranslationMemory[]>(`/translation_memory/`)
 }
-export const createTranslationMemory = async (data: Body_create_translation_memory_translation_memory__post): Promise<TranslationMemory> => {
-  const formData = new FormData()
-  formData.append('file', data.file)
-  return await api.post<TranslationMemory>(`/translation_memory/`, formData)
+export const createTranslationMemory = async (content: TranslationMemoryCreationSettings): Promise<TranslationMemory> => {
+  return await api.post<TranslationMemory>(`/translation_memory/`, content)
 }
-export const getTranslationMemory = async (tm_id: number): Promise<TranslationMemoryWithRecordsCount> => {
+export const getMemory = async (tm_id: number): Promise<TranslationMemoryWithRecordsCount> => {
   return await api.get<TranslationMemoryWithRecordsCount>(`/translation_memory/${tm_id}`)
 }
-export const deleteTranslationMemory = async (tm_id: number): Promise<StatusMessage> => {
+export const deleteMemory = async (tm_id: number): Promise<StatusMessage> => {
   return await api.delete<StatusMessage>(`/translation_memory/${tm_id}`)
 }
-export const getTranslationMemoryRecords = async (tm_id: number, page?: number | null): Promise<TranslationMemoryRecord[]> => {
+export const getMemoryRecords = async (tm_id: number, page?: number | null): Promise<TranslationMemoryRecord[]> => {
   return await api.get<TranslationMemoryRecord[]>(`/translation_memory/${tm_id}/records`, {query: {page}})
+}
+export const createMemoryFromFile = async (data: Body_create_memory_from_file_translation_memory_upload_post): Promise<TranslationMemory> => {
+  const formData = new FormData()
+  formData.append('file', data.file)
+  return await api.post<TranslationMemory>(`/translation_memory/upload`, formData)
 }

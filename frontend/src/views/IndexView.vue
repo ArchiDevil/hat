@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
 
-import {
-  deleteTranslationMemory,
-  getTranslationMemories,
-} from '../client/services/TmsService'
+import {deleteMemory, getMemories} from '../client/services/TmsService'
 import {getDocs} from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
 import {TranslationMemory} from '../client/schemas/TranslationMemory'
@@ -22,7 +19,7 @@ const tmxDocs = ref<TranslationMemory[]>([])
 const docs = ref<Document[]>([])
 
 const getTmxDocs = async () => {
-  tmxDocs.value = await getTranslationMemories()
+  tmxDocs.value = await getMemories()
 }
 
 const getDocuments = async () => {
@@ -68,7 +65,7 @@ onMounted(async () => {
         v-for="file in tmxDocs"
         :key="file.id"
         :file="file"
-        :delete-method="deleteTranslationMemory"
+        :delete-method="deleteMemory"
         @delete="getTmxDocs()"
       />
     </Panel>
