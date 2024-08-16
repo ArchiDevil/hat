@@ -4,10 +4,12 @@ import {computed, ref} from 'vue'
 import {Document} from '../client/schemas/Document'
 
 import Button from 'primevue/button'
+
 import RoutingLink from './RoutingLink.vue'
 
 const emit = defineEmits<{
   delete: []
+  openSettings: [documentId: number]
 }>()
 
 const props = defineProps<{
@@ -63,14 +65,21 @@ const deleteFile = async () => {
     >
       {{ document.type }}
     </div>
-    <Button
-      label="Delete"
-      severity="secondary"
-      :disabled="busy"
-      @click="deleteFile()"
-    />
     <span v-if="status">
       {{ status }}
     </span>
+    <Button
+      label="Settings"
+      severity="secondary"
+      :disabled="busy"
+      @click="$emit('openSettings', document.id)"
+    />
+    <Button
+      class="ml-auto"
+      label="Delete"
+      severity="danger"
+      :disabled="busy"
+      @click="deleteFile()"
+    />
   </div>
 </template>

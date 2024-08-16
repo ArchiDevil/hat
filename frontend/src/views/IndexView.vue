@@ -13,10 +13,13 @@ import DocUploadingDialog from '../components/DocUploadingDialog.vue'
 import TmRecord from '../components/TmRecord.vue'
 import PageNav from '../components/PageNav.vue'
 import SupportLinks from '../components/SupportLinks.vue'
+import TmSettingsModal from '../components/TmSettingsModal.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 
 const tmxDocs = ref<TranslationMemory[]>([])
 const docs = ref<Document[]>([])
+const tmSettingsVisible = ref(false)
+const selectedDocumentId = ref<number | undefined>(undefined)
 
 const getTmxDocs = async () => {
   tmxDocs.value = await getMemories()
@@ -84,7 +87,19 @@ onMounted(async () => {
       <DocumentList
         :documents="docs"
         @delete="getDocuments()"
+        @open-settings="
+          (docId) => {
+            selectedDocumentId = docId
+            tmSettingsVisible = true
+          }
+        "
       />
     </Panel>
   </div>
+
+  <TmSettingsModal
+    v-if="selectedDocumentId"
+    v-model="tmSettingsVisible"
+    :document-id="selectedDocumentId"
+  />
 </template>

@@ -6,6 +6,7 @@ import DocumentRecord from './DocumentRecord.vue'
 
 const emit = defineEmits<{
   delete: []
+  openSettings: [documentId: number]
 }>()
 
 defineProps<{
@@ -22,6 +23,7 @@ defineProps<{
       :delete-method="deleteDoc"
       type="document"
       @delete="emit('delete')"
+      @open-settings="(docId) => $emit('openSettings', docId)"
     />
   </div>
 </template>
