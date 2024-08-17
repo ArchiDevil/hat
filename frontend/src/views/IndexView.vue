@@ -1,59 +1,34 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
 
-import {deleteMemory, getMemories} from '../client/services/TmsService'
-import {getDocs} from '../client/services/DocumentService'
-import {Document} from '../client/schemas/Document'
-import {TranslationMemory} from '../client/schemas/TranslationMemory'
+import {useTmStore} from '../stores/tm'
+import {useDocStore} from '../stores/document'
 
 import Panel from 'primevue/panel'
 
+import TestingWarning from '../components/TestingWarning.vue'
 import DocumentList from '../components/DocumentList.vue'
 import DocUploadingDialog from '../components/DocUploadingDialog.vue'
 import TmRecord from '../components/TmRecord.vue'
 import PageNav from '../components/PageNav.vue'
-import SupportLinks from '../components/SupportLinks.vue'
 import TmSettingsModal from '../components/TmSettingsModal.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
 
-const tmxDocs = ref<TranslationMemory[]>([])
-const docs = ref<Document[]>([])
+const tmStore = useTmStore()
+const docStore = useDocStore()
 const tmSettingsVisible = ref(false)
 const selectedDocumentId = ref<number | undefined>(undefined)
 
-const getTmxDocs = async () => {
-  tmxDocs.value = await getMemories()
-}
-
-const getDocuments = async () => {
-  docs.value = await getDocs()
-}
-
 onMounted(async () => {
-  await getTmxDocs()
-  await getDocuments()
+  await tmStore.fetchMemories()
+  await docStore.fetchDocs()
 })
 </script>
 
 <template>
   <div class="container">
     <PageNav />
-    <Panel
-      class="w-1/2 border rounded bg-red-50 px-4 mt-4"
-      header="Warning!"
-      toggleable
-    >
-      <p>
-        The tool is currently in a testing phase. Please, be ready to sudden
-        breakups and unexpected crashes.
-        <span class="text-red-700 font-semibold">
-          Use small portions of data with Yandex first!
-        </span>
-        If you find any bug or have ideas, please report them in any form using
-        these links:
-      </p>
-      <SupportLinks />
-    </Panel>
+    <TestingWarning />
 
     <Panel
       class="mt-4"
@@ -62,14 +37,14 @@ onMounted(async () => {
     >
       <TmxUploadingDialog
         title="Select a TMX file:"
-        @uploaded="getTmxDocs()"
+        @uploaded="tmStore.fetchMemories()"
       />
       <TmRecord
-        v-for="file in tmxDocs"
+        v-for="file in tmStore.memories"
         :key="file.id"
         :file="file"
-        :delete-method="deleteMemory"
-        @delete="getTmxDocs()"
+        :delete-method="() => tmStore.delete(file)"
+        @delete="tmStore.fetchMemories()"
       />
     </Panel>
 
@@ -85,8 +60,8 @@ onMounted(async () => {
         "
       />
       <DocumentList
-        :documents="docs"
-        @delete="getDocuments()"
+        :documents="docStore.docs"
+        @delete="docStore.fetchDocs()"
         @open-settings="
           (docId) => {
             selectedDocumentId = docId

@@ -2,7 +2,7 @@ import {acceptHMRUpdate, defineStore} from 'pinia'
 
 import {TranslationMemory} from '../client/schemas/TranslationMemory'
 import {TranslationMemoryUsage} from '../client/schemas/TranslationMemoryUsage'
-import {getMemories} from '../client/services/TmsService'
+import {deleteMemory, getMemories} from '../client/services/TmsService'
 
 export const useTmStore = defineStore('tm', {
   state() {
@@ -18,6 +18,9 @@ export const useTmStore = defineStore('tm', {
       this.selectedMemories = []
       this.memories = await getMemories()
       this.selectedMemories = this.memories
+    },
+    async delete(memory: TranslationMemory) {
+      await deleteMemory(memory.id)
     },
   },
   getters: {

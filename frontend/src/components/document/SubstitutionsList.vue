@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {useDocStore} from '../../stores/document'
+import {useCurrentDocStore} from '../../stores/current_document'
 
-const store = useDocStore()
+const store = useCurrentDocStore()
 </script>
 
 <template>

@@ -2,7 +2,7 @@
 import {computed, onMounted, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 
-import {useDocStore} from '../stores/document'
+import {useCurrentDocStore} from '../stores/current_document'
 
 import Paginator, {PageState} from 'primevue/paginator'
 import Skeleton from 'primevue/skeleton'
@@ -19,7 +19,7 @@ import RoutingLink from '../components/RoutingLink.vue'
 
 const route = useRoute()
 const router = useRouter()
-const store = useDocStore()
+const store = useCurrentDocStore()
 
 const documentId = computed(() => {
   return Number(route.params.id)
