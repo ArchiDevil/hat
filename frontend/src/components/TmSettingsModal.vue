@@ -10,6 +10,7 @@ import {useTmStore} from '../stores/tm'
 
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 
@@ -30,6 +31,22 @@ const writeOptions = computed(() => {
 
 const busy = ref(false)
 const chosenTmId = ref<number>(-1)
+const createNewMode = ref(false)
+const newTmName = ref('')
+
+const createNewTm = async () => {
+  busy.value = true
+  await useTmStore().create({
+    name: newTmName.value,
+  })
+  stopCreation()
+  busy.value = false
+}
+
+const stopCreation = () => {
+  newTmName.value = ''
+  createNewMode.value = false
+}
 
 watchEffect(async () => {
   const docMemories = await getTranslationMemories(props.documentId)
@@ -70,7 +87,42 @@ const save = async () => {
     header="Select memories to use"
     :style="{width: '32rem'}"
   >
-    <span class="mb-2 block">Select memories to read from:</span>
+    <div
+      v-if="!createNewMode"
+      class="flex gap-2 mb-2 items-baseline"
+    >
+      <span>Select memories to read from:</span>
+      <Button
+        class="ml-auto"
+        label="Create"
+        size="small"
+        @click="createNewMode = true"
+      />
+    </div>
+    <div
+      v-else
+      class="flex gap-2 mb-2 items-baseline"
+    >
+      <InputText
+        size="small"
+        class="w-full"
+        v-model="newTmName"
+        placeholder="New memory name..."
+      />
+      <Button
+        class="ml-auto w-20"
+        label="Ok"
+        size="small"
+        :disabled="!newTmName.length"
+        @click="createNewTm()"
+      />
+      <Button
+        class="w-20"
+        label="Cancel"
+        size="small"
+        @click="stopCreation()"
+      />
+    </div>
     <div class="mb-4 w-full">
       <Listbox
         v-model="chosenTms"
