@@ -11,4 +11,4 @@ requests==2.32.*
 passlib==1.7.*
 itsdangerous==2.2.0
 openpyxl==3.1.5
-nltk==3.8.*
+nltk==3.9.*
