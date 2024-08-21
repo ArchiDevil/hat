@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -34,6 +34,9 @@ class Glossary(Base):
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     user: Mapped["User"] = relationship(back_populates="glossaries")
+    documents = relationship(
+        "Document", secondary="glossary_to_document", back_populates="glossaries"
+    )
 
 
 class GlossaryRecord(Base):
@@ -50,3 +53,11 @@ class GlossaryRecord(Base):
 
     glossary_id: Mapped[int] = mapped_column(ForeignKey("glossary.id"))
     glossary: Mapped["Glossary"] = relationship(back_populates="records")
+
+
+class GlossaryToDocument(Base):
+    __tablename__ = "glossary_to_document"
+
+    id = Column(Integer, primary_key=True)
+    glossary_id = Column(Integer, ForeignKey("glossary.id"))
+    document_id = Column(Integer, ForeignKey("document.id"))

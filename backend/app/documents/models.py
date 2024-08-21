@@ -72,6 +72,9 @@ class Document(Base):
         "memory",
         creator=lambda memory: DocMemoryAssociation(memory=memory, mode="read"),
     )
+    glossaries = relationship(
+        "Glossary", secondary="glossary_to_document", back_populates="documents"
+    )
 
 
 class DocumentRecord(Base):
