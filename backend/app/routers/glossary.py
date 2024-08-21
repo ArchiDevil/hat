@@ -12,19 +12,19 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.glossary.controllers import (
-    create_glossary_doc_from_file_controller,
-    list_glossary_docs_controller,
+    create_glossary_from_file_controller,
+    list_glossary_controller,
     list_glossary_records_controller,
-    retrieve_glossary_doc_controller,
-    update_glossary_doc_controller,
+    retrieve_glossary_controller,
+    update_glossary_controller,
 )
 from app.glossary.schema import (
-    GlossaryDocument,
-    GlossaryDocumentResponse,
+    Glossary,
     GlossaryLoadFileResponse,
     GlossaryRecord,
+    GlossaryResponse,
 )
-from app.glossary.tasks import create_glossary_doc_from_file_tasks
+from app.glossary.tasks import create_glossary_from_file_tasks
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -33,79 +33,75 @@ router = APIRouter(
 
 
 @router.get(
-    "/docs",
-    description="Get list glossary documents",
-    response_model=list[GlossaryDocumentResponse],
+    "/",
+    description="Get list glossary",
+    response_model=list[GlossaryResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_glossary_docs(db: Session = Depends(get_db)):
-    return list_glossary_docs_controller(db)
+def list_glossary(db: Session = Depends(get_db)):
+    return list_glossary_controller(db)
 
 
 @router.get(
-    path="/docs/{glossary_doc_id}",
-    description="Get a single glossary document",
-    response_model=GlossaryDocumentResponse,
+    path="/{glossary_id}",
+    description="Get a single glossary",
+    response_model=GlossaryResponse,
     status_code=status.HTTP_200_OK,
     responses={
         404: {
-            "description": "Glossary docs requested by id",
+            "description": "Glossary requested by id",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Glossary document id: 1, not found"}
-                }
+                "application/json": {"example": {"detail": "Glossary id: 1, not found"}}
             },
         },
     },
 )
-def retrieve_glossary_doc(glossary_doc_id: int, db: Session = Depends(get_db)):
-    glossary_doc_response = retrieve_glossary_doc_controller(glossary_doc_id, db)
-    if glossary_doc_response:
-        return glossary_doc_response
+def retrieve_glossary(glossary_id: int, db: Session = Depends(get_db)):
+    glossary_response = retrieve_glossary_controller(glossary_id, db)
+    if glossary_response:
+        return glossary_response
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary document id:{glossary_doc_id}, not found",
+        detail=f"Glossary id:{glossary_id}, not found",
     )
 
 
 @router.put(
-    path="/docs/{glossary_doc_id}",
-    description="Update a single glossary document",
-    response_model=GlossaryDocumentResponse,
+    path="/{glossary_id}",
+    description="Update a single glossary",
+    response_model=GlossaryResponse,
     status_code=status.HTTP_200_OK,
     responses={
         404: {
-            "description": "Glossary docs requested by id",
+            "description": "Glossary requested by id",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Glossary document id: 1, not found"}
-                }
+                "application/json": {"example": {"detail": "Glossary id: 1, not found"}}
             },
         },
     },
 )
-def update_glossary_doc(
-    glossary_doc_id: int, document: GlossaryDocument, db: Session = Depends(get_db)
+def update_glossary(
+    glossary_id: int, glossary: Glossary, db: Session = Depends(get_db)
 ):
-    glossary_doc_response = update_glossary_doc_controller(
-        db=db, document_id=glossary_doc_id, document=document
+    glossary_response = update_glossary_controller(
+        db=db, glossary_id=glossary_id, glossary=glossary
     )
-    if glossary_doc_response:
-        return glossary_doc_response
+    if glossary_response:
+        return glossary_response
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary document id:{glossary_doc_id}, not found",
+        detail=f"Glossary id:{glossary_id}, not found",
     )
 
 
 @router.get(
-    "/records",
+    "/{glossary_id}/records",
     description="Get list glossary record ",
     response_model=list[GlossaryRecord],
     status_code=status.HTTP_200_OK,
 )
-def list_records_docs(document_id: int | None = None, db: Session = Depends(get_db)):
-    return list_glossary_records_controller(db, document_id)
+def list_records(glossary_id: int | None = None, db: Session = Depends(get_db)):
+    return list_glossary_records_controller(db, glossary_id)
 
 
 @router.post(
@@ -114,20 +110,20 @@ def list_records_docs(document_id: int | None = None, db: Session = Depends(get_
     response_model=GlossaryLoadFileResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_glossary_doc_from_file(
+def create_glossary_from_file(
     user_id: Annotated[int, Depends(get_current_user_id)],
-    document_name: str,
+    glossary_name: str,
     background_tasks: BackgroundTasks,
     file: UploadFile,
     db: Session = Depends(get_db),
 ):
-    sheet, glossary_doc = create_glossary_doc_from_file_controller(
-        db, file, user_id, document_name
+    sheet, glossary = create_glossary_from_file_controller(
+        db=db, file=file, user_id=user_id, glossary_name=glossary_name
     )
     background_tasks.add_task(
-        create_glossary_doc_from_file_tasks,
+        create_glossary_from_file_tasks,
         sheet=sheet,
         db=db,
-        glossary_doc_id=glossary_doc.id,
+        glossary_id=glossary.id,
     )
-    return GlossaryLoadFileResponse(glossary_doc_id=glossary_doc.id)
+    return GlossaryLoadFileResponse(glossary_id=glossary.id)

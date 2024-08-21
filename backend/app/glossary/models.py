@@ -16,8 +16,8 @@ class ProcessingStatuses:
     DONE = "DONE"
 
 
-class GlossaryDocument(Base):
-    __tablename__ = "glossary_document"
+class Glossary(Base):
+    __tablename__ = "glossary"
     id: Mapped[int] = mapped_column(primary_key=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
@@ -28,7 +28,7 @@ class GlossaryDocument(Base):
     upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
 
     records: Mapped[list["GlossaryRecord"]] = relationship(
-        back_populates="document",
+        back_populates="glossary",
         cascade="all, delete-orphan",
         order_by="GlossaryRecord.id",
     )
@@ -48,5 +48,5 @@ class GlossaryRecord(Base):
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()
 
-    document_id: Mapped[int] = mapped_column(ForeignKey("glossary_document.id"))
-    document: Mapped["GlossaryDocument"] = relationship(back_populates="records")
+    glossary_id: Mapped[int] = mapped_column(ForeignKey("glossary.id"))
+    glossary: Mapped["Glossary"] = relationship(back_populates="records")

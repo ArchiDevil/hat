@@ -8,7 +8,7 @@ from app.documents.models import (
     XliffDocument,
     XliffRecord,
 )
-from app.glossary.models import GlossaryDocument, GlossaryRecord
+from app.glossary.models import Glossary, GlossaryRecord
 from app.schema import (
     DocumentTask,
     User,
@@ -23,7 +23,7 @@ __all__ = [
     "User",
     "XliffDocument",
     "XliffRecord",
-    "GlossaryDocument",
+    "Glossary",
     "GlossaryRecord",
     "Document",
     "DocumentRecord",
