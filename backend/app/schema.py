@@ -6,7 +6,7 @@ from app.db import Base
 
 if TYPE_CHECKING:
     from app.documents.models import Document
-    from app.glossary.models import GlossaryDocument
+    from app.glossary.models import Glossary
     from app.translation_memory.models import TranslationMemory
 
 
@@ -36,8 +36,8 @@ class User(Base):
     documents: Mapped[list["Document"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", order_by="Document.id"
     )
-    glossaries: Mapped[list["GlossaryDocument"]] = relationship(
+    glossaries: Mapped[list["Glossary"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
-        order_by="GlossaryDocument.id",
+        order_by="Glossary.id",
     )

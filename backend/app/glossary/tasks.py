@@ -25,14 +25,14 @@ class GlossaryRowRecord:
         return cls(comment, created_at, author, updated_at, source, target)
 
 
-def create_glossary_doc_from_file_tasks(sheet, db: Session, glossary_doc_id: int):
-    record_for_save = extract_from_xlsx(sheet, glossary_doc_id)
-    bulk_save_doc_update_processing_status(
-        db=db, record_for_save=record_for_save, glossary_doc_id=glossary_doc_id
+def create_glossary_from_file_tasks(sheet, db: Session, glossary_id: int):
+    record_for_save = extract_from_xlsx(sheet, glossary_id)
+    bulk_save_glossaries_update_processing_status(
+        db=db, record_for_save=record_for_save, glossary_id=glossary_id
     )
 
 
-def extract_from_xlsx(sheet, glossary_doc_id) -> list[GlossaryRecord]:
+def extract_from_xlsx(sheet, glossary_id) -> list[GlossaryRecord]:
     record_for_save = []
     for cells in sheet.iter_rows(min_row=2, values_only=True):
         parsed_record = GlossaryRowRecord.from_tuple(cells)
@@ -43,15 +43,15 @@ def extract_from_xlsx(sheet, glossary_doc_id) -> list[GlossaryRecord]:
             comment=parsed_record.comment,
             source=parsed_record.source,
             target=parsed_record.target,
-            document_id=glossary_doc_id,
+            glossary_id=glossary_id,
         )
         record_for_save.append(record)
     return record_for_save
 
 
-def bulk_save_doc_update_processing_status(
-    db: Session, record_for_save: list[GlossaryRecord], glossary_doc_id: int
+def bulk_save_glossaries_update_processing_status(
+    db: Session, record_for_save: list[GlossaryRecord], glossary_id: int
 ):
-    glossary_doc_query = GlossaryQuery(db)
-    glossary_doc_query.bulk_create_glossary_record(record_for_save)
-    glossary_doc_query.update_glossary_doc_processing_status(glossary_doc_id)
+    glossary_query = GlossaryQuery(db)
+    glossary_query.bulk_create_glossary_record(record_for_save)
+    glossary_query.update_glossary_processing_status(glossary_id)
