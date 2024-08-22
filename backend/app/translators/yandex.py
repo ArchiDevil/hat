@@ -6,7 +6,6 @@ from typing import Generator
 import requests
 from pydantic import BaseModel, PositiveInt, ValidationError
 
-from app.models import MachineTranslationSettings
 from app.settings import settings
 
 
@@ -27,25 +26,47 @@ class TranslationError(Exception):
     """
 
 
-# Currently Yandex rejects requests larger than 10k symbols.
+GlossaryPair = tuple[str, str]
+GlossaryPairs = list[GlossaryPair]
+LineWithGlossaries = tuple[str, GlossaryPairs]
+
+
+# Currently Yandex rejects requests larger than 10k symbols and more than
+# 50 records in glossary.
 def iterate_batches(
-    lines: list[str], max_batch_size: PositiveInt = 10000
-) -> Generator[list[str], None, None]:
-    output = []
-    last_len = 0
+    lines: list[LineWithGlossaries],
+    max_symbols_per_batch: PositiveInt = 10000,
+    max_glossaries_per_batch: PositiveInt = 50,
+) -> Generator[list[LineWithGlossaries], None, None]:
+    output_lines: list[LineWithGlossaries] = []
+    last_symbols_len = 0
+    last_glossaries_len = 0
     i = 0
     while i < len(lines):
-        if last_len + len(lines[i]) > max_batch_size:
-            yield output
-            last_len = 0
-            output = []
+        # special case for first large glossary list
+        if not output_lines and len(lines[i][1]) > max_glossaries_per_batch:
+            last_symbols_len = len(lines[i][0])
+            last_glossaries_len = 50
+            output_lines.append((lines[i][0], lines[i][1][:max_glossaries_per_batch]))
+            i += 1
+            continue
+
+        if (
+            last_symbols_len + len(lines[i][0]) > max_symbols_per_batch
+            or last_glossaries_len + len(lines[i][1]) > max_glossaries_per_batch
+        ):
+            yield output_lines
+            last_symbols_len = 0
+            last_glossaries_len = 0
+            output_lines = []
         else:
-            last_len += len(lines[i])
-            output.append(lines[i])
+            last_symbols_len += len(lines[i][0])
+            last_glossaries_len += len(lines[i][1])
+            output_lines.append(lines[i])
             i += 1
 
-    if output:
-        yield output
+    if output_lines:
+        yield output_lines
 
 
 def get_iam_token(oauth_token: str):
@@ -74,14 +95,30 @@ def get_iam_token(oauth_token: str):
     return response.json()["iamToken"]
 
 
-def translate_batch(lines: list[str], iam_token: str, folder_id: str) -> list[str]:
+def translate_batch(
+    lines: list[LineWithGlossaries],
+    iam_token: str,
+    folder_id: str,
+) -> list[str]:
     output: list[str] = []
     json_data = {
         "folderId": folder_id,
         "targetLanguageCode": "ru",
         "sourceLanguageCode": "en",
-        "texts": lines,
+        "texts": [line for line, _ in lines],
     }
+
+    glossary_data = {"glossaryData": {"glossaryPairs": []}}
+    for _, glossaries in lines:
+        for glossary in glossaries:
+            glossary_data["glossaryData"]["glossaryPairs"].append(
+                {
+                    "sourceText": glossary[0],
+                    "translatedText": glossary[1],
+                }
+            )
+    if glossary_data["glossaryData"]["glossaryPairs"]:
+        json_data["glossaryConfig"] = glossary_data
 
     headers = {
         "Content-Type": "application/json",
@@ -111,7 +148,7 @@ def translate_batch(lines: list[str], iam_token: str, folder_id: str) -> list[st
 
 
 def translate_lines(
-    lines: list[str], settings: MachineTranslationSettings
+    lines: list[LineWithGlossaries], oauth_token: str, folder_id: str
 ) -> tuple[list[str], bool]:
     """
     Translate lines of text using machine translation.
@@ -124,7 +161,7 @@ def translate_lines(
         A list of translated strings.
     """
     # get IAM token first
-    iam_token = get_iam_token(settings.oauth_token)
+    iam_token = get_iam_token(oauth_token)
 
     # translate lines
     output: list[str] = []
@@ -133,7 +170,7 @@ def translate_lines(
             # TODO: make it in a smarter way, currently Yandex rejects
             # requests that are too frequent
             time.sleep(1.0 / 20.0)
-            output += translate_batch(batch, iam_token, settings.folder_id)
+            output += translate_batch(batch, iam_token, folder_id)
         except TranslationError as e:
             logging.error("Translation error: %s", str(e))
             return output, True

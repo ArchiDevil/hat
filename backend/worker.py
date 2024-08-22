@@ -144,8 +144,9 @@ def translate_segments(
         try:
             lines = [segments[idx].original for idx in translate_indices]
             translated, mt_failed = yandex.translate_lines(
-                lines,
-                mt_settings,
+                [(line, []) for line in lines],
+                oauth_token=mt_settings.oauth_token,
+                folder_id=mt_settings.folder_id,
             )
             for idx, translated_line in enumerate(translated):
                 segments[translate_indices[idx]].translation = translated_line

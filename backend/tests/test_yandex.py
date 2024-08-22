@@ -2,33 +2,54 @@ import time
 
 import requests
 
-from app.models import MachineTranslationSettings
 from app.translators import yandex
 
 # pylint: disable=C0116
 
 
 def test_can_iterate_batches():
-    lines = [f"line{i}" for i in range(2048)]
+    lines = [(f"line{i}", [("source", "target")]) for i in range(2048)]
 
     last_idx = 0
     for batch in yandex.iterate_batches(lines):
         assert len(batch) > 0
         for line in batch:
-            assert line == f"line{last_idx}"
+            assert line == (f"line{last_idx}", [("source", "target")])
             last_idx += 1
 
     assert last_idx == 2048
 
 
 def test_batch_never_exceeds_10000_symbols():
-    lines = [f"line{i}" for i in range(2048)]
+    lines = [(f"line{i}", []) for i in range(2048)]
     data = next(yandex.iterate_batches(lines))
     # measure the sum of all strings of the first batch
     total_len = 0
-    for line in data:
+    for line, _ in data:
         total_len += len(line)
     assert total_len <= 10000
+
+
+def test_batch_never_exceeds_50_glossary_records():
+    lines = [(f"line{i}", [("test", "test")]) for i in range(2048)]
+    data = next(yandex.iterate_batches(lines))
+    assert data
+    # measure the sum of all glossary_records of the first batch
+    total_len = 0
+    for _, glossaries in data:
+        total_len += len(glossaries)
+    assert total_len <= 50
+
+
+def test_batch_gets_first_50_glossary_records():
+    lines = [("line1", [(f"test{i}", f"test{i}") for i in range(60)])]
+    data = next(yandex.iterate_batches(lines))
+    assert data
+    # measure the sum of all glossary_records of the first batch
+    total_len = 0
+    for _, glossaries in data:
+        total_len += len(glossaries)
+    assert total_len <= 50
 
 
 def test_translator_gets_iam_token(monkeypatch):
@@ -112,7 +133,48 @@ def test_translator_translates_batch(monkeypatch):
         return FakeResponse()
 
     monkeypatch.setattr(requests, "post", fake_post)
-    yandex.translate_batch(["line1", "line2"], iam_token="12345", folder_id="folder-id")
+    yandex.translate_batch(
+        [("line1", []), ("line2", [])], iam_token="12345", folder_id="folder-id"
+    )
+
+
+def test_translator_translates_batch_with_glossaries(monkeypatch):
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {"translations": [{"text": "line1"}, {"text": "line2"}]}
+
+    def fake_post(*args, **kwargs):
+        assert (
+            args[0] == "https://translate.api.cloud.yandex.net/translate/v2/translate"
+        )
+        assert kwargs["json"] == {
+            "folderId": "folder-id",
+            "texts": ["line1", "line2"],
+            "targetLanguageCode": "ru",
+            "sourceLanguageCode": "en",
+            "glossaryConfig": {
+                "glossaryData": {
+                    "glossaryPairs": [
+                        {"sourceText": "source1", "translatedText": "target1"},
+                        {"sourceText": "source2", "translatedText": "target2"},
+                    ]
+                }
+            },
+        }
+        assert kwargs["headers"] == {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer 12345",
+        }
+        return FakeResponse()
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    yandex.translate_batch(
+        [("line1", [("source1", "target1")]), ("line2", [("source2", "target2")])],
+        iam_token="12345",
+        folder_id="folder-id",
+    )
 
 
 def test_translator_handles_errors(monkeypatch):
@@ -129,7 +191,7 @@ def test_translator_handles_errors(monkeypatch):
     monkeypatch.setattr(requests, "post", fake_post)
     try:
         yandex.translate_batch(
-            ["line1", "line2"], iam_token="12345", folder_id="folder-id"
+            [("line1", []), ("line2", [])], iam_token="12345", folder_id="folder-id"
         )
         assert False
     except yandex.TranslationError as e:
@@ -173,10 +235,9 @@ def test_translator_translates_everything(monkeypatch):
 
     monkeypatch.setattr(requests, "post", fake_post)
     assert (["line1-translation"], False) == yandex.translate_lines(
-        ["line1"],
-        settings=MachineTranslationSettings(
-            folder_id="folder-id", oauth_token="<PASSWORD>"
-        ),
+        [("line1", [])],
+        oauth_token="<PASSWORD>",
+        folder_id="folder-id",
     )
 
 
@@ -242,10 +303,9 @@ def test_translator_returns_partial_when_fails(monkeypatch):
 
     # it fails and returns only a first part
     assert (["x" * 9900 + "-translation"], True) == yandex.translate_lines(
-        ["x" * 9900, "y" * 9900],
-        settings=MachineTranslationSettings(
-            folder_id="folder-id", oauth_token="<PASSWORD>"
-        ),
+        [("x" * 9900, []), ("y" * 9900, [])],
+        oauth_token="<PASSWORD>",
+        folder_id="folder-id",
     )
 
 
@@ -288,10 +348,9 @@ def test_translator_requests_not_frequent(monkeypatch):
 
     now = time.time()
     yandex.translate_lines(
-        ["x" * 9900 for _ in range(21)],
-        settings=MachineTranslationSettings(
-            folder_id="folder-id", oauth_token="<PASSWORD>"
-        ),
+        [("x" * 9900, []) for _ in range(21)],
+        oauth_token="<PASSWORD>",
+        folder_id="folder-id",
     )
 
     # check that 21 request takes more than a second
