@@ -77,6 +77,12 @@ def get_segment_translation(
     if substitute_numbers and source.isdigit():
         return source
 
+    glossary_record = (
+        session.query(GlossaryRecord).where(GlossaryRecord.source == source).first()
+    )
+    if glossary_record:
+        return glossary_record.target
+
     if threshold < 1.0:
         substitutions = TranslationMemoryQuery(session).get_substitutions(
             source, tm_ids, threshold, 1
