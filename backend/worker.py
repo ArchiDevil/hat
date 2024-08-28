@@ -6,7 +6,10 @@ import logging
 import time
 from typing import Iterable, Sequence
 
-from sqlalchemy import select
+from nltk.stem.snowball import SnowballStemmer
+from nltk.tokenize import word_tokenize
+
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -22,12 +25,38 @@ from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescrip
 from app.formats.base import BaseSegment
 from app.formats.txt import TxtSegment, extract_txt_content
 from app.formats.xliff import XliffSegment, extract_xliff_content
+from app.glossary.models import GlossaryRecord
 from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
 from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import TranslationMemoryUsage
 from app.translators import yandex
+
+stemmer = SnowballStemmer("english")
+
+
+def stem_sentence(sentence: str) -> list[str]:
+    words = word_tokenize(sentence)
+    # should we use stopwords?
+    # words = [word for word in words if word not in stopwords.words("english")]
+    words = [stemmer.stem(word) for word in words]
+    return words
+
+
+def get_glossary_for_segment(segment: str, session: Session) -> list[tuple[str, str]]:
+    words = stem_sentence(segment)
+    clauses = [GlossaryRecord.source.ilike(f"%{word}%") for word in words]
+    records = session.execute(select(GlossaryRecord).where(or_(*clauses))).scalars()
+    found_pairs = [(record.source, record.target) for record in records]
+    output: list[tuple[str, str]] = []
+    for pair in found_pairs:
+        glossary_words = stem_sentence(pair[0])
+        found_words = [word for word in glossary_words if word in words]
+        if len(found_words) != len(glossary_words):
+            continue
+        output.append(pair)
+    return output
 
 
 def segment_needs_processing(segment: BaseSegment) -> bool:
@@ -100,7 +129,10 @@ def process_document(
 
     start_time = time.time()
     mt_result = translate_segments(
-        segments, translate_indices, settings.machine_translation_settings
+        segments,
+        translate_indices,
+        settings.machine_translation_settings,
+        session,
     )
     logging.info(
         "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
@@ -169,14 +201,20 @@ def translate_segments(
     segments: Sequence[BaseSegment],
     translate_indices: Sequence[int],
     mt_settings: MachineTranslationSettings | None,
+    session: Session,
 ) -> bool:
     # TODO: it is better to make solution more translation service agnostic
     mt_failed = False
     if mt_settings and translate_indices:
         try:
-            lines = [segments[idx].original for idx in translate_indices]
+            original_segments = [segments[idx].original for idx in translate_indices]
+            data_to_translate: list[yandex.LineWithGlossaries] = []
+            for segment in original_segments:
+                data_to_translate.append(
+                    (segment, get_glossary_for_segment(segment, session))
+                )
             translated, mt_failed = yandex.translate_lines(
-                [(line, []) for line in lines],
+                data_to_translate,
                 oauth_token=mt_settings.oauth_token,
                 folder_id=mt_settings.folder_id,
             )
