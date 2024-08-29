@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.glossary.models import GlossaryRecord
+from app.translators.yandex import translate_lines
 
 stemmer = SnowballStemmer("english")
 
@@ -43,7 +44,12 @@ def main():
     segment = "Elemental forces and the building blocks of reality originate from these Inner Planes:"
     glossary_records = get_glossary_for_segment(segment, session)
     pprint(glossary_records)
-    pprint(f"Count: {len(glossary_records)}")
+    output, _ = translate_lines(
+        [(segment, glossary_records)],
+        oauth_token="",
+        folder_id="",
+    )
+    pprint(output)
 
 
 if __name__ == "__main__":
