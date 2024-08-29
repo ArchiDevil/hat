@@ -80,12 +80,44 @@ def process_document(
     settings: DocumentProcessingSettings,
     session: Session,
 ) -> bool:
+    start_time = time.time()
     segments = extract_segments(doc)
+    logging.info(
+        "Segments extraction time: %.2f seconds, speed: %.2f segment/second",
+        time.time() - start_time,
+        len(segments) / (time.time() - start_time),
+    )
+
+    start_time = time.time()
     translate_indices = substitute_segments(settings, session, segments)
+    logging.info(
+        "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
+        time.time() - start_time,
+        (len(translate_indices)) / (time.time() - start_time),
+        len(translate_indices),
+        len(segments),
+    )
+
+    start_time = time.time()
     mt_result = translate_segments(
         segments, translate_indices, settings.machine_translation_settings
     )
+    logging.info(
+        "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
+        time.time() - start_time,
+        (len(segments) - len(translate_indices)) / (time.time() - start_time),
+        len(segments) - len(translate_indices),
+        len(segments),
+    )
+
+    start_time = time.time()
     create_doc_segments(doc, session, segments)
+    logging.info(
+        "Database segments creation time: %.2f seconds, speed: %.2f segment/second",
+        time.time() - start_time,
+        len(segments) / (time.time() - start_time),
+    )
+
     return mt_result
 
 
@@ -208,6 +240,7 @@ def create_doc_segments(
 
 
 def process_task(session: Session, task: DocumentTask) -> bool:
+    start_time = time.time()
     try:
         task.status = TaskStatus.PROCESSING.value
         session.commit()
@@ -244,6 +277,7 @@ def process_task(session: Session, task: DocumentTask) -> bool:
         return False
     finally:
         logging.info("Task finished %s, removing...", task.id)
+        logging.info("Task took %.2f seconds", time.time() - start_time)
         session.delete(task)
         session.commit()
 
