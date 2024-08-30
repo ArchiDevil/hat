@@ -1,4 +1,4 @@
-"""Added original segment id to XLIFF
+"""Add original segment id to XLIFF
 
 Revision ID: ebad9129920d
 Revises: 0ba6579fbbca

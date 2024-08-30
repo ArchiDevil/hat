@@ -20,7 +20,7 @@ class TmMode(Enum):
 
 
 class DocMemoryAssociation(Base):
-    __tablename__ = "doc_to_tm"
+    __tablename__ = "document_to_translation_memory"
 
     doc_id: Mapped[int] = mapped_column(ForeignKey("document.id"), primary_key=True)
     tm_id: Mapped[int] = mapped_column(

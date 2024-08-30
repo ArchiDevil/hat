@@ -1,4 +1,4 @@
-"""add_glossary_to_document_table
+"""Add glossary_to_document table
 
 Revision ID: d87059999f4b
 Revises: c8d6d3fa5dda
@@ -11,6 +11,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
+# pylint: disable=E1101
 
 revision: str = "d87059999f4b"
 down_revision: Union[str, None] = "c8d6d3fa5dda"

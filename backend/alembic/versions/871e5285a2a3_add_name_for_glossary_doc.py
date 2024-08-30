@@ -1,4 +1,4 @@
-"""add_name_for_glossary_doc
+"""Add name for glossary_document
 
 Revision ID: 871e5285a2a3
 Revises: bc813d99ccfb

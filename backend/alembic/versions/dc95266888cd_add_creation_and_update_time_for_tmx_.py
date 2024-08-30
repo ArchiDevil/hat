@@ -1,4 +1,4 @@
-"""Added creation and update time for tmx segments
+"""Add creation and update time for tmx segments
 
 Revision ID: dc95266888cd
 Revises: 68219fe4ad46

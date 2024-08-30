@@ -1,4 +1,4 @@
-"""Added table processing status
+"""Add table processing status
 
 Revision ID: 004d29805949
 Revises: ebad9129920d

@@ -1,4 +1,4 @@
-"""rename_glossary_doc_to_glossary
+"""Rename glossary_doc to glossary
 
 Revision ID: c8d6d3fa5dda
 Revises: 871e5285a2a3

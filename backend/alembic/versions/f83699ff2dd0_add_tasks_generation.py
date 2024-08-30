@@ -1,4 +1,4 @@
-"""Added tasks generation
+"""Add tasks generation
 
 Revision ID: f83699ff2dd0
 Revises: 004d29805949

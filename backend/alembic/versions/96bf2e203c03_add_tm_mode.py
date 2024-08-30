@@ -25,12 +25,12 @@ modetype = sa.Enum('read', 'write', name='tmmode')
 
 def upgrade() -> None:
     modetype.create(op.get_bind(), checkfirst=True)
-    op.add_column('doc_to_tm', sa.Column('mode', modetype, nullable=True))
-    op.execute(sa.update(sa.table('doc_to_tm', sa.Column('mode'))).values(mode='read'))
-    op.alter_column('doc_to_tm', 'mode', nullable=False)
-    op.create_primary_key(None, 'doc_to_tm', ['doc_id', 'tm_id', 'mode'])
+    op.add_column('document_to_translation_memory', sa.Column('mode', modetype, nullable=True))
+    op.execute(sa.update(sa.table('document_to_translation_memory', sa.Column('mode'))).values(mode='read'))
+    op.alter_column('document_to_translation_memory', 'mode', nullable=False)
+    op.create_primary_key(None, 'document_to_translation_memory', ['doc_id', 'tm_id', 'mode'])
 
 
 def downgrade() -> None:
-    op.drop_column('doc_to_tm', 'mode')
+    op.drop_column('document_to_translation_memory', 'mode')
     modetype.drop(op.get_bind())

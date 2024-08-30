@@ -1,4 +1,4 @@
-"""Added original XLIFF doc field
+"""Add original XLIFF doc field
 
 Revision ID: 0ba6579fbbca
 Revises: d2f116d3976e

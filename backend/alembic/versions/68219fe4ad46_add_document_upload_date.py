@@ -1,4 +1,4 @@
-"""Added document upload time
+"""Add document upload time
 
 Revision ID: 68219fe4ad46
 Revises: f83699ff2dd0

@@ -1,4 +1,4 @@
-"""change_glossary_document_drop_unnecessary_fields
+"""Drop unnecessary fields from glossary_document
 
 Revision ID: 5d15972f5415
 Revises: 15355f38c714
@@ -11,6 +11,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
+# pylint: disable=E1101
 
 revision: str = "5d15972f5415"
 down_revision: Union[str, None] = "15355f38c714"
@@ -48,7 +49,7 @@ def downgrade() -> None:
         "glossary_document",
         sa.Column("created_by", sa.INTEGER(), autoincrement=False, nullable=False),
     )
-    op.drop_constraint(None, "glossary_document", type_="foreignkey")
+    op.drop_constraint('glossary_document_user_id_fkey', "glossary_document", type_="foreignkey")
     op.create_foreign_key(
         "glossary_document_created_by_fkey",
         "glossary_document",
