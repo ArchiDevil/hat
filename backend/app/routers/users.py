@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schema
 from app.db import get_db
-from app.security import password_hasher
+from app.security import hash_password
 from app.user.depends import has_admin_role
 
 router = APIRouter(
@@ -34,7 +34,7 @@ def create_user(
 ) -> models.User:
     fields = data.model_dump()
     fields["role"] = fields["role"].value
-    fields["password"] = password_hasher.hash(fields["password"])
+    fields["password"] = hash_password(fields["password"])
     new_user = schema.User(**fields)
     db.add(new_user)
     db.commit()

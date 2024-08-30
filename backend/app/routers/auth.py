@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schema
 from app.db import get_db
-from app.security import password_hasher
+from app.security import verify_password
 from app.settings import settings
 from app.user.depends import has_user_role
 
@@ -24,7 +24,7 @@ def login(
 
     user = db.query(schema.User).filter_by(email=data.email).first()
 
-    if not user or not password_hasher.verify(data.password, user.password):
+    if not user or not verify_password(data.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     if user.disabled:

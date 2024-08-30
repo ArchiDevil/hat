@@ -5,7 +5,7 @@ import re
 from app.db import get_db
 from app.models import UserRole
 from app.schema import User
-from app.security import password_hasher
+from app.security import hash_password
 
 
 def add_user():
@@ -25,7 +25,7 @@ def add_user():
     if len(password) < 8:
         print("Password must be at least 8 symbols long!")
 
-    password = password_hasher.hash(password)
+    password = hash_password(password)
 
     session = next(get_db())
     session.add(
