@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.glossary.controllers import (
     create_glossary_from_file_controller,
+    delete_glossary_controller,
+    delete_glossary_record_controller,
     list_glossary_controller,
     list_glossary_records_controller,
     retrieve_glossary_controller,
@@ -29,6 +31,7 @@ from app.glossary.schema import (
     GlossaryScheme,
 )
 from app.glossary.tasks import create_glossary_from_file_tasks
+from app.models import StatusMessage
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -114,6 +117,29 @@ def update_glossary(
     )
 
 
+@router.delete(
+    path="/{glossary_id}",
+    description="Delete a single glossary",
+    response_model=StatusMessage,
+    status_code=status.HTTP_200_OK,
+    responses={
+        404: {
+            "description": "Glossary requested by id",
+            "content": {
+                "application/json": {"example": {"detail": "Glossary id: 1, not found"}}
+            },
+        },
+    },
+)
+def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
+    if response := delete_glossary_controller(glossary_id, db):
+        return response
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Glossary id:{glossary_id}, not found",
+    )
+
+
 @router.get(
     "/{glossary_id}/records",
     description="Get list glossary record ",
@@ -144,6 +170,31 @@ def update_glossary_record(
     record_id: int, record: GlossaryRecordUpdate, db: Session = Depends(get_db)
 ):
     if response := update_glossary_record_controller(record_id, record, db):
+        return response
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Glossary record id:{record_id}, not found",
+    )
+
+
+@router.delete(
+    path="/records/{record_id}",
+    description="Delete a single glossary record",
+    response_model=StatusMessage,
+    status_code=status.HTTP_200_OK,
+    responses={
+        404: {
+            "description": "Glossary record requested by id",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Glossary record id: 1, not found"}
+                }
+            },
+        },
+    },
+)
+def delete_glossary_record(record_id: int, db: Session = Depends(get_db)):
+    if response := delete_glossary_record_controller(record_id, db):
         return response
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,

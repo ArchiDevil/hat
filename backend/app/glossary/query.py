@@ -99,6 +99,16 @@ class GlossaryQuery:
             return self.get_glossary(glossary_id)
         raise NotFoundGlossaryExc()
 
+    def delete_glossary(self, glossary_id: int) -> bool:
+        if (
+            self.db.query(Glossary)
+            .filter(Glossary.id == glossary_id)  # type: ignore
+            .delete()
+        ):
+            self.db.commit()
+            return True
+        return False
+
     def update_glossary_processing_status(
         self, glossary_id: int
     ) -> Type[Glossary] | None:
@@ -123,3 +133,13 @@ class GlossaryQuery:
             self.db.commit()
             return self.get_glossary_record(record_id)
         raise NotFoundGlossaryRecordExc()
+
+    def delete_record(self, record_id: int) -> bool:
+        if (
+            self.db.query(GlossaryRecord)
+            .filter(GlossaryRecord.id == record_id)  # type: ignore
+            .delete()
+        ):
+            self.db.commit()
+            return True
+        return False
