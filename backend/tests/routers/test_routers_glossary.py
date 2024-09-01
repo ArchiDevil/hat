@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import Glossary
 from app.glossary.query import GlossaryQuery
+from app.glossary.schema import GlossaryRecordUpdate, GlossaryScheme
 from main import app
 
 
@@ -52,10 +53,10 @@ def test_get_glossary_list(user_logged_client: TestClient, session: Session):
     path = app.url_path_for("list_glossary")
 
     glossary_1 = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary_name="Glossary name"
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
     glossary_2 = GlossaryQuery(session).create_glossary(
-        user_id=2, glossary_name="Glossary name"
+        user_id=2, glossary=GlossaryScheme(name="Glossary name")
     )
 
     response = user_logged_client.get(path)
@@ -74,7 +75,7 @@ def test_get_glossary_retrieve(user_logged_client: TestClient, session: Session)
     """GET /glossary/{glossary_id}/"""
 
     glossary_1 = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary_name="Glossary name"
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
 
     path = app.url_path_for("retrieve_glossary", **{"glossary_id": glossary_1.id})
@@ -95,7 +96,7 @@ def test_update_glossary(user_logged_client: TestClient, session: Session):
     expected_name = "New glossary name"
 
     glossary_1 = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary_name="Glossary name"
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
     path = app.url_path_for("update_glossary", **{"glossary_id": glossary_1.id})
 
@@ -109,9 +110,9 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     """GET /glossary/{glossary_id}/records/"""
 
     glossary = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary_name="Glossary name"
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
-    rec = GlossaryQuery(session).create_glossary_record(
+    record = GlossaryQuery(session).create_glossary_record(
         author="Test",
         comment="Comment",
         source="Test",
@@ -124,8 +125,49 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     response = user_logged_client.get(path)
     [resp_rec] = response.json()
 
-    assert resp_rec["author"] == rec.author
-    assert resp_rec["comment"] == rec.comment
-    assert resp_rec["source"] == rec.source
-    assert resp_rec["target"] == rec.target
-    assert resp_rec["glossary_id"] == rec.glossary_id
+    assert resp_rec["author"] == record.author
+    assert resp_rec["comment"] == record.comment
+    assert resp_rec["source"] == record.source
+    assert resp_rec["target"] == record.target
+    assert resp_rec["glossary_id"] == record.glossary_id
+
+
+def test_update_glossary_record(user_logged_client: TestClient, session: Session):
+    """PUT /glossary/records/{record_id}/"""
+    expected_author = "Author name 2"
+    repo = GlossaryQuery(session)
+    glossary = repo.create_glossary(
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+    )
+    record = repo.create_glossary_record(
+        author="Author name 1",
+        comment="Comment",
+        source="Test",
+        target="Тест",
+        glossary_id=glossary.id,
+    )
+
+    dumped_record = GlossaryRecordUpdate.model_validate(record)
+    dumped_record.author = expected_author
+
+    path = app.url_path_for("update_glossary_record", **{"record_id": record.id})
+    response = user_logged_client.put(url=path, json=dumped_record.model_dump())
+    response_json = response.json()
+
+    assert response_json["author"] == expected_author
+    assert repo.get_glossary_record(record.id).author == expected_author
+
+
+def test_create_glossary(user_logged_client: TestClient, session: Session):
+    """POST /glossary/"""
+    expected_glossary_name = "Glossary name 1"
+    path = app.url_path_for("create_glossary")
+    dumped_glossary = GlossaryScheme(name=expected_glossary_name)
+
+    response = user_logged_client.post(url=path, json=dumped_glossary.model_dump())
+    response_json = response.json()
+
+    assert (
+        GlossaryQuery(session).get_glossary(response_json["id"]).name
+        == expected_glossary_name
+    )

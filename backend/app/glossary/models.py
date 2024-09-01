@@ -46,7 +46,7 @@ class GlossaryRecord(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
-    author: Mapped[str] = mapped_column()
+    author: Mapped[str] = mapped_column(nullable=True)
     comment: Mapped[str] = mapped_column(nullable=True)
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()

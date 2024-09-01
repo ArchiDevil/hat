@@ -5,10 +5,15 @@ from sqlalchemy.orm import Session
 from app import Glossary, GlossaryRecord
 from app.base.exceptions import BaseQueryException
 from app.glossary.models import ProcessingStatuses
+from app.glossary.schema import GlossaryRecordUpdate, GlossaryScheme
 
 
 class NotFoundGlossaryExc(BaseQueryException):
-    """Not found glossary doc"""
+    """Not found glossary"""
+
+
+class NotFoundGlossaryRecordExc(BaseQueryException):
+    """Not found glossary record"""
 
 
 class GlossaryQuery:
@@ -18,10 +23,19 @@ class GlossaryQuery:
         self.db = db
 
     def get_glossary(self, glossary_id: int) -> Type[Glossary]:
-        glossary = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()
+        glossary = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()  # type: ignore
         if glossary:
             return glossary
         raise NotFoundGlossaryExc()
+
+    def get_glossary_record(self, record_id: int) -> Type[GlossaryRecord]:
+        if (
+            record := self.db.query(GlossaryRecord)
+            .filter(GlossaryRecord.id == record_id)  # type: ignore
+            .first()
+        ):
+            return record
+        raise NotFoundGlossaryRecordExc()
 
     def list_glossary(self) -> list[Type[Glossary]]:
         return self.db.query(Glossary).order_by(Glossary.id).all()
@@ -32,16 +46,22 @@ class GlossaryQuery:
         if glossary_id:
             return (
                 self.db.query(GlossaryRecord)
-                .filter(GlossaryRecord.glossary_id == glossary_id)
+                .filter(GlossaryRecord.glossary_id == glossary_id)  # type: ignore
                 .order_by(GlossaryRecord.id)
                 .all()
             )
         return self.db.query(GlossaryRecord).order_by(GlossaryRecord.id).all()
 
-    def create_glossary(self, user_id: int, glossary_name: str) -> Glossary:
+    def create_glossary(
+        self,
+        user_id: int,
+        glossary: GlossaryScheme,
+        processing_status: str = ProcessingStatuses.IN_PROCESS,
+    ) -> Glossary:
         glossary = Glossary(
             user_id=user_id,
-            name=glossary_name,
+            processing_status=processing_status,
+            **glossary.model_dump(),
         )
         self.db.add(glossary)
         self.db.commit()
@@ -66,11 +86,13 @@ class GlossaryQuery:
         self.db.commit()
         return glossary_record
 
-    def update_glossary(self, glossary_id: int, glossary: Glossary) -> Type[Glossary]:
+    def update_glossary(
+        self, glossary_id: int, glossary: GlossaryScheme
+    ) -> Type[Glossary]:
         result = (
             self.db.query(Glossary)
-            .filter(Glossary.id == glossary_id)
-            .update(glossary.model_dump())
+            .filter(Glossary.id == glossary_id)  # type: ignore
+            .update(glossary.model_dump())  # type: ignore
         )
         if result:
             self.db.commit()
@@ -80,7 +102,7 @@ class GlossaryQuery:
     def update_glossary_processing_status(
         self, glossary_id: int
     ) -> Type[Glossary] | None:
-        doc = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()
+        doc = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()  # type: ignore
         if doc:
             doc.processing_status = ProcessingStatuses.DONE
             self.db.commit()
@@ -90,3 +112,14 @@ class GlossaryQuery:
     def bulk_create_glossary_record(self, records: list[GlossaryRecord]):
         self.db.add_all(records)
         self.db.commit()
+
+    def update_record(self, record_id: int, record: GlossaryRecordUpdate):
+        result = (
+            self.db.query(GlossaryRecord)
+            .filter(GlossaryRecord.id == record_id)  # type: ignore
+            .update(record.model_dump())  # type: ignore
+        )
+        if result:
+            self.db.commit()
+            return self.get_glossary_record(record_id)
+        raise NotFoundGlossaryRecordExc()
