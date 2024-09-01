@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
 from app.glossary.schema import (
-    Glossary,
     GlossaryRecord,
+    GlossaryRecordUpdate,
     GlossaryResponse,
+    GlossaryScheme,
 )
 
 
@@ -19,8 +20,9 @@ def create_glossary_from_file_controller(
     xlsx = io.BytesIO(content)
     workbook = openpyxl.load_workbook(xlsx)
     sheet = workbook["Sheet1"]
+    glossary_scheme = GlossaryScheme(name=glossary_name)
     glossary_doc = GlossaryQuery(db).create_glossary(
-        user_id=user_id, glossary_name=glossary_name
+        user_id=user_id, glossary=glossary_scheme
     )
     return sheet, glossary_doc
 
@@ -43,8 +45,17 @@ def retrieve_glossary_controller(glossary_doc_id: int, db: Session):
         return None
 
 
-def update_glossary_controller(glossary: Glossary, glossary_id: int, db: Session):
+def update_glossary_controller(glossary: GlossaryScheme, glossary_id: int, db: Session):
     try:
         return GlossaryQuery(db).update_glossary(glossary_id, glossary)
+    except NotFoundGlossaryExc:
+        return None
+
+
+def update_glossary_record_controller(
+    record_id: int, record: GlossaryRecordUpdate, db: Session
+):
+    try:
+        return GlossaryQuery(db).update_record(record_id, record)
     except NotFoundGlossaryExc:
         return None

@@ -10,7 +10,15 @@ class GlossaryLoadFileResponse(BaseModel):
     glossary_id: int
 
 
-class Glossary(BaseModel):
+class GlossaryScheme(BaseModel):
+    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GlossaryResponse(IdentifiedTimestampedModel):
+    processing_status: str
+    upload_time: datetime.datetime
+    user_id: int
     name: str
     model_config = ConfigDict(from_attributes=True)
 
@@ -25,9 +33,10 @@ class GlossaryRecord(IdentifiedTimestampedModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class GlossaryResponse(IdentifiedTimestampedModel):
-    processing_status: str
-    upload_time: datetime.datetime
-    user_id: int
-    name: str
+class GlossaryRecordUpdate(BaseModel):
+    author: str
+    comment: Optional[str]
+    source: str
+    target: str
+
     model_config = ConfigDict(from_attributes=True)

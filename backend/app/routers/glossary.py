@@ -17,12 +17,16 @@ from app.glossary.controllers import (
     list_glossary_records_controller,
     retrieve_glossary_controller,
     update_glossary_controller,
+    update_glossary_record_controller,
 )
+from app.glossary.models import ProcessingStatuses
+from app.glossary.query import GlossaryQuery
 from app.glossary.schema import (
-    Glossary,
     GlossaryLoadFileResponse,
     GlossaryRecord,
+    GlossaryRecordUpdate,
     GlossaryResponse,
+    GlossaryScheme,
 )
 from app.glossary.tasks import create_glossary_from_file_tasks
 from app.user.depends import get_current_user_id, has_user_role
@@ -57,12 +61,29 @@ def list_glossary(db: Session = Depends(get_db)):
     },
 )
 def retrieve_glossary(glossary_id: int, db: Session = Depends(get_db)):
-    glossary_response = retrieve_glossary_controller(glossary_id, db)
-    if glossary_response:
-        return glossary_response
+    if response := retrieve_glossary_controller(glossary_id, db):
+        return response
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Glossary id:{glossary_id}, not found",
+    )
+
+
+@router.post(
+    "/",
+    description="Create glossary",
+    response_model=GlossaryResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_glossary(
+    glossary: GlossaryScheme,
+    current_user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    return GlossaryQuery(db).create_glossary(
+        glossary=glossary,
+        processing_status=ProcessingStatuses.DONE,
+        user_id=current_user_id,
     )
 
 
@@ -81,13 +102,12 @@ def retrieve_glossary(glossary_id: int, db: Session = Depends(get_db)):
     },
 )
 def update_glossary(
-    glossary_id: int, glossary: Glossary, db: Session = Depends(get_db)
+    glossary_id: int, glossary: GlossaryScheme, db: Session = Depends(get_db)
 ):
-    glossary_response = update_glossary_controller(
+    if response := update_glossary_controller(
         db=db, glossary_id=glossary_id, glossary=glossary
-    )
-    if glossary_response:
-        return glossary_response
+    ):
+        return response
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Glossary id:{glossary_id}, not found",
@@ -102,6 +122,33 @@ def update_glossary(
 )
 def list_records(glossary_id: int | None = None, db: Session = Depends(get_db)):
     return list_glossary_records_controller(db, glossary_id)
+
+
+@router.put(
+    path="/records/{record_id}",
+    description="Update a single glossary record",
+    response_model=GlossaryRecord,
+    status_code=status.HTTP_200_OK,
+    responses={
+        404: {
+            "description": "Glossary record requested by id",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Glossary record id: 1, not found"}
+                }
+            },
+        },
+    },
+)
+def update_glossary_record(
+    record_id: int, record: GlossaryRecordUpdate, db: Session = Depends(get_db)
+):
+    if response := update_glossary_record_controller(record_id, record, db):
+        return response
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Glossary record id:{record_id}, not found",
+    )
 
 
 @router.post(

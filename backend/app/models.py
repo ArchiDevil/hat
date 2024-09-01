@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 from app.base.schema import Identified
 
@@ -55,6 +55,6 @@ class User(Identified, UserFields):
 
 
 class AuthFields(BaseModel):
-    email: str = Field(pattern=r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+    email: EmailStr
     password: str
     remember: bool
