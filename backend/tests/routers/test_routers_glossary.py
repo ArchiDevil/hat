@@ -171,3 +171,37 @@ def test_create_glossary(user_logged_client: TestClient, session: Session):
         GlossaryQuery(session).get_glossary(response_json["id"]).name
         == expected_glossary_name
     )
+
+
+def test_delete_glossary(user_logged_client: TestClient, session: Session):
+    """DELETE /glossary/{glossary_id}/"""
+    glossary = GlossaryQuery(session).create_glossary(
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+    )
+    path = app.url_path_for("delete_glossary", **{"glossary_id": glossary.id})
+
+    response = user_logged_client.delete(url=path)
+    response_json = response.json()
+
+    assert response_json == {"message": "Deleted"}
+
+
+def test_delete_glossary_record(user_logged_client: TestClient, session: Session):
+    """DELETE /glossary/records/{record_id}/"""
+    repo = GlossaryQuery(session)
+    glossary = repo.create_glossary(
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+    )
+    record = repo.create_glossary_record(
+        author="Author name 1",
+        comment="Comment",
+        source="Test",
+        target="Тест",
+        glossary_id=glossary.id,
+    )
+    path = app.url_path_for("delete_glossary_record", **{"record_id": record.id})
+
+    response = user_logged_client.delete(url=path)
+    response_json = response.json()
+
+    assert response_json == {"message": "Deleted"}

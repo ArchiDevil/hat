@@ -4,13 +4,18 @@ import openpyxl
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
-from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
+from app.glossary.query import (
+    GlossaryQuery,
+    NotFoundGlossaryExc,
+    NotFoundGlossaryRecordExc,
+)
 from app.glossary.schema import (
     GlossaryRecord,
     GlossaryRecordUpdate,
     GlossaryResponse,
     GlossaryScheme,
 )
+from app.models import StatusMessage
 
 
 def create_glossary_from_file_controller(
@@ -52,10 +57,20 @@ def update_glossary_controller(glossary: GlossaryScheme, glossary_id: int, db: S
         return None
 
 
+def delete_glossary_controller(glossary_id: int, db: Session):
+    if GlossaryQuery(db).delete_glossary(glossary_id):
+        return StatusMessage(message="Deleted")
+
+
 def update_glossary_record_controller(
     record_id: int, record: GlossaryRecordUpdate, db: Session
 ):
     try:
         return GlossaryQuery(db).update_record(record_id, record)
-    except NotFoundGlossaryExc:
+    except NotFoundGlossaryRecordExc:
         return None
+
+
+def delete_glossary_record_controller(record_id: int, db: Session):
+    if GlossaryQuery(db).delete_record(record_id):
+        return StatusMessage(message="Deleted")
