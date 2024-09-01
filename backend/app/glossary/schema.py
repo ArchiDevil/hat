@@ -23,13 +23,22 @@ class GlossaryResponse(IdentifiedTimestampedModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class GlossaryRecord(IdentifiedTimestampedModel):
+class GlossaryRecordSchema(IdentifiedTimestampedModel):
     author: str
     comment: Optional[str]
     source: str
     target: str
 
     glossary_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GlossaryRecordCreate(BaseModel):
+    author: str
+    comment: Optional[str]
+    source: str
+    target: str
+
     model_config = ConfigDict(from_attributes=True)
 
 

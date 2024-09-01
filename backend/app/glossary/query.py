@@ -1,11 +1,16 @@
 from typing import Type
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import Glossary, GlossaryRecord
 from app.base.exceptions import BaseQueryException
 from app.glossary.models import ProcessingStatuses
-from app.glossary.schema import GlossaryRecordUpdate, GlossaryScheme
+from app.glossary.schema import (
+    GlossaryRecordCreate,
+    GlossaryRecordUpdate,
+    GlossaryScheme,
+)
 
 
 class NotFoundGlossaryExc(BaseQueryException):
@@ -69,21 +74,18 @@ class GlossaryQuery:
 
     def create_glossary_record(
         self,
-        author: str,
-        source: str,
-        target: str,
+        record: GlossaryRecordCreate,
         glossary_id: int,
-        comment: str | None = None,
     ) -> GlossaryRecord:
         glossary_record = GlossaryRecord(
-            author=author,
-            comment=comment,
-            source=source,
-            target=target,
             glossary_id=glossary_id,
+            **record.model_dump(),
         )
         self.db.add(glossary_record)
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError:
+            raise NotFoundGlossaryExc
         return glossary_record
 
     def update_glossary(
