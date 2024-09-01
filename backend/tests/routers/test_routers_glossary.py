@@ -4,7 +4,11 @@ from sqlalchemy.orm import Session
 
 from app import Glossary
 from app.glossary.query import GlossaryQuery
-from app.glossary.schema import GlossaryRecordUpdate, GlossaryScheme
+from app.glossary.schema import (
+    GlossaryRecordCreate,
+    GlossaryRecordUpdate,
+    GlossaryScheme,
+)
 from main import app
 
 
@@ -112,11 +116,14 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     glossary = GlossaryQuery(session).create_glossary(
         user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
-    record = GlossaryQuery(session).create_glossary_record(
+    record_scheme = GlossaryRecordCreate(
         author="Test",
         comment="Comment",
         source="Test",
         target="Тест",
+    )
+    record = GlossaryQuery(session).create_glossary_record(
+        record=record_scheme,
         glossary_id=glossary.id,
     )
 
@@ -139,11 +146,14 @@ def test_update_glossary_record(user_logged_client: TestClient, session: Session
     glossary = repo.create_glossary(
         user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
-    record = repo.create_glossary_record(
+    record_scheme = GlossaryRecordCreate(
         author="Author name 1",
         comment="Comment",
         source="Test",
         target="Тест",
+    )
+    record = repo.create_glossary_record(
+        record=record_scheme,
         glossary_id=glossary.id,
     )
 
@@ -192,11 +202,14 @@ def test_delete_glossary_record(user_logged_client: TestClient, session: Session
     glossary = repo.create_glossary(
         user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
-    record = repo.create_glossary_record(
+    record_scheme = GlossaryRecordCreate(
         author="Author name 1",
         comment="Comment",
         source="Test",
         target="Тест",
+    )
+    record = repo.create_glossary_record(
+        record=record_scheme,
         glossary_id=glossary.id,
     )
     path = app.url_path_for("delete_glossary_record", **{"record_id": record.id})
@@ -205,3 +218,27 @@ def test_delete_glossary_record(user_logged_client: TestClient, session: Session
     response_json = response.json()
 
     assert response_json == {"message": "Deleted"}
+
+
+def test_create_glossary_record(user_logged_client: TestClient, session: Session):
+    """POST /glossary/{glossary_id}/records"""
+    glossary_id = (
+        GlossaryQuery(session)
+        .create_glossary(user_id=1, glossary=GlossaryScheme(name="Glossary name"))
+        .id
+    )
+    record_scheme = GlossaryRecordCreate(
+        author="Author name 1",
+        comment="Comment",
+        source="Test",
+        target="Тест",
+    )
+    path = app.url_path_for("create_glossary_record", **{"glossary_id": glossary_id})
+    response = user_logged_client.post(url=path, json=record_scheme.model_dump())
+    response_json = response.json()
+
+    assert response_json["author"] == record_scheme.author
+    assert response_json["comment"] == record_scheme.comment
+    assert response_json["source"] == record_scheme.source
+    assert response_json["target"] == record_scheme.target
+    assert response_json["glossary_id"] == glossary_id

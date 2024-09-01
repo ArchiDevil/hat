@@ -10,7 +10,8 @@ from app.glossary.query import (
     NotFoundGlossaryRecordExc,
 )
 from app.glossary.schema import (
-    GlossaryRecord,
+    GlossaryRecordCreate,
+    GlossaryRecordSchema,
     GlossaryRecordUpdate,
     GlossaryResponse,
     GlossaryScheme,
@@ -39,7 +40,7 @@ def list_glossary_controller(db: Session):
 
 def list_glossary_records_controller(db: Session, glossary_id: int | None):
     records = GlossaryQuery(db).list_glossary_records(glossary_id)
-    return [GlossaryRecord.model_validate(record) for record in records]
+    return [GlossaryRecordSchema.model_validate(record) for record in records]
 
 
 def retrieve_glossary_controller(glossary_doc_id: int, db: Session):
@@ -68,6 +69,17 @@ def update_glossary_record_controller(
     try:
         return GlossaryQuery(db).update_record(record_id, record)
     except NotFoundGlossaryRecordExc:
+        return None
+
+
+def create_glossary_record_controller(
+    glossary_id: int, record: GlossaryRecordCreate, db: Session
+):
+    try:
+        return GlossaryQuery(db).create_glossary_record(
+            glossary_id=glossary_id, record=record
+        )
+    except NotFoundGlossaryExc:
         return None
 
 

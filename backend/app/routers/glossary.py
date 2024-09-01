@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.glossary.controllers import (
     create_glossary_from_file_controller,
+    create_glossary_record_controller,
     delete_glossary_controller,
     delete_glossary_record_controller,
     list_glossary_controller,
@@ -25,7 +26,8 @@ from app.glossary.models import ProcessingStatuses
 from app.glossary.query import GlossaryQuery
 from app.glossary.schema import (
     GlossaryLoadFileResponse,
-    GlossaryRecord,
+    GlossaryRecordCreate,
+    GlossaryRecordSchema,
     GlossaryRecordUpdate,
     GlossaryResponse,
     GlossaryScheme,
@@ -143,17 +145,34 @@ def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
 @router.get(
     "/{glossary_id}/records",
     description="Get list glossary record ",
-    response_model=list[GlossaryRecord],
+    response_model=list[GlossaryRecordSchema],
     status_code=status.HTTP_200_OK,
 )
 def list_records(glossary_id: int | None = None, db: Session = Depends(get_db)):
     return list_glossary_records_controller(db, glossary_id)
 
 
+@router.post(
+    "/{glossary_id}/records",
+    description="Create glossary record ",
+    response_model=GlossaryRecordSchema,
+    status_code=status.HTTP_200_OK,
+)
+def create_glossary_record(
+    glossary_id: int, record: GlossaryRecordCreate, db: Session = Depends(get_db)
+):
+    if response := create_glossary_record_controller(glossary_id, record, db):
+        return response
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Glossary id:{glossary_id}, not found",
+    )
+
+
 @router.put(
     path="/records/{record_id}",
     description="Update a single glossary record",
-    response_model=GlossaryRecord,
+    response_model=GlossaryRecordSchema,
     status_code=status.HTTP_200_OK,
     responses={
         404: {
