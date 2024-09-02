@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -110,7 +111,17 @@ def test_doc_records_returns_404_for_nonexistent_document(
     assert response.status_code == 404
 
 
-def test_can_update_doc_record(user_logged_client: TestClient, session: Session):
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"target": "Updated", "approved": None},
+        {"target": None, "approved": True},
+        {"target": "Updated", "approved": True},
+    ],
+)
+def test_can_update_doc_record(
+    user_logged_client: TestClient, session: Session, arguments: dict[str, str]
+):
     with session as s:
         records = [
             DocumentRecord(
@@ -133,22 +144,25 @@ def test_can_update_doc_record(user_logged_client: TestClient, session: Session)
         )
         s.commit()
 
-    response = user_logged_client.put(
-        "/document/record/2", json={"target": "Updated"}
-    )
-    assert response.status_code == 200
+    response = user_logged_client.put("/document/record/2", json=arguments)
+    assert response.status_code == 200, response.text
     assert response.json() == {"message": "Record updated"}
 
     with session as s:
         record = s.query(DocumentRecord).filter(DocumentRecord.id == 2).one()
-        assert record.target == "Updated"
+        assert (record.target == arguments["target"]) if arguments["target"] else True
+        assert (
+            (record.approved == arguments["approved"])
+            if arguments["approved"]
+            else True
+        )
 
 
 def test_returns_404_for_nonexistent_doc_when_updating_record(
     user_logged_client: TestClient,
 ):
     response = user_logged_client.put(
-        "/document/record/3", json={"target": "Updated"}
+        "/document/record/3", json={"target": "Updated", "approved": None}
     )
     assert response.status_code == 404
 

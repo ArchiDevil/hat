@@ -116,13 +116,10 @@ def update_doc_record(
     record: doc_schema.DocumentRecordUpdate,
     db: Annotated[Session, Depends(get_db)],
 ) -> models.StatusMessage:
-    found_record = GenericDocsQuery(db).get_record(record_id)
-    if not found_record:
+    if not GenericDocsQuery(db).update_record(record_id, record):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Record not found"
         )
-
-    GenericDocsQuery(db).update_record_target(found_record, record.target)
     return models.StatusMessage(message="Record updated")
 
 

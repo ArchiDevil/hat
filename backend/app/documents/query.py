@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app.documents.schema import DocumentRecordUpdate
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
 
@@ -112,9 +113,21 @@ class GenericDocsQuery:
             select(DocumentRecord).filter(DocumentRecord.id == record_id)
         ).scalar_one_or_none()
 
-    def update_record_target(self, record: DocumentRecord, target: str):
-        record.target = target
+    def update_record(self, record_id: int, data: DocumentRecordUpdate):
+        values = {k: v for k, v in data.model_dump().items() if v}
+        if not values:
+            return True
+
+        if not self.__db.execute(
+            select(DocumentRecord).filter(DocumentRecord.id == record_id)
+        ).scalar_one_or_none():
+            return False
+
+        self.__db.execute(
+            update(DocumentRecord).values(values).where(DocumentRecord.id == record_id)
+        )
         self.__db.commit()
+        return True
 
     def set_document_memories(
         self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]
