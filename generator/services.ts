@@ -180,34 +180,31 @@ const getMethod = (method: ServiceMethod) => {
     const methodName = convertServiceName(method.description.summary)
 
     let functionBody: string[] = []
+    let query: string | undefined = undefined
+    if (paramsList.filter((param) => param.location == 'query').length > 0) {
+      query = paramsList
+        .filter((param) => param.location == 'query')
+        .map((param) => param.name)
+        .join(', ')
+    }
+
+    const queryMethodParams = !query ? '' : `, {query: {${query}}}`
     if (method.description.requestBody) {
-      if (paramsList.filter((param) => param.location == 'query').length > 0) {
-        console.warn('Unsupported query parameters with request body')
-      }
       if (isFormData(method.description.requestBody.content)) {
         // TODO: it should be done smarter, not just hardcoded 'data.file'
         functionBody = [
           `  const formData = new FormData()`,
           `  formData.append('file', data.file)`,
-          `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`, formData)`,
+          `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`, formData${queryMethodParams})`,
         ]
       } else if (isJsonData(method.description.requestBody.content)) {
         functionBody = [
-          `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`, content)`,
+          `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`, content${queryMethodParams})`,
         ]
       }
     } else {
-      let query: string | undefined = undefined
-      if (paramsList.filter((param) => param.location == 'query').length > 0) {
-        query = paramsList
-          .filter((param) => param.location == 'query')
-          .map((param) => param.name)
-          .join(', ')
-      }
-
-      const methodParams = !query ? '' : `, {query: {${query}}}`
       functionBody = [
-        `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`${methodParams})`,
+        `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`${queryMethodParams})`,
       ]
     }
 
