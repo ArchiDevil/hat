@@ -93,8 +93,8 @@ def process_document(
     logging.info(
         "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
         time.time() - start_time,
-        (len(translate_indices)) / (time.time() - start_time + 0.01),
-        len(translate_indices),
+        (len(segments) - len(translate_indices)) / (time.time() - start_time + 0.01),
+        len(segments) - len(translate_indices),
         len(segments),
     )
 
@@ -105,8 +105,8 @@ def process_document(
     logging.info(
         "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
         time.time() - start_time,
-        (len(segments) - len(translate_indices)) / (time.time() - start_time + 0.01),
-        len(segments) - len(translate_indices),
+        (len(translate_indices)) / (time.time() - start_time + 0.01),
+        len(translate_indices),
         len(segments),
     )
 
