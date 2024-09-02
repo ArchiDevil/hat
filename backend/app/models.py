@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 
 from app.base.schema import Identified
 
@@ -41,7 +41,7 @@ class StatusMessage(BaseModel):
 
 class UserFields(BaseModel):
     username: str
-    email: str = Field(pattern=r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+    email: EmailStr
     role: UserRole
     disabled: bool
 
