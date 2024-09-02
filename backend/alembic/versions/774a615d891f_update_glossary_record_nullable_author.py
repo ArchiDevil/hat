@@ -1,4 +1,4 @@
-"""update_glossary_record_nuulable_author
+"""Update glossary_record with nullable for author column
 
 Revision ID: 774a615d891f
 Revises: d87059999f4b
@@ -20,11 +20,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.alter_column(
-        "glossary_record", "author", existing_type=sa.VARCHAR(), nullable=True
+        "glossary_record", "author", existing_type=sa.String(), nullable=True
     )
 
 
 def downgrade() -> None:
     op.alter_column(
-        "glossary_record", "author", existing_type=sa.VARCHAR(), nullable=False
+        "glossary_record", "author", existing_type=sa.String(), nullable=False
     )
