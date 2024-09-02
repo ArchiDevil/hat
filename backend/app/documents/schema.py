@@ -15,12 +15,14 @@ class Document(Identified):
 
 
 class DocumentWithRecordsCount(Document):
+    approved_records_count: int
     records_count: int
 
 
 class DocumentRecord(Identified):
     source: str
     target: str
+    approved: bool
 
 
 class DocumentRecordUpdate(BaseModel):

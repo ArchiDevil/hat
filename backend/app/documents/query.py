@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import DocumentStatus
@@ -81,12 +81,20 @@ class GenericDocsQuery:
         )
         self.__db.commit()
 
-    def get_document_records(self, doc: Document) -> Iterable[DocumentRecord]:
+    def get_document_records_count(self, doc: Document) -> int:
         return self.__db.execute(
-            select(DocumentRecord)
+            select(func.count())
+            .select_from(DocumentRecord)
             .filter(DocumentRecord.document_id == doc.id)
-            .order_by(DocumentRecord.id)
-        ).scalars()
+        ).scalar_one()
+
+    def get_document_approved_records_count(self, doc: Document) -> int:
+        return self.__db.execute(
+            select(func.count())
+            .select_from(DocumentRecord)
+            .filter(DocumentRecord.document_id == doc.id)
+            .filter(DocumentRecord.approved.is_(True))
+        ).scalar_one()
 
     def get_document_records_paged(
         self, doc: Document, page: int, page_records=100
@@ -99,11 +107,9 @@ class GenericDocsQuery:
             .limit(page_records)
         ).scalars()
 
-    def get_record(self, doc_id: int, record_id: int) -> DocumentRecord | None:
+    def get_record(self, record_id: int) -> DocumentRecord | None:
         return self.__db.execute(
-            select(DocumentRecord).filter(
-                DocumentRecord.id == record_id, DocumentRecord.document_id == doc_id
-            )
+            select(DocumentRecord).filter(DocumentRecord.id == record_id)
         ).scalar_one_or_none()
 
     def update_record_target(self, record: DocumentRecord, target: str):

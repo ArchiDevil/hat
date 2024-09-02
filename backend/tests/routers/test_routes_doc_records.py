@@ -9,14 +9,8 @@ from app.documents.models import Document, DocumentRecord, DocumentType
 def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
     with session as s:
         records = [
-            DocumentRecord(
-                source="Regional Effects",
-                target="Translation",
-            ),
-            DocumentRecord(
-                source="User Interface",
-                target="UI",
-            ),
+            DocumentRecord(source="Regional Effects", target="Translation"),
+            DocumentRecord(source="User Interface", target="UI", approved=True),
         ]
         s.add(
             Document(
@@ -36,11 +30,13 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "id": 1,
             "source": "Regional Effects",
             "target": "Translation",
+            "approved": False,
         },
         {
             "id": 2,
             "source": "User Interface",
             "target": "UI",
+            "approved": True,
         },
     ]
 
@@ -75,6 +71,7 @@ def test_doc_records_returns_second_page(
         "id": 101,
         "source": "line100",
         "target": "line100",
+        "approved": False,
     }
 
 
@@ -137,7 +134,7 @@ def test_can_update_doc_record(user_logged_client: TestClient, session: Session)
         s.commit()
 
     response = user_logged_client.put(
-        "/document/1/record/2", json={"target": "Updated"}
+        "/document/record/2", json={"target": "Updated"}
     )
     assert response.status_code == 200
     assert response.json() == {"message": "Record updated"}
@@ -151,7 +148,7 @@ def test_returns_404_for_nonexistent_doc_when_updating_record(
     user_logged_client: TestClient,
 ):
     response = user_logged_client.put(
-        "/document/2000/record/3", json={"target": "Updated"}
+        "/document/record/3", json={"target": "Updated"}
     )
     assert response.status_code == 404
 

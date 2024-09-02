@@ -56,14 +56,17 @@ def get_doc(
     doc_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> doc_schema.DocumentWithRecordsCount:
     doc = get_doc_by_id(db, doc_id)
-    records_count = len(list(GenericDocsQuery(db).get_document_records(doc)))
+    query = GenericDocsQuery(db)
+    records_count = query.get_document_records_count(doc)
+    approved_records_count = query.get_document_approved_records_count(doc)
     return doc_schema.DocumentWithRecordsCount(
         id=doc.id,
         name=doc.name,
         status=models.DocumentStatus(doc.processing_status),
         created_by=doc.created_by,
-        records_count=records_count,
         type=doc.type.value,
+        approved_records_count=approved_records_count,
+        records_count=records_count,
     )
 
 
@@ -83,6 +86,7 @@ def get_doc_records(
             id=record.id,
             source=record.source,
             target=record.target,
+            approved=record.approved,
         )
         for record in records
     ]
@@ -93,7 +97,7 @@ def get_segment_substitutions(
     doc_id: int, segment_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> list[MemorySubstitution]:
     doc = get_doc_by_id(db, doc_id)
-    original_segment = GenericDocsQuery(db).get_record(doc_id, segment_id)
+    original_segment = GenericDocsQuery(db).get_record(segment_id)
     if not original_segment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
@@ -106,16 +110,13 @@ def get_segment_substitutions(
     return TranslationMemoryQuery(db).get_substitutions(original_segment.source, tm_ids)
 
 
-@router.put("/{doc_id}/record/{record_id}")
+@router.put("/record/{record_id}")
 def update_doc_record(
-    doc_id: int,
     record_id: int,
     record: doc_schema.DocumentRecordUpdate,
     db: Annotated[Session, Depends(get_db)],
 ) -> models.StatusMessage:
-    # to check if doc exists
-    get_doc_by_id(db, doc_id)
-    found_record = GenericDocsQuery(db).get_record(doc_id, record_id)
+    found_record = GenericDocsQuery(db).get_record(record_id)
     if not found_record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Record not found"
@@ -294,7 +295,7 @@ def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
             record = db.query(XliffRecord).filter_by(segment_id=segment.id_).first()
             if record and not segment.approved:
                 segment.translation = record.parent.target
-                segment.approved = record.approved
+                segment.approved = record.parent.approved
                 segment.state = SegmentState(record.state)
 
         processed_document.commit()

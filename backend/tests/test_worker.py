@@ -105,45 +105,45 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[0]
         assert record.source == "Regional Effects"
         assert record.target == "Translation"
+        assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675606
         assert xliff_record.state == "translated"
-        assert not xliff_record.approved
 
         # It does not provide text for missing TM record
         record = doc.records[1]
         assert record.source == "Other Effects"
         assert record.target == ""
+        assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675607
         assert xliff_record.state == "needs-translation"
-        assert not xliff_record.approved
 
         # It does not touch approved record
         record = doc.records[2]
         assert record.source == "Regional Effects"
         assert record.target == "Региональные эффекты"
+        assert record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675608
         assert xliff_record.state == "translated"
-        assert xliff_record.approved
 
         # It does not substitute numbers
         record = doc.records[3]
         assert record.source == "123456789"
         assert record.target == ""
+        assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675609
         assert xliff_record.state == "needs-translation"
-        assert not xliff_record.approved
 
 
 def test_process_task_sets_txt_records(session: Session):

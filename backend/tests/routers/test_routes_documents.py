@@ -93,6 +93,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         "name": "test_doc.txt",
         "status": "pending",
         "created_by": 1,
+        "approved_records_count": 0,
         "records_count": 2,
         "type": "txt",
     }
@@ -502,11 +503,17 @@ def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
     with session as s:
         records = [
             DocumentRecord(document_id=1, source="Regional Effects", target="Some"),
-            DocumentRecord(document_id=1, source="Other Effects", target=""),
+            DocumentRecord(
+                document_id=1,
+                source="Other Effects",
+                target="",
+                approved=True,
+            ),
             DocumentRecord(
                 document_id=1,
                 source="Regional Effects",
                 target="Региональные эффекты",
+                approved=True,
             ),
             DocumentRecord(document_id=1, source="123456789", target=""),
             XliffRecord(
@@ -514,28 +521,24 @@ def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
                 segment_id=675606,
                 document_id=1,
                 state="needs-translation",
-                approved=False,
             ),
             XliffRecord(
                 parent_id=2,
                 segment_id=675607,
                 document_id=1,
                 state="needs-translation",
-                approved=True,
             ),
             XliffRecord(
                 parent_id=3,
                 segment_id=675608,
                 document_id=1,
                 state="translated",
-                approved=True,
             ),
             XliffRecord(
                 parent_id=4,
                 segment_id=675609,
                 document_id=1,
                 state="final",
-                approved=False,
             ),
         ]
         s.add_all(records)

@@ -84,6 +84,7 @@ class DocumentRecord(Base):
     document_id: Mapped[int] = mapped_column(ForeignKey("document.id"))
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()
+    approved: Mapped[bool] = mapped_column(default=False)
 
     document: Mapped["Document"] = relationship(back_populates="records")
 
@@ -140,7 +141,6 @@ class XliffRecord(Base):
     segment_id: Mapped[int] = mapped_column()
     document_id: Mapped[int] = mapped_column(ForeignKey("xliff_document.id"))
     state: Mapped[str] = mapped_column()
-    approved: Mapped[bool] = mapped_column()
 
     parent: Mapped["DocumentRecord"] = relationship()
     document: Mapped["XliffDocument"] = relationship(back_populates="records")

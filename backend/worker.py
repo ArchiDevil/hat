@@ -217,9 +217,9 @@ def create_doc_segments(
                     document_id=doc.xliff.id,
                     segment_id=segment.id_,
                     state=segment.state.value,
-                    approved=segment.approved,
                 )
             )
+            doc_records[idx].approved = segment.approved
         session.add_all(xliff_records)
         session.commit()
     elif doc.type == DocumentType.txt:
