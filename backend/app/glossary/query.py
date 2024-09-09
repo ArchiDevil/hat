@@ -1,5 +1,4 @@
-from typing import Type
-
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -27,13 +26,13 @@ class GlossaryQuery:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_glossary(self, glossary_id: int) -> Type[Glossary]:
+    def get_glossary(self, glossary_id: int) -> Glossary:
         glossary = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()  # type: ignore
         if glossary:
             return glossary
         raise NotFoundGlossaryExc()
 
-    def get_glossary_record(self, record_id: int) -> Type[GlossaryRecord]:
+    def get_glossary_record(self, record_id: int) -> GlossaryRecord:
         if (
             record := self.db.query(GlossaryRecord)
             .filter(GlossaryRecord.id == record_id)  # type: ignore
@@ -42,12 +41,12 @@ class GlossaryQuery:
             return record
         raise NotFoundGlossaryRecordExc()
 
-    def list_glossary(self) -> list[Type[Glossary]]:
+    def list_glossary(self) -> list[Glossary]:
         return self.db.query(Glossary).order_by(Glossary.id).all()
 
     def list_glossary_records(
         self, glossary_id: int | None = None
-    ) -> list[Type[GlossaryRecord]]:
+    ) -> list[GlossaryRecord]:
         if glossary_id:
             return (
                 self.db.query(GlossaryRecord)
@@ -88,9 +87,7 @@ class GlossaryQuery:
             raise NotFoundGlossaryExc
         return glossary_record
 
-    def update_glossary(
-        self, glossary_id: int, glossary: GlossaryScheme
-    ) -> Type[Glossary]:
+    def update_glossary(self, glossary_id: int, glossary: GlossaryScheme) -> Glossary:
         result = (
             self.db.query(Glossary)
             .filter(Glossary.id == glossary_id)  # type: ignore
@@ -102,18 +99,17 @@ class GlossaryQuery:
         raise NotFoundGlossaryExc()
 
     def delete_glossary(self, glossary_id: int) -> bool:
-        if (
-            self.db.query(Glossary)
-            .filter(Glossary.id == glossary_id)  # type: ignore
-            .delete()
-        ):
-            self.db.commit()
-            return True
-        return False
+        glossary = self.db.execute(
+            select(Glossary).where(Glossary.id == glossary_id)  # type: ignore
+        ).scalar_one_or_none()
+        if not glossary:
+            return False
 
-    def update_glossary_processing_status(
-        self, glossary_id: int
-    ) -> Type[Glossary] | None:
+        self.db.delete(glossary)
+        self.db.commit()
+        return True
+
+    def update_glossary_processing_status(self, glossary_id: int) -> Glossary | None:
         doc = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()  # type: ignore
         if doc:
             doc.processing_status = ProcessingStatuses.DONE

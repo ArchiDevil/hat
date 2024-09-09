@@ -5,7 +5,6 @@ from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
-from app.schema import User
 
 if TYPE_CHECKING:
     from app.schema import User

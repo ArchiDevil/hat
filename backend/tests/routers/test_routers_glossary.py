@@ -1,9 +1,10 @@
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import Glossary
-from app.glossary.query import GlossaryQuery
+from app.glossary.query import GlossaryQuery, NotFoundGlossaryRecordExc
 from app.glossary.schema import (
     GlossaryRecordCreate,
     GlossaryRecordUpdate,
@@ -194,6 +195,30 @@ def test_delete_glossary(user_logged_client: TestClient, session: Session):
     response_json = response.json()
 
     assert response_json == {"message": "Deleted"}
+
+
+def test_delete_glossary_with_records(user_logged_client: TestClient, session: Session):
+    """DELETE /glossary/{glossary_id}/"""
+    query = GlossaryQuery(session)
+    glossary = query.create_glossary(
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+    )
+    record_id = query.create_glossary_record(
+        GlossaryRecordCreate(
+            author="someone", comment=None, source="some text", target="some target"
+        ),
+        glossary.id,
+    ).id
+
+    path = app.url_path_for("delete_glossary", **{"glossary_id": glossary.id})
+
+    response = user_logged_client.delete(url=path)
+    response_json = response.json()
+
+    assert response_json == {"message": "Deleted"}
+    # check that child was deleted
+    with pytest.raises(NotFoundGlossaryRecordExc):
+        query.get_glossary_record(record_id)
 
 
 def test_delete_glossary_record(user_logged_client: TestClient, session: Session):
