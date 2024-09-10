@@ -145,7 +145,12 @@ def test_can_update_doc_record(
 
     response = user_logged_client.put("/document/record/2", json=arguments)
     assert response.status_code == 200, response.text
-    assert response.json() == {"message": "Record updated"}
+    assert response.json() == {
+        "id": 2,
+        "source": "User Interface",
+        "target": "Updated",
+        "approved": arguments["approved"] or False,
+    }
 
     with session as s:
         record = s.query(DocumentRecord).filter(DocumentRecord.id == 2).one()

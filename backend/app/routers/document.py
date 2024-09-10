@@ -14,7 +14,7 @@ from app.documents.models import (
     TmMode,
     XliffRecord,
 )
-from app.documents.query import GenericDocsQuery
+from app.documents.query import GenericDocsQuery, NotFoundDocumentRecordExc
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
 from app.translation_memory.query import TranslationMemoryQuery
@@ -115,12 +115,14 @@ def update_doc_record(
     record_id: int,
     record: doc_schema.DocumentRecordUpdate,
     db: Annotated[Session, Depends(get_db)],
-) -> models.StatusMessage:
-    if not GenericDocsQuery(db).update_record(record_id, record):
+) -> doc_schema.DocumentRecord:
+    try:
+        record = GenericDocsQuery(db).update_record(record_id, record)
+        return record
+    except NotFoundDocumentRecordExc as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Record not found"
-        )
-    return models.StatusMessage(message="Record updated")
+        ) from e
 
 
 @router.get("/{doc_id}/memories")

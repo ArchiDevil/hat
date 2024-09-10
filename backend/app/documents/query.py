@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.base.exceptions import BaseQueryException
 from app.documents.schema import DocumentRecordUpdate
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
@@ -17,6 +18,10 @@ from .models import (
     TxtDocument,
     XliffDocument,
 )
+
+
+class NotFoundDocumentRecordExc(BaseQueryException):
+    """Exception raised when document record not found"""
 
 
 class GenericDocsQuery:
@@ -114,20 +119,17 @@ class GenericDocsQuery:
         ).scalar_one_or_none()
 
     def update_record(self, record_id: int, data: DocumentRecordUpdate):
-        values = {k: v for k, v in data.model_dump().items() if v}
-        if not values:
-            return True
-
-        if not self.__db.execute(
+        record = self.__db.execute(
             select(DocumentRecord).filter(DocumentRecord.id == record_id)
-        ).scalar_one_or_none():
-            return False
+        ).scalar_one_or_none()
+        if not record:
+            raise NotFoundDocumentRecordExc()
 
-        self.__db.execute(
-            update(DocumentRecord).values(values).where(DocumentRecord.id == record_id)
-        )
+        record.target = data.target
+        if data.approved is not None:
+            record.approved = data.approved
         self.__db.commit()
-        return True
+        return record
 
     def set_document_memories(
         self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]
