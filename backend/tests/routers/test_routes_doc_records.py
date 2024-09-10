@@ -115,7 +115,6 @@ def test_doc_records_returns_404_for_nonexistent_document(
     "arguments",
     [
         {"target": "Updated", "approved": None},
-        {"target": None, "approved": True},
         {"target": "Updated", "approved": True},
     ],
 )

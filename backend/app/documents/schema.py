@@ -26,7 +26,7 @@ class DocumentRecord(Identified):
 
 
 class DocumentRecordUpdate(BaseModel):
-    target: Optional[str]
+    target: str
     approved: Optional[bool]
 
 
