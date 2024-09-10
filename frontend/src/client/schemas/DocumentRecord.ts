@@ -4,4 +4,5 @@ export interface DocumentRecord {
   id: number
   source: string
   target: string
+  approved: boolean
 }

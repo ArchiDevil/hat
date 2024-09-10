@@ -2,4 +2,5 @@
 
 export interface DocumentRecordUpdate {
   target: string
+  approved: boolean | null
 }

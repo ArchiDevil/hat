@@ -8,5 +8,6 @@ export interface DocumentWithRecordsCount {
   status: DocumentStatus
   created_by: number
   type: string
+  approved_records_count: number
   records_count: number
 }

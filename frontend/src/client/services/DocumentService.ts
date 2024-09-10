@@ -33,8 +33,8 @@ export const getDocRecords = async (doc_id: number, page?: number | null): Promi
 export const getSegmentSubstitutions = async (doc_id: number, segment_id: number): Promise<MemorySubstitution[]> => {
   return await api.get<MemorySubstitution[]>(`/document/${doc_id}/segments/${segment_id}/substitutions`)
 }
-export const updateDocRecord = async (doc_id: number, record_id: number, content: DocumentRecordUpdate): Promise<StatusMessage> => {
-  return await api.put<StatusMessage>(`/document/${doc_id}/record/${record_id}`, content)
+export const updateDocRecord = async (record_id: number, content: DocumentRecordUpdate): Promise<DocumentRecord> => {
+  return await api.put<DocumentRecord>(`/document/record/${record_id}`, content)
 }
 export const getTranslationMemories = async (doc_id: number): Promise<DocTranslationMemory[]> => {
   return await api.get<DocTranslationMemory[]>(`/document/${doc_id}/memories`)
