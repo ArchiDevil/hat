@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
+import {useRouter} from 'vue-router'
 
 import {useTmStore} from '../stores/tm'
 import {useDocStore} from '../stores/document'
@@ -13,6 +14,8 @@ import TmRecord from '../components/TmRecord.vue'
 import PageNav from '../components/PageNav.vue'
 import TmSettingsModal from '../components/TmSettingsModal.vue'
 import TmxUploadingDialog from '../components/TmxUploadingDialog.vue'
+
+const router = useRouter()
 
 const tmStore = useTmStore()
 const docStore = useDocStore()
@@ -56,7 +59,7 @@ onMounted(async () => {
       <DocUploadingDialog
         title="Select a file to upload:"
         @processed="
-          (fileId) => $router.push({name: 'document', params: {id: fileId}})
+          (fileId) => router.push({name: 'document', params: {id: fileId}})
         "
       />
       <DocumentList

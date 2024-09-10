@@ -43,7 +43,7 @@ export const useCurrentDocStore = defineStore('current_document', {
         (record) => ({...record, loading: false})
       )
     },
-    async updateRecord(record_id: number, content: string) {
+    async updateRecord(record_id: number, content: string, approved: boolean) {
       if (!this.document) {
         return
       }
@@ -54,10 +54,14 @@ export const useCurrentDocStore = defineStore('current_document', {
         return
       }
       this.records[idx].loading = true
-      await updateDocRecord(this.document?.id, record_id, {
+      const newRecord = await updateDocRecord(record_id, {
         target: content,
+        approved: approved,
       })
-      this.records[idx].loading = false
+      this.records[idx] = {
+        ...newRecord,
+        loading: false,
+      }
     },
     async focusSegment(idx: number) {
       this.currentFocusIdx = idx

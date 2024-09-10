@@ -40,12 +40,12 @@ const updatePage = async (event: PageState) => {
   router.push({query: {page: event.page}})
 }
 
-const onSegmentUpdate = (record: number, text: string) => {
-  store.updateRecord(record, text)
+const onSegmentUpdate = (id: number, text: string, approved: boolean) => {
+  store.updateRecord(id, text, approved)
 }
 
-const onSegmentCommit = (record: number, text: string) => {
-  onSegmentUpdate(record, text)
+const onSegmentCommit = (id: number, text: string) => {
+  onSegmentUpdate(id, text, true)
   store.focusNextSegment()
 }
 
@@ -110,11 +110,14 @@ onMounted(async () => {
               v-for="(record, idx) in store.records"
               :key="record.id"
               editable
-              :record="record"
+              :id="record.id"
+              :source="record.source"
+              :target="record.target"
               :disabled="record.loading"
               :focused-id="store.currentFocusId"
+              :approved="record.approved"
               @commit="(text) => onSegmentCommit(record.id, text)"
-              @update-record="(text) => onSegmentUpdate(record.id, text)"
+              @update-record="(text) => onSegmentUpdate(record.id, text, false)"
               @focus="store.focusSegment(idx)"
             />
           </div>

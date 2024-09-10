@@ -66,7 +66,9 @@ onMounted(async () => {
       <DocSegment
         v-for="record in records"
         :key="record.id"
-        :record="record"
+        :id="record.id"
+        :source="record.source"
+        :target="record.target"
       />
     </div>
     <Paginator
