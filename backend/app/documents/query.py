@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import func, select, case
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
 from app.documents.schema import DocumentRecordUpdate
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
+from app.translation_memory.query import TranslationMemoryQuery
 
 from .models import (
     DocMemoryAssociation,
@@ -120,6 +121,18 @@ class GenericDocsQuery:
         record.target = data.target
         if data.approved is not None:
             record.approved = data.approved
+
+            if data.approved is True:
+                bound_tm = None
+                for memory in record.document.memory_associations:
+                    if memory.mode == TmMode.write:
+                        bound_tm = memory.tm_id
+
+                if bound_tm:
+                    TranslationMemoryQuery(self.__db).add_or_update_record(
+                        bound_tm, record.source, record.target
+                    )
+
         self.__db.commit()
         return record
 

@@ -1,3 +1,4 @@
+import datetime
 from typing import Iterable
 
 from sqlalchemy import func, select, text
@@ -87,4 +88,30 @@ class TranslationMemoryQuery:
 
     def delete_memory(self, memory: TranslationMemory):
         self.__db.delete(memory)
+        self.__db.commit()
+
+    def add_or_update_record(self, document_id: int, source: str, target: str):
+        record = self.__db.execute(
+            select(TranslationMemoryRecord)
+            .where(
+                TranslationMemoryRecord.document_id == document_id,
+                TranslationMemoryRecord.source == source,
+            )
+            .order_by(TranslationMemoryRecord.id.desc()),
+        ).scalar_one_or_none()
+
+        if not record:
+            self.__db.add(
+                TranslationMemoryRecord(
+                    document_id=document_id,
+                    source=source,
+                    target=target,
+                    creation_date=datetime.datetime.now(datetime.UTC),
+                    change_date=datetime.datetime.now(datetime.UTC),
+                )
+            )
+        else:
+            record.target = target
+            record.change_date = datetime.datetime.now(datetime.UTC)
+
         self.__db.commit()

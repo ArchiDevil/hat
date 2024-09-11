@@ -99,12 +99,12 @@ def get_doc_records(
     ]
 
 
-@router.get("/{doc_id}/segments/{segment_id}/substitutions")
-def get_segment_substitutions(
-    doc_id: int, segment_id: int, db: Annotated[Session, Depends(get_db)]
+@router.get("/{doc_id}/records/{record_id}/substitutions")
+def get_record_substitutions(
+    doc_id: int, record_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> list[MemorySubstitution]:
     doc = get_doc_by_id(db, doc_id)
-    original_segment = GenericDocsQuery(db).get_record(segment_id)
+    original_segment = GenericDocsQuery(db).get_record(record_id)
     if not original_segment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"

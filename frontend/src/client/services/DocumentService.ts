@@ -30,8 +30,8 @@ export const deleteDoc = async (doc_id: number): Promise<StatusMessage> => {
 export const getDocRecords = async (doc_id: number, page?: number | null): Promise<DocumentRecord[]> => {
   return await api.get<DocumentRecord[]>(`/document/${doc_id}/records`, {query: {page}})
 }
-export const getSegmentSubstitutions = async (doc_id: number, segment_id: number): Promise<MemorySubstitution[]> => {
-  return await api.get<MemorySubstitution[]>(`/document/${doc_id}/segments/${segment_id}/substitutions`)
+export const getRecordSubstitutions = async (doc_id: number, record_id: number): Promise<MemorySubstitution[]> => {
+  return await api.get<MemorySubstitution[]>(`/document/${doc_id}/records/${record_id}/substitutions`)
 }
 export const updateDocRecord = async (record_id: number, content: DocumentRecordUpdate): Promise<DocumentRecord> => {
   return await api.put<DocumentRecord>(`/document/record/${record_id}`, content)

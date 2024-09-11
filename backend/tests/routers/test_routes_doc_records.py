@@ -1,8 +1,16 @@
+import datetime
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.documents.models import Document, DocumentRecord, DocumentType
+from app.documents.models import (
+    DocMemoryAssociation,
+    Document,
+    DocumentRecord,
+    DocumentType,
+)
+from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 
 # pylint: disable=C0116
 
@@ -160,6 +168,103 @@ def test_can_update_doc_record(
             if arguments["approved"]
             else True
         )
+
+
+def test_record_approving_creates_memory(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        records = [
+            DocumentRecord(source="Some source", target=""),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="done",
+                created_by=1,
+            )
+        )
+        s.add(
+            TranslationMemory(
+                name="test_mem",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode="write"))
+        s.commit()
+
+    response = user_logged_client.put(
+        "/document/record/1", json={"target": "Updated", "approved": True}
+    )
+    assert response.status_code == 200, response.text
+
+    with session as s:
+        record = (
+            s.query(TranslationMemoryRecord)
+            .filter(TranslationMemoryRecord.id == 1)
+            .one()
+        )
+        assert record.source == "Some source"
+        assert record.target == "Updated"
+        assert record.document_id == 1
+
+        today = datetime.datetime.now(datetime.UTC)
+        assert record.creation_date.date() == today.date()
+        assert record.change_date.date() == today.date()
+
+
+def test_record_approving_updates_memory(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        records = [
+            DocumentRecord(source="Some source", target=""),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="done",
+                created_by=1,
+            )
+        )
+        tm_records = [
+            TranslationMemoryRecord(
+                source="Some source",
+                target="Old target",
+                creation_date=datetime.datetime(2000, 4, 5),
+                change_date=datetime.datetime(2000, 4, 6),
+            ),
+        ]
+        s.add(TranslationMemory(name="test_mem", created_by=1, records=tm_records))
+        s.commit()
+
+        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode="write"))
+        s.commit()
+
+    response = user_logged_client.put(
+        "/document/record/1", json={"target": "Updated", "approved": True}
+    )
+    assert response.status_code == 200, response.text
+
+    with session as s:
+        record = (
+            s.query(TranslationMemoryRecord)
+            .filter(TranslationMemoryRecord.id == 1)
+            .one()
+        )
+        assert record.source == "Some source"
+        assert record.target == "Updated"
+        assert record.document_id == 1
+
+        today = datetime.datetime.now(datetime.UTC)
+        assert record.creation_date.date() == datetime.datetime(2000, 4, 5).date()
+        assert record.change_date.date() == today.date()
 
 
 def test_returns_404_for_nonexistent_doc_when_updating_record(
