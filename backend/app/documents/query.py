@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, case
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
@@ -62,17 +62,12 @@ class GenericDocsQuery:
         self.__db.add(document)
         self.__db.commit()
 
-        if document.type == DocumentType.xliff:
-            xliff_doc = XliffDocument(
-                parent_id=document.id, original_document=original_document
-            )
-            self.__db.add(xliff_doc)
-        elif document.type == DocumentType.txt:
-            txt_doc = TxtDocument(
-                parent_id=document.id, original_document=original_document
-            )
-            self.__db.add(txt_doc)
+        args = {"parent_id": document.id, "original_document": original_document}
 
+        if document.type == DocumentType.xliff:
+            self.__db.add(XliffDocument(**args))
+        elif document.type == DocumentType.txt:
+            self.__db.add(TxtDocument(**args))
         self.__db.commit()
 
     def enqueue_document(
@@ -87,20 +82,17 @@ class GenericDocsQuery:
         )
         self.__db.commit()
 
-    def get_document_records_count(self, doc: Document) -> int:
-        return self.__db.execute(
-            select(func.count())
+    def get_document_records_count(self, doc: Document) -> tuple[int, int]:
+        stmt = (
+            select(
+                func.count(case((DocumentRecord.approved.is_(True), 1))),
+                func.count(),
+            )
             .select_from(DocumentRecord)
-            .filter(DocumentRecord.document_id == doc.id)
-        ).scalar_one()
-
-    def get_document_approved_records_count(self, doc: Document) -> int:
-        return self.__db.execute(
-            select(func.count())
-            .select_from(DocumentRecord)
-            .filter(DocumentRecord.document_id == doc.id)
-            .filter(DocumentRecord.approved.is_(True))
-        ).scalar_one()
+            .where(DocumentRecord.document_id == doc.id)
+        )
+        result = self.__db.execute(stmt).one()
+        return result[0], result[1]
 
     def get_document_records_paged(
         self, doc: Document, page: int, page_records=100
@@ -118,10 +110,10 @@ class GenericDocsQuery:
             select(DocumentRecord).filter(DocumentRecord.id == record_id)
         ).scalar_one_or_none()
 
-    def update_record(self, record_id: int, data: DocumentRecordUpdate):
-        record = self.__db.execute(
-            select(DocumentRecord).filter(DocumentRecord.id == record_id)
-        ).scalar_one_or_none()
+    def update_record(
+        self, record_id: int, data: DocumentRecordUpdate
+    ) -> DocumentRecord:
+        record = self.get_record(record_id)
         if not record:
             raise NotFoundDocumentRecordExc()
 

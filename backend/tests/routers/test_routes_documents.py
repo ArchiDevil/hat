@@ -31,6 +31,9 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
                     name="first_doc.txt",
                     type=DocumentType.txt,
                     processing_status="pending",
+                    records=[
+                        DocumentRecord(source="Regional Effects", target="Translation")
+                    ],
                     created_by=1,
                 ),
                 Document(
@@ -52,6 +55,8 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
             "status": "pending",
             "created_by": 1,
             "type": "txt",
+            "approved_records_count": 0,
+            "records_count": 1,
         },
         {
             "id": 2,
@@ -59,6 +64,8 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
             "status": "done",
             "created_by": 1,
             "type": "xliff",
+            "approved_records_count": 0,
+            "records_count": 0,
         },
     ]
 

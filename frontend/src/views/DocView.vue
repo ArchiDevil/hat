@@ -6,6 +6,7 @@ import {useCurrentDocStore} from '../stores/current_document'
 
 import Paginator, {PageState} from 'primevue/paginator'
 import Skeleton from 'primevue/skeleton'
+import ProgressBar from 'primevue/progressbar'
 
 import Link from '../components/Link.vue'
 import DocSegment from '../components/DocSegment.vue'
@@ -77,7 +78,26 @@ onMounted(async () => {
           title="Return to main page"
         />
       </div>
-      <p class="ml-4">Number of records: {{ store.document?.records_count }}</p>
+      <div class="ml-4 flex flex-row gap-2 items-baseline">
+        Progress:
+        <ProgressBar
+          class="w-64 h-2 inline-block"
+          :value="
+            store.document &&
+            (store.document?.approved_records_count /
+              store.document?.records_count) *
+              100
+          "
+          :show-value="false"
+        />
+        {{ store.document?.approved_records_count }} /
+        {{ store.document?.records_count }}
+        <Link
+          :href="store.downloadLink"
+          class="inline-block"
+          title="Download in the current state"
+        />
+      </div>
       <template v-if="store.documentReady && !store.documentLoading">
         <ProcessingErrorMessage
           v-if="store.document?.status == 'error'"
@@ -94,11 +114,6 @@ onMounted(async () => {
           :first="page * 100"
           v-on:page="(event) => updatePage(event)"
           class="inline-block"
-        />
-        <Link
-          :href="store.downloadLink"
-          class="inline-block"
-          title="Download document"
         />
       </div>
     </div>

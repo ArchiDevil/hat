@@ -37,18 +37,26 @@ def get_doc_by_id(db: Session, document_id: int) -> Document:
 
 
 @router.get("/")
-def get_docs(db: Annotated[Session, Depends(get_db)]) -> list[doc_schema.Document]:
-    docs = GenericDocsQuery(db).get_documents_list()
-    return [
-        doc_schema.Document(
-            id=doc.id,
-            name=doc.name,
-            status=models.DocumentStatus(doc.processing_status),
-            created_by=doc.created_by,
-            type=doc.type.value,
+def get_docs(
+    db: Annotated[Session, Depends(get_db)],
+) -> list[doc_schema.DocumentWithRecordsCount]:
+    query = GenericDocsQuery(db)
+    docs = query.get_documents_list()
+    output = []
+    for doc in docs:
+        records = query.get_document_records_count(doc)
+        output.append(
+            doc_schema.DocumentWithRecordsCount(
+                id=doc.id,
+                name=doc.name,
+                status=models.DocumentStatus(doc.processing_status),
+                created_by=doc.created_by,
+                type=doc.type.value,
+                approved_records_count=records[0],
+                records_count=records[1],
+            )
         )
-        for doc in docs
-    ]
+    return output
 
 
 @router.get("/{doc_id}")
@@ -57,16 +65,15 @@ def get_doc(
 ) -> doc_schema.DocumentWithRecordsCount:
     doc = get_doc_by_id(db, doc_id)
     query = GenericDocsQuery(db)
-    records_count = query.get_document_records_count(doc)
-    approved_records_count = query.get_document_approved_records_count(doc)
+    records = query.get_document_records_count(doc)
     return doc_schema.DocumentWithRecordsCount(
         id=doc.id,
         name=doc.name,
         status=models.DocumentStatus(doc.processing_status),
         created_by=doc.created_by,
         type=doc.type.value,
-        approved_records_count=approved_records_count,
-        records_count=records_count,
+        approved_records_count=records[0],
+        records_count=records[1],
     )
 
 

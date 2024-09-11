@@ -10,6 +10,7 @@ import {
   getDocRecords,
   updateDocRecord,
 } from '../client/services/DocumentService'
+import {useDocStore} from './document'
 
 export interface DocFileRecordWithStatus extends DocumentRecord {
   loading: boolean
@@ -62,6 +63,11 @@ export const useCurrentDocStore = defineStore('current_document', {
         ...newRecord,
         loading: false,
       }
+      // rerequest a document to update its records count
+      // this is because more than one record can be updated by a backend
+      // (repetitions, for example)
+      this.document = await getDoc(this.document.id)
+      useDocStore().updateDocument(this.document.id)
     },
     async focusSegment(idx: number) {
       this.currentFocusIdx = idx

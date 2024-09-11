@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
 
-import {Document} from '../client/schemas/Document'
+import {DocumentWithRecordsCount} from '../client/schemas/DocumentWithRecordsCount'
 
 import Button from 'primevue/button'
+import ProgressBar from 'primevue/progressbar'
 
 import RoutingLink from './RoutingLink.vue'
 
@@ -13,7 +14,7 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  document: Document
+  document: DocumentWithRecordsCount
   deleteMethod: (id: number) => Promise<any>
 }>()
 
@@ -22,6 +23,10 @@ const classes = computed(() => {
     'border-green-500': props.document.type == 'xliff',
     'border-blue-500': props.document.type == 'txt',
   }
+})
+
+const progressBarTitle = computed(() => {
+  return `Segments: ${props.document.approved_records_count}/${props.document.records_count}`
 })
 
 const busy = ref(false)
@@ -65,6 +70,12 @@ const deleteFile = async () => {
     >
       {{ document.type }}
     </div>
+    <ProgressBar
+      class="w-24 h-2 self-center"
+      :value="(document.approved_records_count / document.records_count) * 100"
+      :show-value="false"
+      :title="progressBarTitle"
+    />
     <span v-if="status">
       {{ status }}
     </span>

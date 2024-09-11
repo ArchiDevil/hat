@@ -2,9 +2,9 @@
 
 import {getApiBase, api} from '../defaults'
 
+import {DocumentWithRecordsCount} from '../schemas/DocumentWithRecordsCount'
 import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
-import {DocumentWithRecordsCount} from '../schemas/DocumentWithRecordsCount'
 import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentRecord} from '../schemas/DocumentRecord'
 import {MemorySubstitution} from '../schemas/MemorySubstitution'
@@ -13,8 +13,8 @@ import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
 import {DocTranslationMemoryUpdate} from '../schemas/DocTranslationMemoryUpdate'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
 
-export const getDocs = async (): Promise<Document[]> => {
-  return await api.get<Document[]>(`/document/`)
+export const getDocs = async (): Promise<DocumentWithRecordsCount[]> => {
+  return await api.get<DocumentWithRecordsCount[]>(`/document/`)
 }
 export const createDoc = async (data: Body_create_doc_document__post): Promise<Document> => {
   const formData = new FormData()

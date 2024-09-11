@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {deleteDoc} from '../client/services/DocumentService'
-import {Document} from '../client/schemas/Document'
+import {DocumentWithRecordsCount} from '../client/schemas/DocumentWithRecordsCount'
 
 import DocumentRecord from './DocumentRecord.vue'
 
@@ -10,7 +10,7 @@ const emit = defineEmits<{
 }>()
 
 defineProps<{
-  documents: Document[]
+  documents: DocumentWithRecordsCount[]
 }>()
 </script>
 
