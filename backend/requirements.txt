@@ -1,5 +1,5 @@
 fastapi==0.111.*
-python-multipart==0.0.9
+python-multipart==0.0.18
 httpx==0.26.0
 pydantic_settings==2.2.1
 lxml==4.9.3
