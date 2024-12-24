@@ -5,7 +5,7 @@ import {DocumentWithRecordsCount} from '../client/schemas/DocumentWithRecordsCou
 import {MemorySubstitution} from '../client/schemas/MemorySubstitution'
 import {
   getDownloadDocLink,
-  getSegmentSubstitutions,
+  getRecordSubstitutions,
   getDoc,
   getDocRecords,
   updateDocRecord,
@@ -87,7 +87,7 @@ export const useCurrentDocStore = defineStore('current_document', {
         return
       }
 
-      this.substitutions = await getSegmentSubstitutions(
+      this.substitutions = await getRecordSubstitutions(
         this.document.id,
         this.currentFocusId!
       )
