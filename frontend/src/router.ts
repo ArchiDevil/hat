@@ -4,6 +4,7 @@ import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
 const IndexView = () => import('./views/IndexView.vue')
 const LoginView = () => import('./views/LoginView.vue')
 const TmView = () => import('./views/TmView.vue')
+const GlossaryView = () => import('./views/GlossaryView.vue')
 const DocView = () => import('./views/DocView.vue')
 const UsersView = () => import('./views/UsersView.vue')
 
@@ -14,6 +15,7 @@ export const getRouter = () => {
     {path: '/', name: 'home', component: IndexView},
     {path: '/tm/:id', name: 'tm', component: TmView},
     {path: '/document/:id', name: 'document', component: DocView},
+    {path: '/glossary/:id', name: 'glossary', component: GlossaryView},
     {path: '/users/', name: 'users', component: UsersView},
     {path: '/login/', name: 'login', component: LoginView},
   ]

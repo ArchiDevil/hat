@@ -78,8 +78,13 @@ watchEffect(() => {
     </div>
     <div
       ref="targetInput"
-      class="border rounded-border border-surface p-2 bg-white active:border-primary focus:border-primary focus:outline-none w-1/2"
-      :class="{'bg-surface-200': disabled ?? false}"
+      class="border rounded-border border-surface p-2 bg-white w-1/2"
+      :class="{
+        'bg-surface-200': disabled ?? false,
+        'active:border-primary': editable ?? false,
+        'focus:border-primary': editable ?? false,
+        'focus:outline-none': editable ?? false,
+      }"
       :contenteditable="editable"
       @input="onInput"
       @keypress="onKeyPress"
