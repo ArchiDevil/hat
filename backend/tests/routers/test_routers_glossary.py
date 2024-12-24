@@ -36,8 +36,8 @@ def test_post_glossary_load_file(user_logged_client: TestClient, session: Sessio
 
     assert glossary.processing_status == "DONE"
 
-    assert record_1.author == "Test User"
-    assert record_2.author == "Test User"
+    assert record_1.created_by == 1
+    assert record_2.created_by == 1
 
     assert record_1.comment == "Названия книг"
     assert record_2.comment is None
@@ -70,10 +70,10 @@ def test_get_glossary_list(user_logged_client: TestClient, session: Session):
     assert response.status_code == status.HTTP_200_OK
 
     assert resp_1["processing_status"] == glossary_1.processing_status
-    assert resp_1["user_id"] == glossary_1.user_id
+    assert resp_1["created_by"] == glossary_1.created_by
 
     assert resp_2["processing_status"] == glossary_2.processing_status
-    assert resp_2["user_id"] == glossary_2.user_id
+    assert resp_2["created_by"] == glossary_2.created_by
 
 
 def test_get_glossary_retrieve(user_logged_client: TestClient, session: Session):
@@ -92,7 +92,7 @@ def test_get_glossary_retrieve(user_logged_client: TestClient, session: Session)
 
     assert response_json["id"] == glossary_1.id
     assert response_json["processing_status"] == glossary_1.processing_status
-    assert response_json["user_id"] == glossary_1.user_id
+    assert response_json["created_by"] == glossary_1.created_by
 
 
 def test_update_glossary(user_logged_client: TestClient, session: Session):
@@ -118,12 +118,12 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
         user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
     record_scheme = GlossaryRecordCreate(
-        author="Test",
         comment="Comment",
         source="Test",
         target="Тест",
     )
     record = GlossaryQuery(session).create_glossary_record(
+        user_id=1,
         record=record_scheme,
         glossary_id=glossary.id,
     )
@@ -133,7 +133,7 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     response = user_logged_client.get(path)
     [resp_rec] = response.json()
 
-    assert resp_rec["author"] == record.author
+    assert resp_rec["created_by"] == record.created_by
     assert resp_rec["comment"] == record.comment
     assert resp_rec["source"] == record.source
     assert resp_rec["target"] == record.target
@@ -142,31 +142,30 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
 
 def test_update_glossary_record(user_logged_client: TestClient, session: Session):
     """PUT /glossary/records/{record_id}/"""
-    expected_author = "Author name 2"
+    expected_user_id = 1
     repo = GlossaryQuery(session)
     glossary = repo.create_glossary(
         user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
     record_scheme = GlossaryRecordCreate(
-        author="Author name 1",
         comment="Comment",
         source="Test",
         target="Тест",
     )
     record = repo.create_glossary_record(
+        user_id=1,
         record=record_scheme,
         glossary_id=glossary.id,
     )
 
     dumped_record = GlossaryRecordUpdate.model_validate(record)
-    dumped_record.author = expected_author
 
     path = app.url_path_for("update_glossary_record", **{"record_id": record.id})
     response = user_logged_client.put(url=path, json=dumped_record.model_dump())
     response_json = response.json()
 
-    assert response_json["author"] == expected_author
-    assert repo.get_glossary_record(record.id).author == expected_author
+    assert response_json["created_by"] == expected_user_id
+    assert repo.get_glossary_record(record.id).created_by == expected_user_id
 
 
 def test_create_glossary(user_logged_client: TestClient, session: Session):
@@ -204,10 +203,11 @@ def test_delete_glossary_with_records(user_logged_client: TestClient, session: S
         user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
     record_id = query.create_glossary_record(
-        GlossaryRecordCreate(
-            author="someone", comment=None, source="some text", target="some target"
+        user_id=1,
+        record=GlossaryRecordCreate(
+            comment=None, source="some text", target="some target"
         ),
-        glossary.id,
+        glossary_id=glossary.id,
     ).id
 
     path = app.url_path_for("delete_glossary", **{"glossary_id": glossary.id})
@@ -228,12 +228,12 @@ def test_delete_glossary_record(user_logged_client: TestClient, session: Session
         user_id=1, glossary=GlossaryScheme(name="Glossary name")
     )
     record_scheme = GlossaryRecordCreate(
-        author="Author name 1",
         comment="Comment",
         source="Test",
         target="Тест",
     )
     record = repo.create_glossary_record(
+        user_id=1,
         record=record_scheme,
         glossary_id=glossary.id,
     )
@@ -253,7 +253,6 @@ def test_create_glossary_record(user_logged_client: TestClient, session: Session
         .id
     )
     record_scheme = GlossaryRecordCreate(
-        author="Author name 1",
         comment="Comment",
         source="Test",
         target="Тест",
@@ -262,7 +261,7 @@ def test_create_glossary_record(user_logged_client: TestClient, session: Session
     response = user_logged_client.post(url=path, json=record_scheme.model_dump())
     response_json = response.json()
 
-    assert response_json["author"] == record_scheme.author
+    assert response_json["created_by"] == 1
     assert response_json["comment"] == record_scheme.comment
     assert response_json["source"] == record_scheme.source
     assert response_json["target"] == record_scheme.target

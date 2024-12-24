@@ -63,7 +63,7 @@ class GlossaryQuery:
         processing_status: str = ProcessingStatuses.IN_PROCESS,
     ) -> Glossary:
         glossary = Glossary(
-            user_id=user_id,
+            created_by=user_id,
             processing_status=processing_status,
             **glossary.model_dump(),
         )
@@ -73,11 +73,13 @@ class GlossaryQuery:
 
     def create_glossary_record(
         self,
+        user_id: int,
         record: GlossaryRecordCreate,
         glossary_id: int,
     ) -> GlossaryRecord:
         glossary_record = GlossaryRecord(
             glossary_id=glossary_id,
+            created_by=user_id,
             **record.model_dump(),
         )
         self.db.add(glossary_record)

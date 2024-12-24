@@ -18,13 +18,13 @@ class GlossaryScheme(BaseModel):
 class GlossaryResponse(IdentifiedTimestampedModel):
     processing_status: str
     upload_time: datetime.datetime
-    user_id: int
+    created_by: int
     name: str
     model_config = ConfigDict(from_attributes=True)
 
 
 class GlossaryRecordSchema(IdentifiedTimestampedModel):
-    author: str
+    created_by: int
     comment: Optional[str]
     source: str
     target: str
@@ -34,7 +34,6 @@ class GlossaryRecordSchema(IdentifiedTimestampedModel):
 
 
 class GlossaryRecordCreate(BaseModel):
-    author: str
     comment: Optional[str]
     source: str
     target: str
@@ -43,7 +42,6 @@ class GlossaryRecordCreate(BaseModel):
 
 
 class GlossaryRecordUpdate(BaseModel):
-    author: str
     comment: Optional[str]
     source: str
     target: str
