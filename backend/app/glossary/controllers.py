@@ -73,11 +73,11 @@ def update_glossary_record_controller(
 
 
 def create_glossary_record_controller(
-    glossary_id: int, record: GlossaryRecordCreate, db: Session
+    user_id: int, glossary_id: int, record: GlossaryRecordCreate, db: Session
 ):
     try:
         return GlossaryQuery(db).create_glossary_record(
-            glossary_id=glossary_id, record=record
+            user_id=user_id, glossary_id=glossary_id, record=record
         )
     except NotFoundGlossaryExc:
         return None

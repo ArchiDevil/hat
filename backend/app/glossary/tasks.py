@@ -25,19 +25,19 @@ class GlossaryRowRecord:
         return cls(comment, created_at, author, updated_at, source, target)
 
 
-def create_glossary_from_file_tasks(sheet, db: Session, glossary_id: int):
-    record_for_save = extract_from_xlsx(sheet, glossary_id)
+def create_glossary_from_file_tasks(user_id: int, sheet, db: Session, glossary_id: int):
+    record_for_save = extract_from_xlsx(user_id, sheet, glossary_id)
     bulk_save_glossaries_update_processing_status(
         db=db, record_for_save=record_for_save, glossary_id=glossary_id
     )
 
 
-def extract_from_xlsx(sheet, glossary_id) -> list[GlossaryRecord]:
+def extract_from_xlsx(user_id: int, sheet, glossary_id: int) -> list[GlossaryRecord]:
     record_for_save = []
     for cells in sheet.iter_rows(min_row=2, values_only=True):
         parsed_record = GlossaryRowRecord.from_tuple(cells)
         record = GlossaryRecord(
-            author=parsed_record.author,
+            created_by=user_id,
             created_at=parsed_record.created_at,
             updated_at=parsed_record.updated_at,
             comment=parsed_record.comment,

@@ -25,13 +25,13 @@ class Glossary(Base):
         default=ProcessingStatuses.IN_PROCESS
     )
     upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
     records: Mapped[list["GlossaryRecord"]] = relationship(
         back_populates="glossary",
         cascade="all, delete-orphan",
         order_by="GlossaryRecord.id",
     )
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     user: Mapped["User"] = relationship(back_populates="glossaries")
     documents = relationship(
         "Document", secondary="glossary_to_document", back_populates="glossaries"
@@ -45,13 +45,14 @@ class GlossaryRecord(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
 
-    author: Mapped[str] = mapped_column(nullable=True)
     comment: Mapped[str] = mapped_column(nullable=True)
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()
+    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
     glossary_id: Mapped[int] = mapped_column(ForeignKey("glossary.id"))
     glossary: Mapped["Glossary"] = relationship(back_populates="records")
+    user: Mapped["User"] = relationship()
 
 
 class GlossaryToDocument(Base):

@@ -82,13 +82,13 @@ def retrieve_glossary(glossary_id: int, db: Session = Depends(get_db)):
 )
 def create_glossary(
     glossary: GlossaryScheme,
-    current_user_id: int = Depends(get_current_user_id),
+    user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     return GlossaryQuery(db).create_glossary(
         glossary=glossary,
         processing_status=ProcessingStatuses.DONE,
-        user_id=current_user_id,
+        user_id=user_id,
     )
 
 
@@ -154,14 +154,17 @@ def list_records(glossary_id: int | None = None, db: Session = Depends(get_db)):
 
 @router.post(
     "/{glossary_id}/records",
-    description="Create glossary record ",
+    description="Create glossary record",
     response_model=GlossaryRecordSchema,
     status_code=status.HTTP_200_OK,
 )
 def create_glossary_record(
-    glossary_id: int, record: GlossaryRecordCreate, db: Session = Depends(get_db)
+    glossary_id: int,
+    record: GlossaryRecordCreate,
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
 ):
-    if response := create_glossary_record_controller(glossary_id, record, db):
+    if response := create_glossary_record_controller(user_id, glossary_id, record, db):
         return response
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -239,6 +242,7 @@ def create_glossary_from_file(
     )
     background_tasks.add_task(
         create_glossary_from_file_tasks,
+        user_id=user_id,
         sheet=sheet,
         db=db,
         glossary_id=glossary.id,
