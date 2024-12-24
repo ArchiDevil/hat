@@ -23,8 +23,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "hypercorn",
-      "args": ["asgi:app", "--reload"],
-      "jinja": true
+      "args": ["main:app", "--reload"]
     }
   ]
 }
