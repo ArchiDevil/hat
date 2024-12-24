@@ -3,7 +3,7 @@ import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
 
 const IndexView = () => import('./views/IndexView.vue')
 const LoginView = () => import('./views/LoginView.vue')
-const TmxView = () => import('./views/TmxView.vue')
+const TmView = () => import('./views/TmView.vue')
 const DocView = () => import('./views/DocView.vue')
 const UsersView = () => import('./views/UsersView.vue')
 
@@ -12,7 +12,7 @@ import {useUserStore} from './stores/user'
 export const getRouter = () => {
   const routes: RouteRecordRaw[] = [
     {path: '/', name: 'home', component: IndexView},
-    {path: '/tmx/:id', name: 'tmx', component: TmxView},
+    {path: '/tm/:id', name: 'tm', component: TmView},
     {path: '/document/:id', name: 'document', component: DocView},
     {path: '/users/', name: 'users', component: UsersView},
     {path: '/login/', name: 'login', component: LoginView},

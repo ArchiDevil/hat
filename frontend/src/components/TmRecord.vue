@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 
-import {Document} from '../client/schemas/Document'
 import {TranslationMemory} from '../client/schemas/TranslationMemory'
 
 import Button from 'primevue/button'
@@ -12,8 +11,8 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  file: Document | TranslationMemory
-  deleteMethod: (id: number) => Promise<any>
+  file: TranslationMemory
+  deleteMethod: () => Promise<any>
 }>()
 
 const busy = ref(false)
@@ -23,7 +22,7 @@ const deleteFile = async () => {
   try {
     busy.value = true
     status.value = 'Busy...'
-    await props.deleteMethod(props.file.id)
+    await props.deleteMethod()
     status.value = undefined
   } catch (error) {
     console.log(error)
@@ -46,19 +45,20 @@ const deleteFile = async () => {
       #{{ file.id }} {{ file.name }}
     </div>
     <RoutingLink
-      name="tmx"
+      name="tm"
       :params="{id: file.id}"
       :disabled="busy"
       title="Open"
     />
-    <Button
-      label="Delete"
-      severity="secondary"
-      :disabled="busy"
-      @click="deleteFile()"
-    />
     <span v-if="status">
       {{ status }}
     </span>
+    <Button
+      class="ml-auto"
+      label="Delete"
+      severity="danger"
+      :disabled="busy"
+      @click="deleteFile()"
+    />
   </div>
 </template>

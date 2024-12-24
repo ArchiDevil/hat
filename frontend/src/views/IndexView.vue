@@ -19,6 +19,7 @@ const router = useRouter()
 
 const tmStore = useTmStore()
 const docStore = useDocStore()
+
 const tmSettingsVisible = ref(false)
 const selectedDocumentId = ref<number | undefined>(undefined)
 
@@ -35,13 +36,10 @@ onMounted(async () => {
 
     <Panel
       class="mt-4"
-      header="TMX files list"
+      header="Translation Memories"
       toggleable
     >
-      <TmxUploadingDialog
-        title="Select a TMX file:"
-        @uploaded="tmStore.fetchMemories()"
-      />
+      <TmxUploadingDialog @uploaded="tmStore.fetchMemories()" />
       <TmRecord
         v-for="file in tmStore.memories"
         :key="file.id"
@@ -53,7 +51,7 @@ onMounted(async () => {
 
     <Panel
       class="mt-4"
-      header="Documents list"
+      header="Documents"
       toggleable
     >
       <DocUploadingDialog

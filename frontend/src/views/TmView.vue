@@ -48,7 +48,7 @@ onMounted(async () => {
 <template>
   <div class="container">
     <PageNav />
-    <PageTitle title="TMX file viewer" />
+    <PageTitle title="Translation memory viewer" />
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
     <p class="mb-4">Number of records: {{ document?.records_count }}</p>

@@ -10,10 +10,6 @@ const emit = defineEmits<{
   uploaded: []
 }>()
 
-defineProps<{
-  title: string
-}>()
-
 const uploading = ref(false)
 const status = ref('')
 
