@@ -183,3 +183,26 @@ def test_can_create_tm(user_logged_client: TestClient, session: Session):
         assert tm.name == "test"
         assert tm.created_by == 1
         assert len(tm.records) == 0
+
+
+def test_can_download_document(user_logged_client: TestClient, session: Session):
+    tm_records = [
+        TranslationMemoryRecord(source="Regional Effects", target="Translation"),
+        TranslationMemoryRecord(source="User Interface", target="UI"),
+    ]
+    with session as s:
+        s.add(TranslationMemory(name="test_doc.tmx", records=tm_records, created_by=1))
+        s.commit()
+
+    response = user_logged_client.get("/translation_memory/1/download")
+    assert response.status_code == 200
+    data = response.read().decode("utf-8")
+    assert "Regional Effects" in data
+    assert "Translation" in data
+    assert "User Interface" in data
+    assert "UI" in data
+
+
+def test_download_returns_404_for_non_existing_tm(user_logged_client: TestClient):
+    response = user_logged_client.get("/translation_memory/999/download")
+    assert response.status_code == 404
