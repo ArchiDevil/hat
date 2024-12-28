@@ -2,7 +2,11 @@
 import {computed, onMounted, ref, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 
-import {getMemory, getMemoryRecords} from '../client/services/TmsService'
+import {
+  getMemory,
+  getMemoryRecords,
+  getDownloadMemoryLink,
+} from '../client/services/TmsService'
 import {TranslationMemoryWithRecordsCount} from '../client/schemas/TranslationMemoryWithRecordsCount'
 import {TranslationMemoryRecord} from '../client/schemas/TranslationMemoryRecord'
 
@@ -11,6 +15,7 @@ import Paginator, {PageState} from 'primevue/paginator'
 import DocSegment from '../components/DocSegment.vue'
 import PageTitle from '../components/PageTitle.vue'
 import PageNav from '../components/PageNav.vue'
+import Link from '../components/Link.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow.
@@ -19,6 +24,7 @@ const route = useRoute()
 const router = useRouter()
 const document = ref<TranslationMemoryWithRecordsCount>()
 const records = ref<TranslationMemoryRecord[]>()
+const downloadLink = ref<string>()
 
 const page = computed(() => {
   return Number(route.query['page'] ?? '0')
@@ -37,6 +43,7 @@ watchEffect(async () => {
     return
   }
   records.value = await getMemoryRecords(document.value.id, page.value)
+  downloadLink.value = getDownloadMemoryLink(document.value.id)
 })
 
 onMounted(async () => {
@@ -49,9 +56,17 @@ onMounted(async () => {
   <div class="container">
     <PageNav />
     <PageTitle title="Translation memory viewer" />
-    <p>File ID: {{ document?.id }}</p>
-    <p>File name: {{ document?.name }}</p>
-    <p class="mb-4">Number of records: {{ document?.records_count }}</p>
+    <div class="mb-4 flex flex-col">
+      <p>File ID: {{ document?.id }}</p>
+      <p>File name: {{ document?.name }}</p>
+      <p>Number of records: {{ document?.records_count }}</p>
+      <Link
+        v-if="downloadLink"
+        :href="downloadLink"
+        class="block"
+        title="Download TMX file"
+      />
+    </div>
     <Paginator
       :rows="100"
       :total-records="document?.records_count"

@@ -1,10 +1,11 @@
 from typing import Annotated, Final
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.formats.tmx import extract_tmx_content
+from app.formats.tmx import TmxData, TmxSegment, extract_tmx_content
 from app.models import StatusMessage
 from app.translation_memory import models, schema
 from app.translation_memory.query import TranslationMemoryQuery
@@ -113,3 +114,33 @@ def create_translation_memory(
 def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
     TranslationMemoryQuery(db).delete_memory(get_memory_by_id(db, tm_id))
     return StatusMessage(message="Deleted")
+
+
+@router.get(
+    "/{tm_id}/download",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Successful Response",
+            "content": {"application/octet-stream": {"schema": {"type": "string"}}},
+        }
+    },
+)
+def download_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]):
+    memory = get_memory_by_id(db, tm_id)
+    data = TmxData(
+        [
+            TmxSegment(
+                original=record.source,
+                translation=record.target,
+                creation_date=record.creation_date,
+                change_date=record.change_date,
+            )
+            for record in memory.records
+        ]
+    )
+    return StreamingResponse(
+        data.write(),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{tm_id}.tmx"'},
+    )

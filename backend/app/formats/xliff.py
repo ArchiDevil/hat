@@ -4,7 +4,7 @@ from typing import Optional
 
 from lxml import etree
 
-from .base import BaseSegment
+from .base import BaseSegment, get_seg_text
 
 
 class SegmentState(Enum):
@@ -92,6 +92,8 @@ class XliffSegment(BaseSegment):
 
 
 class XliffData:
+    # This class is used to manipulate existing XLIFF files. It cannot create a
+    # file from scratch and requires a root of the existing XML.
     def __init__(self, segments: list[XliffSegment], root: etree._Element) -> None:
         self.__segments = segments
         self.__root = root
@@ -176,8 +178,8 @@ def extract_xliff_content(content: bytes) -> XliffData:
             XliffSegment(
                 segment_id,
                 approved,
-                "".join(src_segment.itertext()),
-                "".join(tgt_segment.itertext()),
+                get_seg_text(src_segment),
+                get_seg_text(tgt_segment),
                 tgt_segment.attrib.get("state"),
             )
         )
