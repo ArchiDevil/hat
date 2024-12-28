@@ -1,3 +1,6 @@
+from lxml import etree
+
+
 class BaseSegment:
     def __init__(self, id_: int, source: str, target: str | None) -> None:
         self._id = id_
@@ -19,3 +22,7 @@ class BaseSegment:
     @translation.setter
     def translation(self, value: str | None):
         self._target = value
+
+
+def get_seg_text(seg: etree._Element) -> str:
+    return "".join(seg.itertext())

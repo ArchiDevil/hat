@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.formats.tmx import extract_tmx_content
+from app.formats.tmx import TmxData, TmxSegment, extract_tmx_content
 
 # pylint: disable=C0116
 
@@ -135,3 +135,49 @@ def test_can_load_multiple_segments():
     assert data[1].translation == '"Мир - мои охотничьи угодья,'
     assert data[1].creation_date == datetime(2021, 7, 30, 5, 11, 33)
     assert data[1].change_date == datetime(2021, 7, 30, 5, 11, 34)
+
+
+def test_can_store_simplest_tmx():
+    data = TmxData([])
+    content = data.write().read()
+    assert b"<?xml version='1.0' encoding='UTF-8'?>" in content
+    assert b'<tmx version="1.4">' in content
+    assert b"</tmx>" in content
+
+    assert b"<header " in content
+    assert b'creationtool="HAT"' in content
+    assert b'creationtoolversion="1.0"' in content
+    assert b'segtype="sentence"' in content
+    assert b'o-tmf="ATM"' in content
+    assert b'adminlang="en-US"' in content
+    assert b'srclang="en"' in content
+    assert b'datatype="plaintext"' in content
+
+
+def test_can_store_one_segment_tmx():
+    data = TmxData([TmxSegment("Hi", "Привет", None, None)])
+    content = data.write().read()
+
+    assert b"<tu>" in content
+    assert b"</tu>" in content
+
+    assert b'<tuv xml:lang="en"><seg>Hi</seg></tuv>' in content
+    assert '<tuv xml:lang="ru"><seg>Привет</seg></tuv>'.encode() in content
+
+
+def test_can_store_multiple_tmx():
+    data = TmxData(
+        [
+            TmxSegment("Hi", "Привет", None, None),
+            TmxSegment("Hello", "Здравствуйте", None, None),
+        ]
+    )
+
+    content = data.write().read()
+    assert b"<tu>" in content
+
+    assert b'<tuv xml:lang="en"><seg>Hi</seg></tuv>' in content
+    assert '<tuv xml:lang="ru"><seg>Привет</seg></tuv>'.encode() in content
+
+    assert b'<tuv xml:lang="en"><seg>Hello</seg></tuv>' in content
+    assert '<tuv xml:lang="ru"><seg>Здравствуйте</seg></tuv>'.encode() in content
