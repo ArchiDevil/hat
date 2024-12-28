@@ -32,6 +32,8 @@ onMounted(async () => {
   await glossaryStore.fetchGlossaries()
   await docStore.fetchDocs()
 })
+
+const showGlossaries = import.meta.env.VITE_ENABLE_GLOSSARIES === 'true'
 </script>
 
 <template>
@@ -55,6 +57,7 @@ onMounted(async () => {
     </Panel>
 
     <Panel
+      v-if="showGlossaries"
       class="mt-4"
       header="Glossaries"
       toggleable

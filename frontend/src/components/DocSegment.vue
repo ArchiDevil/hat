@@ -3,7 +3,7 @@ import {nextTick, ref, watch, watchEffect} from 'vue'
 
 import Button from 'primevue/button'
 
-import {debounce} from '../utils'
+import {debounce} from '../utilities/utils'
 
 const props = defineProps<{
   id: number
