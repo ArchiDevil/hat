@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from io import BytesIO
 from typing import NamedTuple
 
@@ -46,7 +46,19 @@ class TmxData:
         )
         body = etree.SubElement(self.__root, "body", None, None)
         for segment in self.__segments:
-            tu = etree.SubElement(body, "tu", None, None)
+            translation_unit_attrib = {}
+
+            if segment.creation_date is not None:
+                translation_unit_attrib["creationdate"] = (
+                    segment.creation_date.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
+                )
+
+            if segment.change_date is not None:
+                translation_unit_attrib["changedate"] = segment.change_date.astimezone(
+                    UTC
+                ).strftime("%Y%m%dT%H%M%SZ")
+
+            tu = etree.SubElement(body, "tu", translation_unit_attrib, None)
             origin = etree.SubElement(
                 tu,
                 "tuv",
@@ -87,13 +99,11 @@ def extract_tmx_content(
     for tu in root.iter("tu"):
         creation_date = None
         if "creationdate" in tu.attrib:
-            creation_date = datetime.strptime(
-                tu.attrib["creationdate"], "%Y%m%dT%H%M%SZ"
-            )
+            creation_date = datetime.fromisoformat(tu.attrib["creationdate"])
 
         change_date = None
         if "changedate" in tu.attrib:
-            change_date = datetime.strptime(tu.attrib["changedate"], "%Y%m%dT%H%M%SZ")
+            change_date = datetime.fromisoformat(tu.attrib["changedate"])
 
         orig_search_string = f".//tuv[@lang='{orig_lang}' or @xml:lang='{orig_lang}']"
         tran_search_string = f".//tuv[@lang='{tran_lang}' or @xml:lang='{tran_lang}']"

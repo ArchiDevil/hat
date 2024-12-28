@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
 
 from app.formats.tmx import TmxData, TmxSegment, extract_tmx_content
 
@@ -59,8 +59,8 @@ def test_can_load_simplest_tmx_1_4():
         data[0].translation
         == "Каждый персонаж, участвующий в игре, делает проверку Мудрости"
     )
-    assert data[0].creation_date == datetime(2022, 7, 3, 7, 59, 19)
-    assert data[0].change_date == datetime(2022, 7, 3, 7, 59, 20)
+    assert data[0].creation_date == datetime(2022, 7, 3, 7, 59, 19, tzinfo=UTC)
+    assert data[0].change_date == datetime(2022, 7, 3, 7, 59, 20, tzinfo=UTC)
 
 
 def test_can_load_tagged_1_4():
@@ -94,8 +94,8 @@ def test_can_load_tagged_1_4():
         data[0].translation
         == "Каждый персонаж, участвующий в игре, делает проверку Мудрости (Скрытность), чтобы спрятаться (правила о навыках с различными способностями см. в Книге Игрока)."
     )
-    assert data[0].creation_date == datetime(2022, 7, 3, 7, 59, 19)
-    assert data[0].change_date == datetime(2022, 7, 3, 7, 59, 20)
+    assert data[0].creation_date == datetime(2022, 7, 3, 7, 59, 19, tzinfo=UTC)
+    assert data[0].change_date == datetime(2022, 7, 3, 7, 59, 20, tzinfo=UTC)
 
 
 def test_can_load_multiple_segments():
@@ -128,13 +128,13 @@ def test_can_load_multiple_segments():
     assert len(data) == 2
     assert data[0].original == '"My anger consumes me.'
     assert data[0].translation == '"Злость поглощает меня.'
-    assert data[0].creation_date == datetime(2021, 7, 30, 5, 11, 33)
-    assert data[0].change_date == datetime(2021, 7, 30, 5, 11, 34)
+    assert data[0].creation_date == datetime(2021, 7, 30, 5, 11, 33, tzinfo=UTC)
+    assert data[0].change_date == datetime(2021, 7, 30, 5, 11, 34, tzinfo=UTC)
 
     assert data[1].original == '"The world is my hunting ground.'
     assert data[1].translation == '"Мир - мои охотничьи угодья,'
-    assert data[1].creation_date == datetime(2021, 7, 30, 5, 11, 33)
-    assert data[1].change_date == datetime(2021, 7, 30, 5, 11, 34)
+    assert data[1].creation_date == datetime(2021, 7, 30, 5, 11, 33, tzinfo=UTC)
+    assert data[1].change_date == datetime(2021, 7, 30, 5, 11, 34, tzinfo=UTC)
 
 
 def test_can_store_simplest_tmx():
@@ -181,3 +181,66 @@ def test_can_store_multiple_tmx():
 
     assert b'<tuv xml:lang="en"><seg>Hello</seg></tuv>' in content
     assert '<tuv xml:lang="ru"><seg>Здравствуйте</seg></tuv>'.encode() in content
+
+
+def test_can_store_creation_date():
+    data = TmxData(
+        [
+            TmxSegment("Hi", "Привет", datetime(2023, 10, 5, 14, 30, tzinfo=UTC), None),
+            TmxSegment(
+                "Hello",
+                "Здравствуйте",
+                datetime(2023, 10, 6, 15, 45, 12, tzinfo=timezone(timedelta(hours=3))),
+                None,
+            ),
+        ]
+    )
+
+    content = data.write().read()
+    assert b'<tu creationdate="20231005T143000Z">' in content
+    assert b'<tu creationdate="20231006T124512Z">' in content
+
+
+def test_can_store_change_date():
+    data = TmxData(
+        [
+            TmxSegment("Hi", "Привет", None, datetime(2023, 10, 5, 14, 30, tzinfo=UTC)),
+            TmxSegment(
+                "Hello",
+                "Здравствуйте",
+                None,
+                datetime(2023, 10, 6, 15, 45, 12, tzinfo=timezone(timedelta(hours=3))),
+            ),
+        ]
+    )
+
+    content = data.write().read()
+    assert b'<tu changedate="20231005T143000Z">' in content
+    assert b'<tu changedate="20231006T124512Z">' in content
+
+
+def test_can_store_both_dates():
+    data = TmxData(
+        [
+            TmxSegment(
+                "Hi",
+                "Привет",
+                datetime(2023, 10, 6, 15, 45, 12, tzinfo=timezone(timedelta(hours=3))),
+                datetime(2023, 10, 5, 14, 30, tzinfo=UTC),
+            ),
+            TmxSegment(
+                "Hello",
+                "Здравствуйте",
+                datetime(2023, 10, 5, 14, 30, tzinfo=UTC),
+                datetime(2023, 10, 6, 15, 45, 12, tzinfo=timezone(timedelta(hours=3))),
+            ),
+        ]
+    )
+
+    content = data.write().read()
+    assert (
+        b'<tu creationdate="20231006T124512Z" changedate="20231005T143000Z">' in content
+    )
+    assert (
+        b'<tu creationdate="20231005T143000Z" changedate="20231006T124512Z">' in content
+    )
