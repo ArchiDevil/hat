@@ -29,3 +29,6 @@ export const createMemoryFromFile = async (data: Body_create_memory_from_file_tr
   formData.append('file', data.file)
   return await api.post<TranslationMemory>(`/translation_memory/upload`, formData)
 }
+export const getDownloadMemoryLink = (tm_id: number): string => {
+  return getApiBase() + `/translation_memory/${tm_id}/download`
+}
