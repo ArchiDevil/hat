@@ -1,4 +1,4 @@
-FROM node:20 AS build
+FROM node:20-slim AS build
 COPY ./frontend /app
 WORKDIR /app
 RUN npm install -g pnpm
