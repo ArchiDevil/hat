@@ -28,7 +28,7 @@ const commitData = debounce(async () => {
     return
   }
   emit('updateRecord', targetInput.value.textContent)
-}, 5000)
+}, 1000)
 
 const onKeyPress = (event: KeyboardEvent) => {
   if (!targetInput.value || !targetInput.value.textContent) {

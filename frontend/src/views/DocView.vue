@@ -101,7 +101,7 @@ onMounted(async () => {
       <template v-if="store.documentReady && !store.documentLoading">
         <ProcessingErrorMessage
           v-if="store.document?.status == 'error'"
-          class="mt-2"
+          class="mt-2 ml-4"
         />
       </template>
       <div
