@@ -8,6 +8,13 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+      start_interval: 5s
 
   worker:
     build:
@@ -17,7 +24,8 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     restart: on-failure
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   backend:
     build:
@@ -29,8 +37,10 @@ services:
       - DOMAIN_NAME=${DOMAIN_NAME}
     restart: on-failure
     depends_on:
-      - db
-      - worker
+      db:
+        condition: service_healthy
+      worker:
+        condition: service_started
 
   proxy:
     build:

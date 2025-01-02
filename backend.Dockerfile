@@ -1,10 +1,8 @@
 FROM python:3.12-slim
 
 RUN apt update && apt install -y dos2unix
-
-COPY ./backend/wait-for-it.sh /app/wait-for-it.sh
 COPY ./backend/run.sh /app/run.sh
-RUN dos2unix /app/wait-for-it.sh /app/run.sh
+RUN dos2unix /app/run.sh
 
 COPY ./backend/requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
