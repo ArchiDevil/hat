@@ -1,13 +1,9 @@
-from pprint import pprint
-
 from nltk.stem.snowball import SnowballStemmer
 from nltk.tokenize import word_tokenize
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.db import get_db
 from app.glossary.models import GlossaryRecord
-from app.translators.yandex import translate_lines
 
 stemmer = SnowballStemmer("english")
 
@@ -33,23 +29,3 @@ def get_glossary_for_segment(segment: str, session: Session) -> list[tuple[str, 
             continue
         output.append(pair)
     return output
-
-
-def main():
-    session = next(get_db())
-    # segment = "This appendix provides an overview of the multiverse, the overarching reality that encompasses D&D’s countless worlds and adventures."
-    # segment = "These realms are explored in greater detail in the Dungeon Master's Guide, along with other planes like the Far Realm, Negative Plane, and Positive Plane."
-    # segment = "Most D&D adventures take place on the Material Plane, which holds the worlds of settings like Dragonlance, Eberron, the Forgotten Realms, and Greyhawk."
-    segment = "Elemental forces and the building blocks of reality originate from these Inner Planes:"
-    glossary_records = get_glossary_for_segment(segment, session)
-    pprint(glossary_records)
-    output, _ = translate_lines(
-        [(segment, glossary_records)],
-        oauth_token="",
-        folder_id="",
-    )
-    pprint(output)
-
-
-if __name__ == "__main__":
-    main()

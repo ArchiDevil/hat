@@ -6,10 +6,7 @@ import logging
 import time
 from typing import Iterable, Sequence
 
-from nltk.stem.snowball import SnowballStemmer
-from nltk.tokenize import word_tokenize
-
-from sqlalchemy import select, or_
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -26,37 +23,13 @@ from app.formats.base import BaseSegment
 from app.formats.txt import TxtSegment, extract_txt_content
 from app.formats.xliff import XliffSegment, extract_xliff_content
 from app.glossary.models import GlossaryRecord
+from app.linguistic.utils import get_glossary_for_segment
 from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
 from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import TranslationMemoryUsage
 from app.translators import yandex
-
-stemmer = SnowballStemmer("english")
-
-
-def stem_sentence(sentence: str) -> list[str]:
-    words = word_tokenize(sentence)
-    # should we use stopwords?
-    # words = [word for word in words if word not in stopwords.words("english")]
-    words = [stemmer.stem(word) for word in words]
-    return words
-
-
-def get_glossary_for_segment(segment: str, session: Session) -> list[tuple[str, str]]:
-    words = stem_sentence(segment)
-    clauses = [GlossaryRecord.source.ilike(f"%{word}%") for word in words]
-    records = session.execute(select(GlossaryRecord).where(or_(*clauses))).scalars()
-    found_pairs = [(record.source, record.target) for record in records]
-    output: list[tuple[str, str]] = []
-    for pair in found_pairs:
-        glossary_words = stem_sentence(pair[0])
-        found_words = [word for word in glossary_words if word in words]
-        if len(found_words) != len(glossary_words):
-            continue
-        output.append(pair)
-    return output
 
 
 def segment_needs_processing(segment: BaseSegment) -> bool:
