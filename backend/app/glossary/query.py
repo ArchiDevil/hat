@@ -10,6 +10,7 @@ from app.glossary.schema import (
     GlossaryRecordUpdate,
     GlossaryScheme,
 )
+from app.linguistic.utils import stem_sentence
 
 
 class NotFoundGlossaryExc(BaseQueryException):
@@ -80,6 +81,7 @@ class GlossaryQuery:
         glossary_record = GlossaryRecord(
             glossary_id=glossary_id,
             created_by=user_id,
+            stemmed_source=" ".join(stem_sentence(record.source)),
             **record.model_dump(),
         )
         self.db.add(glossary_record)
@@ -124,10 +126,12 @@ class GlossaryQuery:
         self.db.commit()
 
     def update_record(self, record_id: int, record: GlossaryRecordUpdate):
+        dump = record.model_dump()
+        dump["stemmed_source"] = " ".join(stem_sentence(record.source))
         result = (
             self.db.query(GlossaryRecord)
             .filter(GlossaryRecord.id == record_id)  # type: ignore
-            .update(record.model_dump())  # type: ignore
+            .update(dump)  # type: ignore
         )
         if result:
             self.db.commit()

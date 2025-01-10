@@ -48,6 +48,9 @@ def test_post_glossary_load_file(user_logged_client: TestClient, session: Sessio
     assert record_1.source == "Shadow of the Dragon Queen"
     assert record_2.source == "Age of Dreams"
 
+    assert record_1.stemmed_source == "shadow of the dragon queen"
+    assert record_2.stemmed_source == "age of dream"
+
     assert record_1.target == "Тень Королевы драконов"
     assert record_2.target == "Век Мечтаний"
 
@@ -165,7 +168,10 @@ def test_update_glossary_record(user_logged_client: TestClient, session: Session
     response_json = response.json()
 
     assert response_json["created_by"] == expected_user_id
-    assert repo.get_glossary_record(record.id).created_by == expected_user_id
+
+    record = repo.get_glossary_record(record.id)
+    assert record.created_by == expected_user_id
+    assert record.stemmed_source == "test"
 
 
 def test_create_glossary(user_logged_client: TestClient, session: Session):
@@ -247,11 +253,10 @@ def test_delete_glossary_record(user_logged_client: TestClient, session: Session
 
 def test_create_glossary_record(user_logged_client: TestClient, session: Session):
     """POST /glossary/{glossary_id}/records"""
-    glossary_id = (
-        GlossaryQuery(session)
-        .create_glossary(user_id=1, glossary=GlossaryScheme(name="Glossary name"))
-        .id
-    )
+    repo = GlossaryQuery(session)
+    glossary_id = repo.create_glossary(
+        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+    ).id
     record_scheme = GlossaryRecordCreate(
         comment="Comment",
         source="Test",
@@ -266,3 +271,5 @@ def test_create_glossary_record(user_logged_client: TestClient, session: Session
     assert response_json["source"] == record_scheme.source
     assert response_json["target"] == record_scheme.target
     assert response_json["glossary_id"] == glossary_id
+
+    assert repo.get_glossary_record(response_json["id"]).stemmed_source == "test"

@@ -54,6 +54,8 @@ class GlossaryRecord(Base):
     glossary: Mapped["Glossary"] = relationship(back_populates="records")
     user: Mapped["User"] = relationship()
 
+    stemmed_source: Mapped[str] = mapped_column()
+
 
 class GlossaryToDocument(Base):
     __tablename__ = "glossary_to_document"
