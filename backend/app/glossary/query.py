@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -8,8 +8,9 @@ from app.glossary.models import ProcessingStatuses
 from app.glossary.schema import (
     GlossaryRecordCreate,
     GlossaryRecordUpdate,
-    GlossaryScheme,
+    GlossarySchema,
 )
+from app.linguistic.utils import stem_sentence
 
 
 class NotFoundGlossaryExc(BaseQueryException):
@@ -32,7 +33,17 @@ class GlossaryQuery:
             return glossary
         raise NotFoundGlossaryExc()
 
-    def get_glossary_record(self, record_id: int) -> GlossaryRecord:
+    def get_glossaries(self, glossary_ids: list[int]) -> list[Glossary]:
+        glossaries = (
+            self.db.execute(select(Glossary).where(Glossary.id.in_(glossary_ids)))
+            .scalars()
+            .all()
+        )
+        if glossaries:
+            return list(glossaries)
+        raise NotFoundGlossaryExc()
+
+    def get_glossary_record_by_id(self, record_id: int) -> GlossaryRecord:
         if (
             record := self.db.query(GlossaryRecord)
             .filter(GlossaryRecord.id == record_id)  # type: ignore
@@ -40,6 +51,29 @@ class GlossaryQuery:
         ):
             return record
         raise NotFoundGlossaryRecordExc()
+
+    def get_glossary_records_for_segment(
+        self, segment: str, glossary_ids: list[int]
+    ) -> list[GlossaryRecord]:
+        words = stem_sentence(segment)
+        or_clauses = [GlossaryRecord.source.ilike(f"%{word}%") for word in words]
+        records = self.db.execute(
+            select(GlossaryRecord).where(
+                or_(*or_clauses),
+                GlossaryRecord.glossary_id.in_(glossary_ids),
+            )
+        ).scalars()
+
+        output: list[GlossaryRecord] = []
+        for record in records:
+            glossary_words = record.stemmed_source.split(" ")
+            found_words = [word for word in glossary_words if word in words]
+
+            # naive approach to check if all words are found in a target phrase
+            if len(found_words) == len(glossary_words):
+                output.append(record)
+
+        return output
 
     def list_glossary(self) -> list[Glossary]:
         return self.db.query(Glossary).order_by(Glossary.id).all()
@@ -59,7 +93,7 @@ class GlossaryQuery:
     def create_glossary(
         self,
         user_id: int,
-        glossary: GlossaryScheme,
+        glossary: GlossarySchema,
         processing_status: str = ProcessingStatuses.IN_PROCESS,
     ) -> Glossary:
         glossary = Glossary(
@@ -80,6 +114,7 @@ class GlossaryQuery:
         glossary_record = GlossaryRecord(
             glossary_id=glossary_id,
             created_by=user_id,
+            stemmed_source=" ".join(stem_sentence(record.source)),
             **record.model_dump(),
         )
         self.db.add(glossary_record)
@@ -89,7 +124,7 @@ class GlossaryQuery:
             raise NotFoundGlossaryExc
         return glossary_record
 
-    def update_glossary(self, glossary_id: int, glossary: GlossaryScheme) -> Glossary:
+    def update_glossary(self, glossary_id: int, glossary: GlossarySchema) -> Glossary:
         result = (
             self.db.query(Glossary)
             .filter(Glossary.id == glossary_id)  # type: ignore
@@ -124,14 +159,16 @@ class GlossaryQuery:
         self.db.commit()
 
     def update_record(self, record_id: int, record: GlossaryRecordUpdate):
+        dump = record.model_dump()
+        dump["stemmed_source"] = " ".join(stem_sentence(record.source))
         result = (
             self.db.query(GlossaryRecord)
             .filter(GlossaryRecord.id == record_id)  # type: ignore
-            .update(record.model_dump())  # type: ignore
+            .update(dump)  # type: ignore
         )
         if result:
             self.db.commit()
-            return self.get_glossary_record(record_id)
+            return self.get_glossary_record_by_id(record_id)
         raise NotFoundGlossaryRecordExc()
 
     def delete_record(self, record_id: int) -> bool:

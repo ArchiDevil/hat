@@ -15,6 +15,13 @@ from app.documents.models import (
     XliffDocument,
     XliffRecord,
 )
+from app.documents.query import GenericDocsQuery
+from app.glossary.models import ProcessingStatuses
+from app.glossary.query import GlossaryQuery
+from app.glossary.schema import (
+    GlossaryRecordCreate,
+    GlossarySchema,
+)
 from app.models import DocumentStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory
@@ -809,3 +816,203 @@ def test_set_linked_tms_fail_with_multiple_writes(
         json={"memories": [{"id": 1, "mode": "write"}, {"id": 2, "mode": "write"}]},
     )
     assert response.status_code == 400
+
+
+def test_can_get_glossaries_substitutions(
+    user_logged_client: TestClient, session: Session
+):
+    dq = GenericDocsQuery(session)
+    with session as s:
+        records = [
+            DocumentRecord(
+                source="Regional Effects",
+                target="",
+            ),
+            DocumentRecord(
+                source="User Interface",
+                target="",
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    gq = GlossaryQuery(session)
+    g = gq.create_glossary(1, GlossarySchema(name="test"), ProcessingStatuses.DONE)
+    gq.create_glossary_record(
+        1,
+        GlossaryRecordCreate(
+            comment=None, source="Regional Effects", target="Региональные эффекты"
+        ),
+        g.id,
+    )
+    dq.set_document_glossaries(dq.get_document(1), [g])
+
+    response = user_logged_client.get("/document/1/records/1/glossary_records")
+    assert response.status_code == 200
+    response_json = response.json()
+    assert len(response_json) == 1
+    assert response_json[0]["source"] == "Regional Effects"
+    assert response_json[0]["target"] == "Региональные эффекты"
+    assert response_json[0]["glossary_id"] == 1
+    assert response_json[0]["comment"] is None
+    assert response_json[0]["created_by"] == 1
+
+
+def test_glossary_substitution_returns_404_for_non_existent_document(
+    user_logged_client: TestClient,
+):
+    response = user_logged_client.get("/document/999/records/1/glossary_records")
+    assert response.status_code == 404
+
+
+def test_glossary_substitution_returns_404_for_non_existent_record(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        records = [
+            DocumentRecord(
+                source="Regional Effects",
+                target="",
+            ),
+            DocumentRecord(
+                source="User Interface",
+                target="",
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get("/document/1/records/999/glossary_records")
+    assert response.status_code == 404
+
+
+def test_can_get_linked_glossaries(user_logged_client: TestClient, session: Session):
+    with session as s:
+        records = [
+            DocumentRecord(
+                source="Regional Effects",
+                target="",
+            ),
+            DocumentRecord(
+                source="User Interface",
+                target="",
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    gq = GlossaryQuery(session)
+    g = gq.create_glossary(1, GlossarySchema(name="test"), ProcessingStatuses.DONE)
+    gq.create_glossary_record(
+        1,
+        GlossaryRecordCreate(
+            comment=None, source="Regional Effects", target="Региональные эффекты"
+        ),
+        g.id,
+    )
+
+    dq = GenericDocsQuery(session)
+    dq.set_document_glossaries(dq.get_document(1), [g])
+
+    response = user_logged_client.get("/document/1/glossaries")
+    assert response.status_code == 200
+    response_json = response.json()
+    assert len(response_json) == 1
+    assert response_json[0]["document_id"] == 1
+    assert response_json[0]["glossary"]["name"] == "test"
+
+
+def test_linked_glossaries_returns_404_for_non_existing_document(
+    user_logged_client: TestClient,
+):
+    response = user_logged_client.get("/document/99/glossaries")
+    assert response.status_code == 404
+
+
+def test_can_set_glossaries_for_document(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(
+            Document(
+                name="small.xliff",
+                type=DocumentType.xliff,
+                created_by=1,
+                processing_status="UPLOADED",
+            )
+        )
+        s.commit()
+
+    gq = GlossaryQuery(session)
+    g = gq.create_glossary(1, glossary=GlossarySchema(name="test_glossary"))
+    glossary_id = g.id
+
+    response = user_logged_client.post(
+        "/document/1/glossaries",
+        json={"glossaries": [{"id": glossary_id}]},
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "Glossary list updated"
+
+    with session as s:
+        doc = s.query(Document).filter_by(id=1).one()
+        assert len(doc.glossaries) == 1
+        assert doc.glossaries[0].id == glossary_id
+
+
+def test_setting_glossaries_returns_404_for_non_existing_document(
+    user_logged_client: TestClient,
+):
+    response = user_logged_client.post(
+        "/document/99/glossaries",
+        json={"glossaries": [{"id": 1}]},
+    )
+    assert response.status_code == 404
+
+
+def test_setting_glossaries_returns_404_for_non_existing_glossaries(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(
+            Document(
+                name="small.xliff",
+                type=DocumentType.xliff,
+                created_by=1,
+                processing_status="UPLOADED",
+            )
+        )
+        s.commit()
+
+    gq = GlossaryQuery(session)
+    gq.create_glossary(1, glossary=GlossarySchema(name="test_glossary"))
+
+    response = user_logged_client.post(
+        "/document/1/glossaries",
+        json={"glossaries": [{"id": 99}]},
+    )
+    assert response.status_code == 404
