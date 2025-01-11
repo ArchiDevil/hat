@@ -7,6 +7,8 @@ RUN dos2unix /app/run.sh
 COPY ./backend/requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
+RUN python3 -m nltk.downloader punkt_tab
+
 COPY ./backend/alembic /app/alembic
 COPY ./backend/alembic.ini /app/alembic.ini
 
