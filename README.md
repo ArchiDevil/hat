@@ -17,12 +17,13 @@ Install all dependencies:
 
 ```bash
 pip install -r requirements.txt
+python3 -m nltk.downloader punkt_tab
 ```
 
 Then run FastAPI server:
 
 ```bash
-hypercorn asgi:app
+uvicorn asgi:app
 ```
 
 You will need PostgreSQL server running on a local machine. Set up connection
@@ -55,6 +56,7 @@ Then install all dependencies:
 
 ```bash
 pip install -r requirements.txt
+python3 -m nltk.downloader punkt_tab
 ```
 
 Then run the worker:
@@ -71,13 +73,13 @@ To run the frontend you need to install all dependencies first. Navigate to
 `frontend` directory and run:
 
 ```bash
-npm install
+pnpm install
 ```
 
 Then you can run the development server:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 This will start the development server on `localhost:5173` address. Open your
@@ -89,7 +91,7 @@ backend server as well.
 To run frontend's tests you need to run:
 
 ```bash
-npm run test
+pnpm run test
 ```
 
 ## Running the production version
@@ -121,10 +123,9 @@ need to set up something to listed on the domain name if you need.
 
 The production version is located at https://hat.codecliffs.ru
 
-
 ## Backend linting
 
-To run linting for  backend code execute the following command:
+To run linting for backend code execute the following command:
 
 ```bash
 ruff format . && ruff check --select I --fix . && ruff check  --fix .
