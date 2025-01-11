@@ -6,12 +6,14 @@
   ],
   "extensions": {
     "recommendations": [
-      "ms-python.black-formatter",
       "ms-python.isort",
       "ms-python.pylint",
       "ms-python.python",
       "ms-python.vscode-pylance",
-      "dotjoshjohnson.xml"
+      "dotjoshjohnson.xml",
+      "ms-python.debugpy",
+      "kevinrose.vsc-python-indent",
+      "charliermarsh.ruff"
     ]
   },
   "tasks": {
