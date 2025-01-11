@@ -10,6 +10,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - run: cd backend && pip install -r requirements.dev.txt
+      - run: pyhton3 -m nltk.downloader punkt_tab
       - run: cd backend && pytest
       - run: cd backend && ruff check .
 
