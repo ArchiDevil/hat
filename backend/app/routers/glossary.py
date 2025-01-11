@@ -30,7 +30,7 @@ from app.glossary.schema import (
     GlossaryRecordSchema,
     GlossaryRecordUpdate,
     GlossaryResponse,
-    GlossaryScheme,
+    GlossarySchema,
 )
 from app.glossary.tasks import create_glossary_from_file_tasks
 from app.models import StatusMessage
@@ -81,7 +81,7 @@ def retrieve_glossary(glossary_id: int, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_glossary(
-    glossary: GlossaryScheme,
+    glossary: GlossarySchema,
     user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
@@ -107,7 +107,7 @@ def create_glossary(
     },
 )
 def update_glossary(
-    glossary_id: int, glossary: GlossaryScheme, db: Session = Depends(get_db)
+    glossary_id: int, glossary: GlossarySchema, db: Session = Depends(get_db)
 ):
     if response := update_glossary_controller(
         db=db, glossary_id=glossary_id, glossary=glossary

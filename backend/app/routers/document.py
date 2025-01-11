@@ -17,8 +17,8 @@ from app.documents.models import (
 from app.documents.query import GenericDocsQuery, NotFoundDocumentRecordExc
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
-from app.glossary.query import GlossaryQuery
-from app.glossary.schema import GlossaryRecordSchema
+from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
+from app.glossary.schema import GlossaryRecordSchema, GlossaryResponse
 from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import (
     MemorySubstitution,
@@ -214,7 +214,46 @@ def set_translation_memories(
         (find_memory(memory.id, memories), memory.mode) for memory in settings.memories
     ]
     GenericDocsQuery(db).set_document_memories(doc, mem_to_mode)
-    return models.StatusMessage(message="Memories updated")
+    return models.StatusMessage(message="Memory list updated")
+
+
+@router.get("/{doc_id}/glossaries")
+def get_glossaries(
+    doc_id: int, db: Annotated[Session, Depends(get_db)]
+) -> list[doc_schema.DocGlossary]:
+    doc = get_doc_by_id(db, doc_id)
+    return [
+        doc_schema.DocGlossary(
+            document_id=doc.id,
+            glossary=GlossaryResponse.model_validate(x.glossary),
+        )
+        for x in doc.glossary_associations
+    ]
+
+
+@router.post("/{doc_id}/glossaries")
+def set_glossaries(
+    doc_id: int,
+    settings: doc_schema.DocGlossaryUpdate,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # check that all glossaries exist
+    doc = get_doc_by_id(db, doc_id)
+    glossary_ids = {g.id for g in settings.glossaries}
+    try:
+        glossaries = list(GlossaryQuery(db).get_glossaries(list(glossary_ids)))
+    except NotFoundGlossaryExc as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Glossary not found"
+        ) from exc
+
+    if len(glossary_ids) != len(glossaries):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not all glossaries were found",
+        )
+    GenericDocsQuery(db).set_document_glossaries(doc, glossaries)
+    return models.StatusMessage(message="Glossary list updated")
 
 
 @router.delete("/{doc_id}")

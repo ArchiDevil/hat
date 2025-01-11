@@ -3,6 +3,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 from app.documents.models import TmMode
+from app.glossary.schema import GlossaryResponse
 from app.models import DocumentStatus, Identified, MachineTranslationSettings
 from app.translation_memory.schema import TranslationMemory, TranslationMemoryUsage
 
@@ -56,3 +57,12 @@ class TranslationMemoryWithMode(Identified):
 
 class DocTranslationMemoryUpdate(BaseModel):
     memories: list[TranslationMemoryWithMode]
+
+
+class DocGlossary(BaseModel):
+    document_id: int
+    glossary: GlossaryResponse
+
+
+class DocGlossaryUpdate(BaseModel):
+    glossaries: list[Identified]

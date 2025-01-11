@@ -10,7 +10,7 @@ class GlossaryLoadFileResponse(BaseModel):
     glossary_id: int
 
 
-class GlossaryScheme(BaseModel):
+class GlossarySchema(BaseModel):
     name: str
     model_config = ConfigDict(from_attributes=True)
 

@@ -8,7 +8,7 @@ from app.glossary.models import ProcessingStatuses
 from app.glossary.schema import (
     GlossaryRecordCreate,
     GlossaryRecordUpdate,
-    GlossaryScheme,
+    GlossarySchema,
 )
 from app.linguistic.utils import stem_sentence
 
@@ -31,6 +31,16 @@ class GlossaryQuery:
         glossary = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()  # type: ignore
         if glossary:
             return glossary
+        raise NotFoundGlossaryExc()
+
+    def get_glossaries(self, glossary_ids: list[int]) -> list[Glossary]:
+        glossaries = (
+            self.db.execute(select(Glossary).where(Glossary.id.in_(glossary_ids)))
+            .scalars()
+            .all()
+        )
+        if glossaries:
+            return list(glossaries)
         raise NotFoundGlossaryExc()
 
     def get_glossary_record_by_id(self, record_id: int) -> GlossaryRecord:
@@ -83,7 +93,7 @@ class GlossaryQuery:
     def create_glossary(
         self,
         user_id: int,
-        glossary: GlossaryScheme,
+        glossary: GlossarySchema,
         processing_status: str = ProcessingStatuses.IN_PROCESS,
     ) -> Glossary:
         glossary = Glossary(
@@ -114,7 +124,7 @@ class GlossaryQuery:
             raise NotFoundGlossaryExc
         return glossary_record
 
-    def update_glossary(self, glossary_id: int, glossary: GlossaryScheme) -> Glossary:
+    def update_glossary(self, glossary_id: int, glossary: GlossarySchema) -> Glossary:
         result = (
             self.db.query(Glossary)
             .filter(Glossary.id == glossary_id)  # type: ignore

@@ -8,7 +8,7 @@ from app.glossary.query import GlossaryQuery, NotFoundGlossaryRecordExc
 from app.glossary.schema import (
     GlossaryRecordCreate,
     GlossaryRecordUpdate,
-    GlossaryScheme,
+    GlossarySchema,
 )
 from main import app
 
@@ -61,10 +61,10 @@ def test_get_glossary_list(user_logged_client: TestClient, session: Session):
     path = app.url_path_for("list_glossary")
 
     glossary_1 = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     glossary_2 = GlossaryQuery(session).create_glossary(
-        user_id=2, glossary=GlossaryScheme(name="Glossary name")
+        user_id=2, glossary=GlossarySchema(name="Glossary name")
     )
 
     response = user_logged_client.get(path)
@@ -83,7 +83,7 @@ def test_get_glossary_retrieve(user_logged_client: TestClient, session: Session)
     """GET /glossary/{glossary_id}/"""
 
     glossary_1 = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
 
     path = app.url_path_for("retrieve_glossary", **{"glossary_id": glossary_1.id})
@@ -104,7 +104,7 @@ def test_update_glossary(user_logged_client: TestClient, session: Session):
     expected_name = "New glossary name"
 
     glossary_1 = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     path = app.url_path_for("update_glossary", **{"glossary_id": glossary_1.id})
 
@@ -118,7 +118,7 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     """GET /glossary/{glossary_id}/records/"""
 
     glossary = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     record_scheme = GlossaryRecordCreate(
         comment="Comment",
@@ -148,7 +148,7 @@ def test_update_glossary_record(user_logged_client: TestClient, session: Session
     expected_user_id = 1
     repo = GlossaryQuery(session)
     glossary = repo.create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     record_scheme = GlossaryRecordCreate(
         comment="Comment",
@@ -178,7 +178,7 @@ def test_create_glossary(user_logged_client: TestClient, session: Session):
     """POST /glossary/"""
     expected_glossary_name = "Glossary name 1"
     path = app.url_path_for("create_glossary")
-    dumped_glossary = GlossaryScheme(name=expected_glossary_name)
+    dumped_glossary = GlossarySchema(name=expected_glossary_name)
 
     response = user_logged_client.post(url=path, json=dumped_glossary.model_dump())
     response_json = response.json()
@@ -192,7 +192,7 @@ def test_create_glossary(user_logged_client: TestClient, session: Session):
 def test_delete_glossary(user_logged_client: TestClient, session: Session):
     """DELETE /glossary/{glossary_id}/"""
     glossary = GlossaryQuery(session).create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     path = app.url_path_for("delete_glossary", **{"glossary_id": glossary.id})
 
@@ -206,7 +206,7 @@ def test_delete_glossary_with_records(user_logged_client: TestClient, session: S
     """DELETE /glossary/{glossary_id}/"""
     query = GlossaryQuery(session)
     glossary = query.create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     record_id = query.create_glossary_record(
         user_id=1,
@@ -231,7 +231,7 @@ def test_delete_glossary_record(user_logged_client: TestClient, session: Session
     """DELETE /glossary/records/{record_id}/"""
     repo = GlossaryQuery(session)
     glossary = repo.create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     record_scheme = GlossaryRecordCreate(
         comment="Comment",
@@ -255,7 +255,7 @@ def test_create_glossary_record(user_logged_client: TestClient, session: Session
     """POST /glossary/{glossary_id}/records"""
     repo = GlossaryQuery(session)
     glossary_id = repo.create_glossary(
-        user_id=1, glossary=GlossaryScheme(name="Glossary name")
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
     ).id
     record_scheme = GlossaryRecordCreate(
         comment="Comment",
