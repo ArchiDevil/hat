@@ -12,6 +12,7 @@ from app.db import Base
 if TYPE_CHECKING:
     from app.models import User
     from app.translation_memory.models import TranslationMemory
+    from app.glossary.models import Glossary
 
 
 class TmMode(Enum):
@@ -33,6 +34,17 @@ class DocMemoryAssociation(Base):
         back_populates="document_associations"
     )
     PrimaryKeyConstraint(doc_id, tm_id, mode)
+
+
+class DocGlossaryAssociation(Base):
+    __tablename__ = "glossary_to_document"
+
+    document_id: Mapped[int] = mapped_column(ForeignKey("document.id"))
+    glossary_id: Mapped[int] = mapped_column(ForeignKey("glossary.id"))
+
+    document: Mapped["Document"] = relationship(back_populates="glossary_associations")
+    glossary: Mapped["Glossary"] = relationship(back_populates="document_associations")
+    PrimaryKeyConstraint(document_id, glossary_id)
 
 
 class DocumentType(Enum):
@@ -72,8 +84,15 @@ class Document(Base):
         "memory",
         creator=lambda memory: DocMemoryAssociation(memory=memory, mode="read"),
     )
-    glossaries = relationship(
-        "Glossary", secondary="glossary_to_document", back_populates="documents"
+
+    glossary_associations: Mapped[list[DocGlossaryAssociation]] = relationship(
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
+    glossaries: AssociationProxy[list["Glossary"]] = association_proxy(
+        "glossary_associations",
+        "glossary",
+        creator=lambda glossary: DocGlossaryAssociation(glossary=glossary),
     )
 
 

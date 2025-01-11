@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, ForeignKey, Integer
+from sqlalchemy import ForeignKey
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+from app.documents.models import Document, DocGlossaryAssociation
 
 if TYPE_CHECKING:
     from app.schema import User
@@ -33,8 +35,14 @@ class Glossary(Base):
         order_by="GlossaryRecord.id",
     )
     user: Mapped["User"] = relationship(back_populates="glossaries")
-    documents = relationship(
-        "Document", secondary="glossary_to_document", back_populates="glossaries"
+
+    document_associations: Mapped[list["DocGlossaryAssociation"]] = relationship(
+        back_populates="glossary", cascade="all, delete-orphan"
+    )
+    documents: AssociationProxy[list["Document"]] = association_proxy(
+        "glossary_associations",
+        "document",
+        creator=lambda document: DocGlossaryAssociation(document=document),
     )
 
 
@@ -55,11 +63,3 @@ class GlossaryRecord(Base):
     user: Mapped["User"] = relationship()
 
     stemmed_source: Mapped[str] = mapped_column()
-
-
-class GlossaryToDocument(Base):
-    __tablename__ = "glossary_to_document"
-
-    id = Column(Integer, primary_key=True)
-    glossary_id = Column(Integer, ForeignKey("glossary.id"))
-    document_id = Column(Integer, ForeignKey("document.id"))

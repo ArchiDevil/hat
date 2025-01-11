@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
 from app.documents.schema import DocumentRecordUpdate
+from app.glossary.models import Glossary
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
 from app.translation_memory.query import TranslationMemoryQuery
 
 from .models import (
+    DocGlossaryAssociation,
     DocMemoryAssociation,
     Document,
     DocumentRecord,
@@ -144,4 +146,12 @@ class GenericDocsQuery:
             for memory in memories
         ]
         document.memory_associations = associations
+        self.__db.commit()
+
+    def set_document_glossaries(self, document: Document, glossaries: list[Glossary]):
+        associations = [
+            DocGlossaryAssociation(document=document, glossary=glossary)
+            for glossary in glossaries
+        ]
+        document.glossary_associations = associations
         self.__db.commit()
