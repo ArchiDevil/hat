@@ -6,7 +6,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
-from app.documents.models import Document, DocGlossaryAssociation
+from app.documents.models import DocGlossaryAssociation, Document
 
 if TYPE_CHECKING:
     from app.schema import User

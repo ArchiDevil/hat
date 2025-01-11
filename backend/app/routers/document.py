@@ -17,6 +17,8 @@ from app.documents.models import (
 from app.documents.query import GenericDocsQuery, NotFoundDocumentRecordExc
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
+from app.glossary.query import GlossaryQuery
+from app.glossary.schema import GlossaryRecordSchema
 from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import (
     MemorySubstitution,
@@ -111,10 +113,35 @@ def get_record_substitutions(
         )
 
     tm_ids = [tm.id for tm in doc.memories]
-    if not tm_ids:
-        return []
+    return (
+        TranslationMemoryQuery(db).get_substitutions(original_segment.source, tm_ids)
+        if tm_ids
+        else []
+    )
 
-    return TranslationMemoryQuery(db).get_substitutions(original_segment.source, tm_ids)
+
+@router.get("/{doc_id}/records/{record_id}/glossary_records")
+def get_record_glossary_records(
+    doc_id: int, record_id: int, db: Annotated[Session, Depends(get_db)]
+) -> list[GlossaryRecordSchema]:
+    doc = get_doc_by_id(db, doc_id)
+    original_segment = GenericDocsQuery(db).get_record(record_id)
+    if not original_segment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
+        )
+
+    glossary_ids = [gl.id for gl in doc.glossaries]
+    return (
+        [
+            GlossaryRecordSchema.model_validate(record)
+            for record in GlossaryQuery(db).get_glossary_records_for_segment(
+                original_segment.source, glossary_ids
+            )
+        ]
+        if glossary_ids
+        else []
+    )
 
 
 @router.put("/record/{record_id}")

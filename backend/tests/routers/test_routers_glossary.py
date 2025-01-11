@@ -169,7 +169,7 @@ def test_update_glossary_record(user_logged_client: TestClient, session: Session
 
     assert response_json["created_by"] == expected_user_id
 
-    record = repo.get_glossary_record(record.id)
+    record = repo.get_glossary_record_by_id(record.id)
     assert record.created_by == expected_user_id
     assert record.stemmed_source == "test"
 
@@ -224,7 +224,7 @@ def test_delete_glossary_with_records(user_logged_client: TestClient, session: S
     assert response_json == {"message": "Deleted"}
     # check that child was deleted
     with pytest.raises(NotFoundGlossaryRecordExc):
-        query.get_glossary_record(record_id)
+        query.get_glossary_record_by_id(record_id)
 
 
 def test_delete_glossary_record(user_logged_client: TestClient, session: Session):
@@ -272,4 +272,4 @@ def test_create_glossary_record(user_logged_client: TestClient, session: Session
     assert response_json["target"] == record_scheme.target
     assert response_json["glossary_id"] == glossary_id
 
-    assert repo.get_glossary_record(response_json["id"]).stemmed_source == "test"
+    assert repo.get_glossary_record_by_id(response_json["id"]).stemmed_source == "test"

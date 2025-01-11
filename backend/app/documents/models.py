@@ -10,9 +10,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base
 
 if TYPE_CHECKING:
+    from app.glossary.models import Glossary
     from app.models import User
     from app.translation_memory.models import TranslationMemory
-    from app.glossary.models import Glossary
 
 
 class TmMode(Enum):
