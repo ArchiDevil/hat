@@ -8,9 +8,12 @@ import {Body_create_doc_document__post} from '../schemas/Body_create_doc_documen
 import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentRecord} from '../schemas/DocumentRecord'
 import {MemorySubstitution} from '../schemas/MemorySubstitution'
+import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
 import {DocumentRecordUpdate} from '../schemas/DocumentRecordUpdate'
 import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
 import {DocTranslationMemoryUpdate} from '../schemas/DocTranslationMemoryUpdate'
+import {DocGlossary} from '../schemas/DocGlossary'
+import {DocGlossaryUpdate} from '../schemas/DocGlossaryUpdate'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
 
 export const getDocs = async (): Promise<DocumentWithRecordsCount[]> => {
@@ -33,6 +36,9 @@ export const getDocRecords = async (doc_id: number, page?: number | null): Promi
 export const getRecordSubstitutions = async (doc_id: number, record_id: number): Promise<MemorySubstitution[]> => {
   return await api.get<MemorySubstitution[]>(`/document/${doc_id}/records/${record_id}/substitutions`)
 }
+export const getRecordGlossaryRecords = async (doc_id: number, record_id: number): Promise<GlossaryRecordSchema[]> => {
+  return await api.get<GlossaryRecordSchema[]>(`/document/${doc_id}/records/${record_id}/glossary_records`)
+}
 export const updateDocRecord = async (record_id: number, content: DocumentRecordUpdate): Promise<DocumentRecord> => {
   return await api.put<DocumentRecord>(`/document/record/${record_id}`, content)
 }
@@ -41,6 +47,12 @@ export const getTranslationMemories = async (doc_id: number): Promise<DocTransla
 }
 export const setTranslationMemories = async (doc_id: number, content: DocTranslationMemoryUpdate): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/document/${doc_id}/memories`, content)
+}
+export const getGlossaries = async (doc_id: number): Promise<DocGlossary[]> => {
+  return await api.get<DocGlossary[]>(`/document/${doc_id}/glossaries`)
+}
+export const setGlossaries = async (doc_id: number, content: DocGlossaryUpdate): Promise<StatusMessage> => {
+  return await api.post<StatusMessage>(`/document/${doc_id}/glossaries`, content)
 }
 export const processDoc = async (doc_id: number, content: DocumentProcessingSettings): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/document/${doc_id}/process`, content)
