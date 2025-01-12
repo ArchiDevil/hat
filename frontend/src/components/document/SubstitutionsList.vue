@@ -1,22 +1,57 @@
 <script setup lang="ts">
-import {useCurrentDocStore} from '../../stores/current_document'
+interface Substitution {
+  source: string
+  target: string
+}
 
-const store = useCurrentDocStore()
+export interface MemorySubstitution extends Substitution {
+  type: 'memory'
+  similarity: number // ranging from 0.0 to 1.0
+}
+
+export interface GlossarySubstitution extends Substitution {
+  type: 'glossary'
+  comment?: string
+  parentName: string
+}
+
+defineProps<{
+  substitutions: (MemorySubstitution | GlossarySubstitution)[]
+}>()
+
+const subClass = (sub: MemorySubstitution | GlossarySubstitution) => {
+  if (sub.type === 'glossary') return 'bg-violet-200'
+
+  if (sub.similarity >= 0.9) return 'bg-green-200'
+  if (sub.similarity >= 0.85) return 'bg-lime-200'
+  if (sub.similarity >= 0.8) return 'bg-yellow-200'
+  if (sub.similarity >= 0.75) return 'bg-amber-200'
+  return 'bg-orange-200'
+}
 </script>
 
 <template>
-  <div class="min-w-96 max-w-96">
+  <div class="min-w-[28rem] max-w-[28rem]">
     <div
-      v-for="match in store.substitutions"
+      v-for="sub in substitutions"
       class="py-2 text-base grid grid-cols-[auto_1fr_1fr] gap-2 border-b"
     >
       <div
-        class="border rounded bg-surface-200 w-16 text-center grow-0 h-fit"
+        class="border rounded px-1 text-center grow-0 h-fit"
+        :class="subClass(sub)"
       >
-        {{ (match.similarity * 100.0).toFixed(0) }}%
+        <label v-if="sub.type == 'memory'">
+          {{ (sub.similarity * 100.0).toFixed(0) }}%
+        </label>
+        <label
+          v-else-if="sub.type == 'glossary'"
+          :title="sub.parentName"
+        >
+          Term
+        </label>
       </div>
-      <div class="font-text">{{ match.source }}</div>
-      <div class="font-text">{{ match.target }}</div>
+      <div class="font-text">{{ sub.source }}</div>
+      <div class="font-text">{{ sub.target }}</div>
     </div>
   </div>
 </template>

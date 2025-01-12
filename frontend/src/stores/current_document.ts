@@ -9,8 +9,10 @@ import {
   getDoc,
   getDocRecords,
   updateDocRecord,
+  getRecordGlossaryRecords,
 } from '../client/services/DocumentService'
 import {useDocStore} from './document'
+import {GlossaryRecordSchema} from '../client/schemas/GlossaryRecordSchema'
 
 export interface DocFileRecordWithStatus extends DocumentRecord {
   loading: boolean
@@ -25,6 +27,7 @@ export const useCurrentDocStore = defineStore('current_document', {
       currentFocusIdx: undefined as number | undefined,
       downloadLink: undefined as string | undefined,
       substitutions: [] as MemorySubstitution[],
+      glossaryRecords: [] as GlossaryRecordSchema[],
     }
   },
   actions: {
@@ -82,12 +85,18 @@ export const useCurrentDocStore = defineStore('current_document', {
       }
     },
     async loadSubstitutions() {
+      this.substitutions = []
+      this.glossaryRecords = []
+
       if (!this.document || this.currentFocusIdx === undefined) {
-        this.substitutions = []
         return
       }
 
       this.substitutions = await getRecordSubstitutions(
+        this.document.id,
+        this.currentFocusId!
+      )
+      this.glossaryRecords = await getRecordGlossaryRecords(
         this.document.id,
         this.currentFocusId!
       )

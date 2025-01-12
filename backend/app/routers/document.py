@@ -236,7 +236,7 @@ def set_glossaries(
     doc_id: int,
     settings: doc_schema.DocGlossaryUpdate,
     db: Annotated[Session, Depends(get_db)],
-):
+) -> models.StatusMessage:
     # check that all glossaries exist
     doc = get_doc_by_id(db, doc_id)
     glossary_ids = {g.id for g in settings.glossaries}
