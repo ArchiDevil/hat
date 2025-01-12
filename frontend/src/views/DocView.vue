@@ -3,6 +3,7 @@ import {computed, onMounted, watchEffect} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 
 import {useCurrentDocStore} from '../stores/current_document'
+import {useGlossaryStore} from '../stores/glossary'
 
 import Paginator, {PageState} from 'primevue/paginator'
 import Skeleton from 'primevue/skeleton'
@@ -10,7 +11,10 @@ import ProgressBar from 'primevue/progressbar'
 
 import Link from '../components/Link.vue'
 import DocSegment from '../components/DocSegment.vue'
-import SubstitutionsList from '../components/document/SubstitutionsList.vue'
+import SubstitutionsList, {
+  GlossarySubstitution,
+  MemorySubstitution,
+} from '../components/document/SubstitutionsList.vue'
 import LoadingMessage from '../components/document/LoadingMessage.vue'
 import ProcessingErrorMessage from '../components/document/ProcessingErrorMessage.vue'
 import RoutingLink from '../components/RoutingLink.vue'
@@ -21,6 +25,7 @@ import RoutingLink from '../components/RoutingLink.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useCurrentDocStore()
+const glossaryStore = useGlossaryStore()
 
 const documentId = computed(() => {
   return Number(route.params.id)
@@ -28,6 +33,32 @@ const documentId = computed(() => {
 const page = computed(() => {
   return Number(route.query['page'] ?? '0')
 })
+const substitutions = computed(
+  (): (GlossarySubstitution | MemorySubstitution)[] => {
+    const memorySubs = store.substitutions
+      .map((sub): MemorySubstitution => {
+        return {type: 'memory', ...sub}
+      })
+      .sort((a, b) => b.similarity - a.similarity)
+
+    const glossarySubs = store.glossaryRecords
+      .map((sub): GlossarySubstitution => {
+        return {
+          type: 'glossary',
+          source: sub.source,
+          target: sub.target,
+          comment: sub.comment ?? undefined,
+          parentName:
+            glossaryStore.glossaries.find((g) => g.id == sub.glossary_id)
+              ?.name ?? '',
+        }
+      })
+      .sort((a, b) =>
+        a.source.toLowerCase().localeCompare(b.source.toLowerCase())
+      )
+    return [...memorySubs, ...glossarySubs]
+  }
+)
 
 const loadDocument = async () => {
   if (!documentId.value) return
@@ -59,6 +90,7 @@ watchEffect(async () => {
 
 onMounted(async () => {
   await loadDocument()
+  await useGlossaryStore().fetchGlossaries()
 })
 </script>
 
@@ -69,7 +101,7 @@ onMounted(async () => {
   >
     <div class="bg-surface-0 border-b">
       <div>
-        <h2 class="text-xl font-bold mt-4 mb-4 ml-4 inline-block">
+        <h2 class="text-xl font-bold my-4 ml-4 inline-block">
           {{ store.document?.name }}
         </h2>
         <RoutingLink
@@ -138,6 +170,7 @@ onMounted(async () => {
           </div>
           <SubstitutionsList
             class="border-l border-y rounded-l-lg px-2 my-1 overflow-scroll bg-surface-50"
+            :substitutions="substitutions"
           />
         </template>
         <p v-else>Loading...</p>
