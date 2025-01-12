@@ -2,7 +2,9 @@
 import {ref, watchEffect, computed} from 'vue'
 
 import {
+  getGlossaries,
   getTranslationMemories,
+  setGlossaries,
   setTranslationMemories,
 } from '../client/services/DocumentService'
 import {TmMode} from '../client/schemas/TmMode'
@@ -13,40 +15,49 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
+import {useGlossaryStore} from '../stores/glossary'
 
 const props = defineProps<{
   documentId: number
 }>()
 
+const busy = ref(false)
+const tmStore = useTmStore()
+const glossaryStore = useGlossaryStore()
+
 const modalVisible = defineModel<boolean>()
 const chosenTms = ref<{id: number; name: string}[]>([])
-const readOptions = computed(() => {
-  return useTmStore().memories.map((memory) => {
+const tmReadOptions = computed(() => {
+  return tmStore.memories.map((memory) => {
     return {id: memory.id, name: memory.name}
   })
 })
-const writeOptions = computed(() => {
-  return [{id: -1, name: "Don't use TM"}].concat(readOptions.value)
+const tmWriteOptions = computed(() => {
+  return [{id: -1, name: "Don't use TM"}].concat(tmReadOptions.value)
 })
 
-const busy = ref(false)
 const chosenTmId = ref<number>(-1)
 const createNewMode = ref(false)
 const newTmName = ref('')
-
 const createNewTm = async () => {
   busy.value = true
-  await useTmStore().create({
+  await tmStore.create({
     name: newTmName.value,
   })
-  stopCreation()
+  resetTmState()
   busy.value = false
 }
-
-const stopCreation = () => {
+const resetTmState = () => {
   newTmName.value = ''
   createNewMode.value = false
 }
+
+const chosenGlossaries = ref<{id: number; name: string}[]>([])
+const glossaryOptions = computed(() => {
+  return glossaryStore.glossaries.map((glossary) => {
+    return {id: glossary.id, name: glossary.name}
+  })
+})
 
 watchEffect(async () => {
   const docMemories = await getTranslationMemories(props.documentId)
@@ -57,6 +68,11 @@ watchEffect(async () => {
     })
   chosenTmId.value =
     docMemories.find((memory) => memory.mode == 'write')?.memory.id ?? -1
+
+  const docGlossaries = await getGlossaries(props.documentId)
+  chosenGlossaries.value = docGlossaries.map(({glossary}) => {
+    return {id: glossary.id, name: glossary.name}
+  })
 })
 
 const save = async () => {
@@ -75,6 +91,13 @@ const save = async () => {
           : []
       ),
   })
+  await setGlossaries(props.documentId, {
+    glossaries: chosenGlossaries.value.map((glossary) => {
+      return {
+        id: glossary.id,
+      }
+    }),
+  })
   modalVisible.value = false
   busy.value = false
 }
@@ -84,7 +107,7 @@ const save = async () => {
   <Dialog
     v-model:visible="modalVisible"
     modal
-    header="Select memories to use"
+    :header="`Document #${documentId} settings`"
     :style="{width: '32rem'}"
   >
     <div
@@ -120,26 +143,39 @@ const save = async () => {
         class="w-20"
         label="Cancel"
         size="small"
-        @click="stopCreation()"
+        @click="resetTmState()"
       />
     </div>
     <div class="mb-4 w-full">
       <Listbox
         v-model="chosenTms"
-        :options="readOptions"
+        :options="tmReadOptions"
         multiple
         checkmark
         optionLabel="name"
       />
     </div>
+
     <span class="mb-2 block">Select memory to write into:</span>
     <Select
       class="mb-4 w-full"
-      :options="writeOptions"
+      :options="tmWriteOptions"
       optionLabel="name"
       optionValue="id"
       v-model="chosenTmId"
     />
+
+    <span class="mb-2 block">Select glossaries to use:</span>
+    <div class="mb-4 w-full">
+      <Listbox
+        v-model="chosenGlossaries"
+        :options="glossaryOptions"
+        multiple
+        checkmark
+        optionLabel="name"
+      />
+    </div>
+
     <div class="flex justify-end gap-2">
       <Button
         type="button"

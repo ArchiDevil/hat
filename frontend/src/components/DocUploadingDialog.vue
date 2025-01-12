@@ -2,11 +2,17 @@
 import {Ref, ref, computed, onMounted} from 'vue'
 import {MandeError} from 'mande'
 
-import {createDoc, processDoc} from '../client/services/DocumentService'
+import {
+  createDoc,
+  processDoc,
+  setGlossaries,
+} from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
 import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSettings'
+import {TranslationMemoryUsage} from '../client/schemas/TranslationMemoryUsage'
 
 import {useTmStore} from '../stores/tm'
+import {useGlossaryStore} from '../stores/glossary'
 
 import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
@@ -36,7 +42,10 @@ const machineTranslationSettings = ref<MachineTranslationSettings>({
 const similarityThreshold = ref<number>(1.0)
 
 const processingAvailable = computed(() => uploadedFile.value != null)
-const store = useTmStore()
+const tmStore = useTmStore()
+const glossaryStore = useGlossaryStore()
+
+const memoryMode = ref<TranslationMemoryUsage>('newest')
 
 const createFile = async (event: FileUploadSelectEvent) => {
   status.value = ''
@@ -69,13 +78,18 @@ const startProcessing = async () => {
   try {
     uploading.value = true
     status.value = 'Processing...'
+    await setGlossaries(uploadedFile.value!.id, {
+      glossaries: selectedGlossaries.value.map((g) => {
+        return {id: g.id}
+      }),
+    })
     await processDoc(uploadedFile.value!.id, {
       substitute_numbers: substituteNumbers.value,
       machine_translation_settings: useMachineTranslation.value
         ? machineTranslationSettings.value
         : null,
-      memory_ids: store.selectedIds,
-      memory_usage: store.memoryMode,
+      memory_ids: selectedTms.value.map((tm) => tm.id),
+      memory_usage: memoryMode.value,
       similarity_threshold: similarityThreshold.value,
     })
     uploading.value = false
@@ -88,8 +102,15 @@ const startProcessing = async () => {
 }
 
 onMounted(async () => {
-  await store.fetchMemories()
+  await tmStore.fetchMemories()
+  selectedTms.value = tmStore.memories
+
+  await glossaryStore.fetchGlossaries()
+  selectedGlossaries.value = glossaryStore.glossaries
 })
+
+const selectedTms = ref<typeof tmStore.memories>([])
+const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
 </script>
 
 <template>
@@ -109,18 +130,18 @@ onMounted(async () => {
             <label>TMX files to use:</label>
             <MultiSelect
               class="w-96"
-              v-model="store.selectedMemories"
+              v-model="selectedTms"
               placeholder="Select TMX files to use"
-              :options="store.memories"
+              :options="tmStore.memories"
               optionLabel="name"
               filter
               filterPlaceholder="Search TMX files..."
             />
           </div>
-          <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
+          <div class="flex flex-col gap-2 mb-4 max-w-96">
             <label>When segment is found in multiple TMXs:</label>
             <Select
-              v-model="store.memoryMode"
+              v-model="memoryMode"
               :options="[
                 {name: 'Use newest TM', value: 'newest'},
                 {name: 'Use oldest TM', value: 'oldest'},
@@ -129,7 +150,7 @@ onMounted(async () => {
               option-value="value"
             />
           </div>
-          <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
+          <div class="flex flex-col gap-2 mb-4 max-w-96">
             <label>Substitution similary threshold:</label>
             <Select
               v-model="similarityThreshold"
@@ -145,7 +166,7 @@ onMounted(async () => {
               option-value="value"
             />
           </div>
-          <div class="flex items-center mt-2">
+          <div class="flex items-center mb-4">
             <Checkbox
               id="sn"
               v-model="substituteNumbers"
@@ -158,6 +179,18 @@ onMounted(async () => {
             >
               Substitute segments containing only digits
             </label>
+          </div>
+          <div class="flex flex-col gap-2 mb-4 max-w-96">
+            <label>Glossaries to use:</label>
+            <MultiSelect
+              class="w-96"
+              v-model="selectedGlossaries"
+              placeholder="Select glossaries to use"
+              :options="useGlossaryStore().glossaries"
+              optionLabel="name"
+              filter
+              filterPlaceholder="Search glossaries..."
+            />
           </div>
           <div class="flex items-center">
             <Checkbox
