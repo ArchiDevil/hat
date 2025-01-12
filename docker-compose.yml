@@ -16,6 +16,31 @@ services:
       start_period: 5s
       start_interval: 5s
 
+  db-admin:
+    image: dpage/pgadmin4:8.14
+    environment:
+      # these credentials are public since this service is not exposed to public
+      # and used only for debugging purposes
+      - PGADMIN_DEFAULT_EMAIL=pgadmin4@pgadmin.org
+      - PGADMIN_DEFAULT_PASSWORD=pgadmin4
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+      - PGADMIN_DISABLE_POSTFIX=True
+    ports:
+      - "8082:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - debug
+    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
+    user: root
+    configs:
+      - source: servers.json
+        target: /pgadmin4/servers.json
+      - source: pgpass
+        target: /pgpass
+
   worker:
     build:
       dockerfile: worker.Dockerfile
@@ -26,6 +51,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+        restart: true
 
   backend:
     build:
@@ -39,6 +65,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+        restart: true
       worker:
         condition: service_started
 
@@ -55,3 +82,19 @@ services:
 volumes:
   db:
     driver: local
+
+configs:
+  pgpass:
+    content: db:5432:*:${POSTGRES_USER}:${POSTGRES_PASSWORD}
+  servers.json:
+    content: |
+      {"Servers": {"1": {
+        "Group": "Servers",
+        "Name": "PostgresDB",
+        "Host": "db",
+        "Port": 5432,
+        "MaintenanceDB": "${POSTGRES_DB}",
+        "Username": "${POSTGRES_USER}",
+        "PassFile": "/pgpass",
+        "SSLMode": "prefer"
+      }}}

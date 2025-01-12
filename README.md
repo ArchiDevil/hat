@@ -42,6 +42,14 @@ directory.
 pytest
 ```
 
+### Backend linting
+
+To run linting for backend code execute the following command:
+
+```bash
+ruff format . && ruff check --select I --fix . && ruff check  --fix .
+```
+
 ## Running the worker
 
 To run the worker navigate to `backend` directory and create virtual environment
@@ -102,10 +110,10 @@ To do this copy `.env.example` to `.env` and fill in all needed variables.
 Also you have to adjust `alembic.ini` file to match your database settings. It
 is located in `backend` directory.
 
-To run production version of the tool you need to use `docker-compose`:
+To run production version of the tool you need to use `docker compose`:
 
 ```bash
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 You can have two separate `.env` files for local testing and for production
@@ -114,7 +122,7 @@ deployment. To do this make two copies of `.env.template` with different names:
 which file to use by setting `--env-file` parameter when running docker-compose.
 
 ```bash
-docker-compose --env-file .env.prod up -d --build
+docker compose --env-file .env.prod up -d --build
 ```
 
 This will build all needed images and run services in detached mode. Please
@@ -123,10 +131,21 @@ need to set up something to listed on the domain name if you need.
 
 The production version is located at https://hat.codecliffs.ru
 
-## Backend linting
+### Getting into database in Docker compose deployment
 
-To run linting for backend code execute the following command:
+There is a PGAdmin instance as a container which is set up to automatically
+connect to the database in another container. You should run `docker compose`
+with additional profile named `debug` like this:
 
 ```bash
-ruff format . && ruff check --select I --fix . && ruff check  --fix .
+docker compose --env-file .env-prod --profile debug up -d --build
 ```
+
+After everything is running you can access PGAdming instance on
+http://localhost:8082/ address. It will automatically set up and lets you use it
+without login and password. This set up might be used to debug database issues
+or do mundane maintenance tasks without having to use CLI.
+
+Since it is set up to be accessed by anyone who has an access to the server,
+make sure you've removed a container after doing debugging or limit access to
+people with such access.
