@@ -52,6 +52,7 @@ services:
       db:
         condition: service_healthy
         restart: true
+    stop_signal: SIGINT
 
   backend:
     build:
