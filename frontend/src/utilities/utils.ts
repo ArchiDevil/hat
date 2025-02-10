@@ -1,4 +1,4 @@
-type CallbackFunction = (...args: any[]) => void
+type CallbackFunction = (...args: unknown[]) => void
 
 export const debounce = (
   func: CallbackFunction,
@@ -6,15 +6,13 @@ export const debounce = (
 ): CallbackFunction => {
   let timeout: ReturnType<typeof setTimeout> | null
 
-  return (...args: any[]): void => {
-    const context = this
-
+  return (...args: unknown[]): void => {
     if (timeout !== null) {
       clearTimeout(timeout)
     }
 
     timeout = setTimeout(() => {
-      func.apply(context, args)
+      func.apply(this, args)
     }, wait)
   }
 }

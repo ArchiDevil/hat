@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint"
   },
   "repository": {
     "type": "git",
@@ -38,12 +39,17 @@
   },
   "dependencies": {
     "@primevue/themes": "4.0.6",
+    "eslint": "^9.20.0",
+    "eslint-plugin-vue": "^9.32.0",
     "mande": "^2.0.9",
     "pinia": "^2.3.0",
     "primeicons": "7.0.0",
     "primevue": "4.0.6",
     "tailwindcss-primeui": "^0.3.4",
+    "typescript-eslint": "^8.24.0",
     "vue": "^3.5.13",
+    "vue-eslint-parser": "^9.4.3",
     "vue-router": "^4.5.0"
-  }
+  },
+  "packageManager": "pnpm@10.2.1+sha512.398035c7bd696d0ba0b10a688ed558285329d27ea994804a52bad9167d8e3a72bcb993f9699585d3ca25779ac64949ef422757a6c31102c12ab932e5cbe5cc92"
 }

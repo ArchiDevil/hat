@@ -23,15 +23,15 @@ const emit = defineEmits<{
 
 const targetInput = ref<HTMLElement | null>(null)
 
-const commitData = debounce(async () => {
-  if (!targetInput.value || !targetInput.value.textContent) {
+const commitData = debounce(() => {
+  if (!targetInput.value?.textContent) {
     return
   }
   emit('updateRecord', targetInput.value.textContent)
 }, 1000)
 
 const onKeyPress = (event: KeyboardEvent) => {
-  if (!targetInput.value || !targetInput.value.textContent) {
+  if (!targetInput.value?.textContent) {
     return
   }
   if (event.key == 'Enter' && event.ctrlKey) {
@@ -45,14 +45,14 @@ const onInput = () => {
 
 watch(
   () => props.target,
-  () => {
+  async () => {
     // to avoid cursor dropping to 0 position after backend response
     const oldBaseOffset = document.getSelection()?.focusOffset
     if (oldBaseOffset && targetInput.value) {
-      nextTick(() => {
+      await nextTick(() => {
         document
           .getSelection()
-          ?.collapse(targetInput.value!.childNodes[0]!, oldBaseOffset)
+          ?.collapse(targetInput.value!.childNodes[0], oldBaseOffset)
       })
     }
   }

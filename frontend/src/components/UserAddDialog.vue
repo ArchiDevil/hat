@@ -35,7 +35,9 @@ const create = async () => {
 
 <template>
   <div class="border rounded border-slate p-4 mt-4 w-fit">
-    <h2 class="font-bold text-xl mb-2">Create a new user</h2>
+    <h2 class="font-bold text-xl mb-2">
+      Create a new user
+    </h2>
     <div class="flex flex-col gap-2 min-w-96">
       <div class="flex flex-col gap-2">
         <label class="text-color">Username</label>
@@ -48,7 +50,7 @@ const create = async () => {
         <label class="text-color">Email</label>
         <InputText
           v-model="user.email"
-          inputClass="w-full"
+          input-class="w-full"
           :disabled="loading"
           :feedback="false"
         />
@@ -57,7 +59,7 @@ const create = async () => {
         <label class="text-color">Password</label>
         <Password
           v-model="user.password"
-          inputClass="w-full"
+          input-class="w-full"
           :disabled="loading"
           :feedback="false"
         />

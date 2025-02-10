@@ -14,15 +14,13 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const props = defineProps<{
-  user: User
-}>()
+const user = defineModel<User>({required: true});
 
 const loading = ref(false)
 
 const update = async () => {
   loading.value = true
-  await updateUser(props.user.id, props.user)
+  await updateUser(user.value.id, user.value)
   loading.value = false
   emit('finish')
 }
@@ -30,7 +28,9 @@ const update = async () => {
 
 <template>
   <div class="border rounded border-slate p-4 mt-4 w-fit">
-    <h2 class="font-bold text-xl mb-2">Edit a user</h2>
+    <h2 class="font-bold text-xl mb-2">
+      Edit a user
+    </h2>
     <div class="flex flex-col gap-2 min-w-96">
       <div class="flex flex-col gap-2">
         <label class="text-color">Username</label>
@@ -43,7 +43,7 @@ const update = async () => {
         <label class="text-color">Email</label>
         <InputText
           v-model="user.email"
-          inputClass="w-full"
+          input-class="w-full"
           :disabled="loading"
           :feedback="false"
         />
@@ -79,13 +79,13 @@ const update = async () => {
     <div class="flex gap-2 mt-2">
       <Button
         label="Update"
-        @click="update"
         :disabled="loading"
+        @click="update"
       />
       <Button
         label="Close"
-        @click="$emit('close')"
         :disabled="loading"
+        @click="$emit('close')"
       />
     </div>
   </div>

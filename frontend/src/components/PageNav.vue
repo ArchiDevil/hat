@@ -9,7 +9,7 @@ const router = useRouter()
 
 const logout = async () => {
   await useUserStore().logout()
-  router.push({name: 'login'})
+  await router.push({name: 'login'})
 }
 </script>
 

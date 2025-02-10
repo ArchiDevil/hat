@@ -66,20 +66,18 @@ const authenticate = async () => {
         <a
           class="underline"
           href="https://t.me/archidevil"
-          >administration</a
-        >. It will be opened to the public in the future.
+        >administration</a>. It will be opened to the public in the future.
       </p>
       <p class="mt-2">
-        <span class="text-red-700"
-          >There is no way to restore a password right now!</span
-        >
+        <span class="text-red-700">
+          There is no way to restore a password right now!
+        </span>
         Make sure you've saved it in a safe place after you've got an access. If
         you lost it, contact the
         <a
           class="underline"
           href="https://t.me/archidevil"
-          >administration</a
-        >.
+        >administration</a>.
       </p>
     </Panel>
     <div class="flex flex-col gap-2">
@@ -93,7 +91,7 @@ const authenticate = async () => {
       <label class="text-color">Password</label>
       <Password
         v-model="fields.password"
-        inputClass="w-full"
+        input-class="w-full"
         :disabled="loading"
         :feedback="false"
       />
@@ -114,8 +112,8 @@ const authenticate = async () => {
     </div>
     <Button
       label="Login"
-      @click="authenticate"
       :disabled="loading"
+      @click="authenticate"
     />
     <small
       v-if="status"
