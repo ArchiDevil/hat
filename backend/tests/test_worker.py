@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.documents.models import (
+    DocGlossaryAssociation,
     Document,
     DocumentType,
     TxtDocument,
@@ -18,6 +19,7 @@ from app.documents.schema import (
     DocumentProcessingSettings,
     DocumentTaskDescription,
 )
+from app.glossary.models import Glossary, GlossaryRecord
 from app.models import DocumentStatus, MachineTranslationSettings
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
@@ -440,3 +442,46 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
 
         doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "error"
+
+
+def test_process_task_uses_correct_glossary_ids(session: Session):
+    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
+        file_data = fp.read()
+
+    with session as s:
+        glossary_records_1 = [
+            GlossaryRecord(
+                source="Regional Effects",
+                target="Glossary entry 1",
+                created_by=1,
+                stemmed_source="regional effects",
+            )
+        ]
+        glossary_records_2 = [
+            GlossaryRecord(
+                source="Regional Effects",
+                target="Glossary entry 2",
+                created_by=1,
+                stemmed_source="regional effects",
+            )
+        ]
+
+        s.add_all(
+            [
+                Glossary(name="test1", created_by=1, records=glossary_records_1),
+                Glossary(name="test2", created_by=1, records=glossary_records_2),
+                create_doc(name="small.xliff", type_=DocumentType.xliff),
+                create_xliff_doc(file_data),
+                create_task(),
+                DocGlossaryAssociation(document_id=1, glossary_id=2),
+            ]
+        )
+        s.commit()
+
+        result = process_task(s, s.query(DocumentTask).one())
+        assert result
+
+        doc = s.query(Document).filter_by(id=1).one()
+
+        assert doc.records[0].source == "Regional Effects"
+        assert doc.records[0].target == "Glossary entry 2"

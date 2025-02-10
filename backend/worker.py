@@ -44,6 +44,7 @@ def get_segment_translation(
     tm_ids: list[int],
     tm_usage: TranslationMemoryUsage,
     substitute_numbers: bool,
+    glossary_ids: list[int],
     session: Session,
 ) -> str | None:
     # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
@@ -51,7 +52,12 @@ def get_segment_translation(
         return source
 
     glossary_record = (
-        session.query(GlossaryRecord).where(GlossaryRecord.source == source).first()
+        session.query(GlossaryRecord)
+        .where(
+            GlossaryRecord.source == source,
+            GlossaryRecord.glossary_id.in_(glossary_ids),
+        )
+        .first()
     )
     if glossary_record:
         return glossary_record.target
@@ -88,6 +94,8 @@ def process_document(
     settings: DocumentProcessingSettings,
     session: Session,
 ) -> bool:
+    glossary_ids = [x.id for x in doc.glossaries]
+
     start_time = time.time()
     segments = extract_segments(doc)
     logging.info(
@@ -97,7 +105,7 @@ def process_document(
     )
 
     start_time = time.time()
-    translate_indices = substitute_segments(settings, session, segments)
+    translate_indices = substitute_segments(settings, session, segments, glossary_ids)
     logging.info(
         "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
         time.time() - start_time,
@@ -107,7 +115,6 @@ def process_document(
     )
 
     start_time = time.time()
-    glossary_ids = [x.id for x in doc.glossaries]
     mt_result = translate_segments(
         segments,
         translate_indices,
@@ -152,6 +159,7 @@ def substitute_segments(
     settings: DocumentProcessingSettings,
     session: Session,
     segments: Iterable[BaseSegment],
+    glossary_ids: list[int],
 ) -> list[int]:
     """
     Process what is possible to process, save segment indices for further machine
@@ -168,6 +176,7 @@ def substitute_segments(
             settings.memory_ids,
             settings.memory_usage,
             settings.substitute_numbers,
+            glossary_ids,
             session,
         )
         if not translation:
