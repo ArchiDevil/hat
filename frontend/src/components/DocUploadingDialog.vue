@@ -53,7 +53,7 @@ const createFile = async (event: FileUploadSelectEvent) => {
     return
   }
 
-  const selectedFile = event.files[0] as File
+  const selectedFile = (event.files as File[])[0]
 
   try {
     uploading.value = true
@@ -125,17 +125,19 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
     >
       <template #content="{files}">
         <div v-if="files.length != 0">
-          <p class="font-semibold">Processing options</p>
+          <p class="font-semibold">
+            Processing options
+          </p>
           <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
             <label>TMX files to use:</label>
             <MultiSelect
-              class="w-96"
               v-model="selectedTms"
+              class="w-96"
               placeholder="Select TMX files to use"
               :options="tmStore.memories"
-              optionLabel="name"
+              option-label="name"
               filter
-              filterPlaceholder="Search TMX files..."
+              filter-placeholder="Search TMX files..."
             />
           </div>
           <div class="flex flex-col gap-2 mb-4 max-w-96">
@@ -183,13 +185,13 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
           <div class="flex flex-col gap-2 mb-4 max-w-96">
             <label>Glossaries to use:</label>
             <MultiSelect
-              class="w-96"
               v-model="selectedGlossaries"
+              class="w-96"
               placeholder="Select glossaries to use"
               :options="useGlossaryStore().glossaries"
-              optionLabel="name"
+              option-label="name"
               filter
-              filterPlaceholder="Search glossaries..."
+              filter-placeholder="Search glossaries..."
             />
           </div>
           <div class="flex items-center">
@@ -229,8 +231,8 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
               </label>
               <InputText
                 id="fid"
-                class="w-96"
                 v-model="machineTranslationSettings.folder_id"
+                class="w-96"
               />
             </div>
             <div class="flex items-center flex-row gap-2">
@@ -242,13 +244,15 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
               </label>
               <InputText
                 id="oauth"
-                class="w-96"
                 v-model="machineTranslationSettings.oauth_token"
+                class="w-96"
               />
             </div>
           </div>
         </div>
-        <div v-else>{{ status }}</div>
+        <div v-else>
+          {{ status }}
+        </div>
       </template>
       <template #empty>
         <span v-if="!status">Choose a file to upload.</span>

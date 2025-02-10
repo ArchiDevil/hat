@@ -20,7 +20,7 @@ const users = ref<User[]>()
 const mode = ref<'table' | 'add' | 'edit'>('table')
 const currentUser = ref<User>()
 
-const editUser = async (user: User) => {
+const editUser = (user: User) => {
   mode.value = 'edit'
   currentUser.value = {...user}
 }
@@ -50,7 +50,7 @@ onMounted(async () => {
         paginator
         :rows="10"
         :rows-per-page-options="[10, 25, 50]"
-        tableStyle="w-full mt-4"
+        table-style="w-full mt-4"
       >
         <Column
           field="id"
@@ -97,7 +97,7 @@ onMounted(async () => {
     </template>
     <template v-else-if="mode == 'edit'">
       <UserEditDialog
-        :user="currentUser!"
+        v-model="currentUser!"
         @finish="updateData"
         @close="mode = 'table'"
       />

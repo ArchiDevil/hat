@@ -38,13 +38,17 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
     <FileUpload
       mode="advanced"
       accept=".xlsx"
-      customUpload
+      custom-upload
       :disabled="uploading"
       @uploader="(event: FileUploadUploaderEvent) => uploadFile(event)"
     >
       <template #content="{files}">
-        <div v-if="files.length">{{ files[0].name }} is waiting to upload.</div>
-        <div v-else>{{ status }}</div>
+        <div v-if="files.length">
+          {{ files[0].name }} is waiting to upload.
+        </div>
+        <div v-else>
+          {{ status }}
+        </div>
       </template>
       <template #empty>
         <span v-if="!status">Choose XLSX file to upload.</span>

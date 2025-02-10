@@ -15,7 +15,7 @@ import Paginator, {PageState} from 'primevue/paginator'
 import DocSegment from '../components/DocSegment.vue'
 import PageTitle from '../components/PageTitle.vue'
 import PageNav from '../components/PageNav.vue'
-import Link from '../components/Link.vue'
+import Link from '../components/NavLink.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow.
@@ -27,17 +27,18 @@ const records = ref<TranslationMemoryRecord[]>()
 const downloadLink = ref<string>()
 
 const page = computed(() => {
-  return Number(route.query['page'] ?? '0')
+  return Number(route.query.page ?? '0')
 })
 
 const updatePage = async (event: PageState) => {
-  router.push({
+  await router.push({
     query: {
       page: event.page,
     },
   })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 watchEffect(async () => {
   if (!document.value) {
     return
@@ -68,11 +69,11 @@ onMounted(async () => {
       />
     </div>
     <Paginator
+      v-if="records && records?.length"
       :rows="100"
       :total-records="document?.records_count"
       :first="page * 100"
-      v-on:page="(event) => updatePage(event)"
-      v-if="records && records?.length"
+      @page="(event) => updatePage(event)"
     />
     <div
       v-if="records"
@@ -80,18 +81,18 @@ onMounted(async () => {
     >
       <DocSegment
         v-for="record in records"
-        :key="record.id"
         :id="record.id"
+        :key="record.id"
         :source="record.source"
         :target="record.target"
       />
     </div>
     <Paginator
+      v-if="records && records?.length"
       :rows="100"
       :total-records="document?.records_count"
       :first="page * 100"
-      v-on:page="(event) => updatePage(event)"
-      v-if="records && records?.length"
+      @page="(event) => updatePage(event)"
     />
   </div>
 </template>

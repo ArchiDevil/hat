@@ -9,6 +9,7 @@ import Aura from '@primevue/themes/aura'
 import App from './App.vue'
 import {getRouter} from './router'
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const themePreset = definePreset(Aura, {
   semantic: {
     primary: {
@@ -34,11 +35,12 @@ if (import.meta.env.DEV) {
   defaults.credentials = 'include'
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 const app = createApp(App)
 app.use(pinia)
 app.use(PrimeVue, {
   theme: {
-    preset: themePreset,
+    preset: themePreset as unknown,
     options: {
       darkModeSelector: '',
       cssLayer: {

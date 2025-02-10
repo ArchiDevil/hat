@@ -59,6 +59,7 @@ const glossaryOptions = computed(() => {
   })
 })
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 watchEffect(async () => {
   const docMemories = await getTranslationMemories(props.documentId)
   chosenTms.value = docMemories
@@ -127,9 +128,9 @@ const save = async () => {
       class="flex gap-2 mb-2 items-baseline"
     >
       <InputText
+        v-model="newTmName"
         size="small"
         class="w-full"
-        v-model="newTmName"
         placeholder="New memory name..."
       />
       <Button
@@ -152,17 +153,17 @@ const save = async () => {
         :options="tmReadOptions"
         multiple
         checkmark
-        optionLabel="name"
+        option-label="name"
       />
     </div>
 
     <span class="mb-2 block">Select memory to write into:</span>
     <Select
+      v-model="chosenTmId"
       class="mb-4 w-full"
       :options="tmWriteOptions"
-      optionLabel="name"
-      optionValue="id"
-      v-model="chosenTmId"
+      option-label="name"
+      option-value="id"
     />
 
     <span class="mb-2 block">Select glossaries to use:</span>
@@ -172,7 +173,7 @@ const save = async () => {
         :options="glossaryOptions"
         multiple
         checkmark
-        optionLabel="name"
+        option-label="name"
       />
     </div>
 

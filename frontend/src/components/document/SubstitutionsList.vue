@@ -1,19 +1,5 @@
 <script setup lang="ts">
-interface Substitution {
-  source: string
-  target: string
-}
-
-export interface MemorySubstitution extends Substitution {
-  type: 'memory'
-  similarity: number // ranging from 0.0 to 1.0
-}
-
-export interface GlossarySubstitution extends Substitution {
-  type: 'glossary'
-  comment?: string
-  parentName: string
-}
+import {GlossarySubstitution, MemorySubstitution} from './types'
 
 defineProps<{
   substitutions: (MemorySubstitution | GlossarySubstitution)[]
@@ -33,7 +19,8 @@ const subClass = (sub: MemorySubstitution | GlossarySubstitution) => {
 <template>
   <div class="min-w-[28rem] max-w-[28rem]">
     <div
-      v-for="sub in substitutions"
+      v-for="(sub, i) in substitutions"
+      :key="i"
       class="py-2 text-base grid grid-cols-[auto_1fr_1fr] gap-2 border-b"
     >
       <div
@@ -50,8 +37,12 @@ const subClass = (sub: MemorySubstitution | GlossarySubstitution) => {
           Term
         </label>
       </div>
-      <div class="font-text">{{ sub.source }}</div>
-      <div class="font-text">{{ sub.target }}</div>
+      <div class="font-text">
+        {{ sub.source }}
+      </div>
+      <div class="font-text">
+        {{ sub.target }}
+      </div>
     </div>
   </div>
 </template>
