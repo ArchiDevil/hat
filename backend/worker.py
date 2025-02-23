@@ -22,6 +22,8 @@ from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescrip
 from app.formats.base import BaseSegment
 from app.formats.txt import TxtSegment, extract_txt_content
 from app.formats.xliff import XliffSegment, extract_xliff_content
+from app.glossary.models import GlossaryRecord
+from app.glossary.query import GlossaryQuery
 from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
@@ -42,11 +44,23 @@ def get_segment_translation(
     tm_ids: list[int],
     tm_usage: TranslationMemoryUsage,
     substitute_numbers: bool,
+    glossary_ids: list[int],
     session: Session,
 ) -> str | None:
     # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
     if substitute_numbers and source.isdigit():
         return source
+
+    glossary_record = (
+        session.query(GlossaryRecord)
+        .where(
+            GlossaryRecord.source == source,
+            GlossaryRecord.glossary_id.in_(glossary_ids),
+        )
+        .first()
+    )
+    if glossary_record:
+        return glossary_record.target
 
     if threshold < 1.0:
         substitutions = TranslationMemoryQuery(session).get_substitutions(
@@ -80,6 +94,8 @@ def process_document(
     settings: DocumentProcessingSettings,
     session: Session,
 ) -> bool:
+    glossary_ids = [x.id for x in doc.glossaries]
+
     start_time = time.time()
     segments = extract_segments(doc)
     logging.info(
@@ -89,7 +105,7 @@ def process_document(
     )
 
     start_time = time.time()
-    translate_indices = substitute_segments(settings, session, segments)
+    translate_indices = substitute_segments(settings, session, segments, glossary_ids)
     logging.info(
         "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
         time.time() - start_time,
@@ -100,7 +116,11 @@ def process_document(
 
     start_time = time.time()
     mt_result = translate_segments(
-        segments, translate_indices, settings.machine_translation_settings
+        segments,
+        translate_indices,
+        glossary_ids,
+        settings.machine_translation_settings,
+        session,
     )
     logging.info(
         "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
@@ -139,6 +159,7 @@ def substitute_segments(
     settings: DocumentProcessingSettings,
     session: Session,
     segments: Iterable[BaseSegment],
+    glossary_ids: list[int],
 ) -> list[int]:
     """
     Process what is possible to process, save segment indices for further machine
@@ -155,6 +176,7 @@ def substitute_segments(
             settings.memory_ids,
             settings.memory_usage,
             settings.substitute_numbers,
+            glossary_ids,
             session,
         )
         if not translation:
@@ -168,15 +190,25 @@ def substitute_segments(
 def translate_segments(
     segments: Sequence[BaseSegment],
     translate_indices: Sequence[int],
+    glossary_ids: list[int],
     mt_settings: MachineTranslationSettings | None,
+    session: Session,
 ) -> bool:
     # TODO: it is better to make solution more translation service agnostic
     mt_failed = False
     if mt_settings and translate_indices:
         try:
-            lines = [segments[idx].original for idx in translate_indices]
+            original_segments = [segments[idx].original for idx in translate_indices]
+            data_to_translate: list[yandex.LineWithGlossaries] = []
+            for segment in original_segments:
+                glossary_records = GlossaryQuery(
+                    session
+                ).get_glossary_records_for_segment(segment, glossary_ids)
+                data_to_translate.append(
+                    (segment, [(x.source, x.target) for x in glossary_records])
+                )
             translated, mt_failed = yandex.translate_lines(
-                [(line, []) for line in lines],
+                data_to_translate,
                 oauth_token=mt_settings.oauth_token,
                 folder_id=mt_settings.folder_id,
             )
