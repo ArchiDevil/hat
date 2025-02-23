@@ -23,4 +23,5 @@ jobs:
           node-version: '20'
       - run: npm install -g pnpm
       - run: pnpm install -C ./frontend
+      - run: pnpm run -C ./frontend lint
       - run: pnpm run -C ./frontend test

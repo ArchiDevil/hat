@@ -12,7 +12,7 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   file: TranslationMemory
-  deleteMethod: () => Promise<any>
+  deleteMethod: () => Promise<unknown>
 }>()
 
 const busy = ref(false)
@@ -26,6 +26,7 @@ const deleteFile = async () => {
     status.value = undefined
   } catch (error) {
     console.log(error)
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     status.value = `${error} :(`
   } finally {
     busy.value = false

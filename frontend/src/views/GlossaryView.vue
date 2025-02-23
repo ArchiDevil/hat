@@ -25,15 +25,17 @@ onMounted(async () => {
     <PageTitle title="Glossary viewer" />
     <p>File ID: {{ document?.id }}</p>
     <p>File name: {{ document?.name }}</p>
-    <p class="mb-4">Number of records: {{ records?.length }}</p>
+    <p class="mb-4">
+      Number of records: {{ records?.length }}
+    </p>
     <div
       v-if="records"
       class="flex flex-col gap-1"
     >
       <DocSegment
         v-for="record in records"
-        :key="record.id"
         :id="record.id"
+        :key="record.id"
         :source="record.source"
         :target="record.target"
       />

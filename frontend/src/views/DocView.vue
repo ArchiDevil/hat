@@ -9,15 +9,16 @@ import Paginator, {PageState} from 'primevue/paginator'
 import Skeleton from 'primevue/skeleton'
 import ProgressBar from 'primevue/progressbar'
 
-import Link from '../components/Link.vue'
+import Link from '../components/NavLink.vue'
 import DocSegment from '../components/DocSegment.vue'
-import SubstitutionsList, {
-  GlossarySubstitution,
-  MemorySubstitution,
-} from '../components/document/SubstitutionsList.vue'
+import SubstitutionsList from '../components/document/SubstitutionsList.vue'
 import LoadingMessage from '../components/document/LoadingMessage.vue'
 import ProcessingErrorMessage from '../components/document/ProcessingErrorMessage.vue'
 import RoutingLink from '../components/RoutingLink.vue'
+import {
+  GlossarySubstitution,
+  MemorySubstitution,
+} from '../components/document/types'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow
@@ -31,7 +32,7 @@ const documentId = computed(() => {
   return Number(route.params.id)
 })
 const page = computed(() => {
-  return Number(route.query['page'] ?? '0')
+  return Number(route.query.page ?? '0')
 })
 const substitutions = computed(
   (): (GlossarySubstitution | MemorySubstitution)[] => {
@@ -68,24 +69,30 @@ const loadDocument = async () => {
   }
 }
 
+const translationProgress = computed(() => {
+  const doc = store.document
+  return doc && (doc?.approved_records_count / doc?.records_count) * 100
+})
+
 const updatePage = async (event: PageState) => {
-  router.push({query: {page: event.page}})
+  await router.push({query: {page: event.page}})
 }
 
-const onSegmentUpdate = (id: number, text: string, approved: boolean) => {
-  store.updateRecord(id, text, approved)
+const onSegmentUpdate = async (id: number, text: string, approved: boolean) => {
+  await store.updateRecord(id, text, approved)
 }
 
-const onSegmentCommit = (id: number, text: string) => {
-  onSegmentUpdate(id, text, true)
+const onSegmentCommit = async (id: number, text: string) => {
+  await onSegmentUpdate(id, text, true)
   store.focusNextSegment()
 }
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 watchEffect(async () => {
   if (!store.document || !store.documentReady) {
     return
   }
-  store.loadRecords(page.value)
+  await store.loadRecords(page.value)
 })
 
 onMounted(async () => {
@@ -114,12 +121,7 @@ onMounted(async () => {
         Progress:
         <ProgressBar
           class="w-64 h-2 inline-block"
-          :value="
-            store.document &&
-            (store.document?.approved_records_count /
-              store.document?.records_count) *
-              100
-          "
+          :value="translationProgress"
           :show-value="false"
         />
         {{ store.document?.approved_records_count }} /
@@ -144,8 +146,8 @@ onMounted(async () => {
           :rows="100"
           :total-records="store.document?.records_count"
           :first="page * 100"
-          v-on:page="(event) => updatePage(event)"
           class="inline-block"
+          @page="(event) => updatePage(event)"
         />
       </div>
     </div>
@@ -155,9 +157,9 @@ onMounted(async () => {
           <div class="flex flex-col gap-1 overflow-scroll my-1 bg-surface-50">
             <DocSegment
               v-for="(record, idx) in store.records"
+              :id="record.id"
               :key="record.id"
               editable
-              :id="record.id"
               :source="record.source"
               :target="record.target"
               :disabled="record.loading"
@@ -173,7 +175,9 @@ onMounted(async () => {
             :substitutions="substitutions"
           />
         </template>
-        <p v-else>Loading...</p>
+        <p v-else>
+          Loading...
+        </p>
       </template>
     </div>
   </div>

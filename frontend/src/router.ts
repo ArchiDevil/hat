@@ -25,7 +25,7 @@ export const getRouter = () => {
     routes,
   })
 
-  router.beforeEach(async (to, from) => {
+  router.beforeEach(async (to) => {
     const store = useUserStore()
 
     if (to.name === 'login') {
@@ -46,7 +46,7 @@ export const getRouter = () => {
       } catch (e) {
         const err = e as MandeError
         if (err.response.status == 401) {
-          router.push({
+          await router.push({
             name: 'login',
             query: {
               redirect: to.path,

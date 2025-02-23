@@ -70,7 +70,7 @@ export const useCurrentDocStore = defineStore('current_document', {
       // this is because more than one record can be updated by a backend
       // (repetitions, for example)
       this.document = await getDoc(this.document.id)
-      useDocStore().updateDocument(this.document.id)
+      await useDocStore().updateDocument(this.document.id)
     },
     async focusSegment(idx: number) {
       this.currentFocusIdx = idx

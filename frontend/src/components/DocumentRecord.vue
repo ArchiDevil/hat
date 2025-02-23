@@ -15,7 +15,7 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   document: DocumentWithRecordsCount
-  deleteMethod: (id: number) => Promise<any>
+  deleteMethod: (id: number) => Promise<unknown>
 }>()
 
 const classes = computed(() => {
@@ -40,6 +40,7 @@ const deleteFile = async () => {
     status.value = undefined
   } catch (error) {
     console.log(error)
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     status.value = `${error} :(`
   } finally {
     busy.value = false
