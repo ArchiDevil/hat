@@ -6,7 +6,6 @@ import {TranslationMemoryUsage} from './TranslationMemoryUsage'
 export interface DocumentProcessingSettings {
   substitute_numbers: boolean
   machine_translation_settings: MachineTranslationSettings | null
-  memory_ids: number[]
   memory_usage: TranslationMemoryUsage
   similarity_threshold?: number
 }
