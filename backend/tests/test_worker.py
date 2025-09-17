@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.documents.models import (
     DocGlossaryAssociation,
+    DocMemoryAssociation,
     Document,
     DocumentType,
     TxtDocument,
@@ -50,7 +51,6 @@ def create_xliff_doc(data: str):
 def create_task(
     *,
     type_: Literal["xliff", "txt"] = "xliff",
-    tm_ids=[1],
     usage: TranslationMemoryUsage = TranslationMemoryUsage.NEWEST,
     substitute_numbers: bool = False,
     mt_settings: MachineTranslationSettings | None = None,
@@ -62,7 +62,6 @@ def create_task(
             settings=DocumentProcessingSettings(
                 substitute_numbers=substitute_numbers,
                 machine_translation_settings=mt_settings,
-                memory_ids=tm_ids,
                 memory_usage=usage,
             ),
         ).model_dump_json(),
@@ -75,17 +74,21 @@ def test_process_task_sets_xliff_records(session: Session):
         file_data = fp.read()
 
     with session as s:
-        tm_records = [
-            TranslationMemoryRecord(
-                source="Regional Effects",
-                target="Translation",
-            )
-        ]
         s.add_all(
             [
-                TranslationMemory(name="test", records=tm_records, created_by=1),
+                TranslationMemory(
+                    name="test",
+                    records=[
+                        TranslationMemoryRecord(
+                            source="Regional Effects",
+                            target="Translation",
+                        )
+                    ],
+                    created_by=1,
+                ),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
+                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
             ]
         )
 
@@ -168,6 +171,7 @@ def test_process_task_sets_txt_records(session: Session):
                 ),
                 create_doc(name="small.txt", type_=DocumentType.txt),
                 TxtDocument(parent_id=1, original_document=file_data),
+                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
             ]
         )
 
@@ -268,7 +272,8 @@ def test_process_task_uses_correct_tm_ids(session: Session):
                 TranslationMemory(name="test2", records=tm_records_2, created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
-                create_task(tm_ids=[2]),
+                create_task(),
+                DocMemoryAssociation(doc_id=1, tm_id=2, mode='read')
             ]
         )
         s.commit()
@@ -312,7 +317,9 @@ def test_process_task_uses_tm_mode(mode: str, trans_result: str, session: Sessio
                 TranslationMemory(name="test2", records=tm_records_2, created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
-                create_task(tm_ids=[1, 2], usage=TranslationMemoryUsage(mode)),
+                create_task(usage=TranslationMemoryUsage(mode)),
+                DocMemoryAssociation(doc_id=1, tm_id=1, mode='read'),
+                DocMemoryAssociation(doc_id=1, tm_id=2, mode='read')
             ]
         )
         s.commit()
@@ -360,7 +367,6 @@ def test_process_task_substitutes_numbers(session: Session):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_ids": [1],
                 "memory_usage": "newest",
             },
         },
@@ -370,7 +376,6 @@ def test_process_task_substitutes_numbers(session: Session):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_ids": [1],
                 "memory_usage": "newest",
             },
         },
@@ -385,7 +390,6 @@ def test_process_task_substitutes_numbers(session: Session):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_ids": [1],
                 "memory_usage": "newest",
             },
         },
@@ -421,7 +425,6 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(
-                    tm_ids=[],
                     mt_settings=MachineTranslationSettings(
                         folder_id="12345", oauth_token="fake"
                     ),

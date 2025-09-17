@@ -94,6 +94,7 @@ def process_document(
     settings: DocumentProcessingSettings,
     session: Session,
 ) -> bool:
+    tm_ids = [x.id for x in doc.memories]
     glossary_ids = [x.id for x in doc.glossaries]
 
     start_time = time.time()
@@ -105,7 +106,7 @@ def process_document(
     )
 
     start_time = time.time()
-    translate_indices = substitute_segments(settings, session, segments, glossary_ids)
+    translate_indices = substitute_segments(settings, session, segments, tm_ids, glossary_ids)
     logging.info(
         "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
         time.time() - start_time,
@@ -159,6 +160,7 @@ def substitute_segments(
     settings: DocumentProcessingSettings,
     session: Session,
     segments: Iterable[BaseSegment],
+    tm_ids: list[int],
     glossary_ids: list[int],
 ) -> list[int]:
     """
@@ -173,7 +175,7 @@ def substitute_segments(
         translation = get_segment_translation(
             segment.original,
             settings.similarity_threshold,
-            settings.memory_ids,
+            tm_ids,
             settings.memory_usage,
             settings.substitute_numbers,
             glossary_ids,
