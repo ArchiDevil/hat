@@ -298,7 +298,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_ids": [],
             "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
@@ -321,7 +320,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_ids": [],
             "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
@@ -336,10 +334,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
 def test_process_creates_task_for_xliff(
     user_logged_client: TestClient, session: Session
 ):
-    with session as s:
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.commit()
-
     with open("tests/fixtures/small.xliff", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
@@ -348,7 +342,6 @@ def test_process_creates_task_for_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_ids": [1],
             "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
@@ -365,7 +358,6 @@ def test_process_creates_task_for_xliff(
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "memory_ids": [1],
                 "memory_usage": "newest",
                 "similarity_threshold": 1.0,
             },
@@ -373,10 +365,6 @@ def test_process_creates_task_for_xliff(
 
 
 def test_process_creates_task_for_txt(user_logged_client: TestClient, session: Session):
-    with session as s:
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.commit()
-
     with open("tests/fixtures/small.txt", "rb") as fp:
         user_logged_client.post("/document/", files={"file": fp})
 
@@ -385,7 +373,6 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_ids": [1],
             "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
@@ -402,97 +389,10 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "memory_ids": [1],
                 "memory_usage": "newest",
                 "similarity_threshold": 1.0,
             },
         }
-
-
-def test_process_creates_xliff_doc_tm_link(
-    user_logged_client: TestClient, session: Session
-):
-    with session as s:
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
-        s.commit()
-
-    with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
-
-    response = user_logged_client.post(
-        "/document/1/process",
-        json={
-            "substitute_numbers": False,
-            "machine_translation_settings": None,
-            "memory_ids": [1, 2],
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
-        },
-    )
-    assert response.status_code == 200
-
-    with session as s:
-        doc = s.query(Document).filter_by(id=1).one()
-        assert len(doc.memories) == 2
-        assert doc.memories[0].id == 1
-        assert doc.memories[1].id == 2
-
-
-def test_process_creates_txt_doc_tm_link(
-    user_logged_client: TestClient, session: Session
-):
-    with session as s:
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
-        s.commit()
-
-    with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
-
-    response = user_logged_client.post(
-        "/document/1/process",
-        json={
-            "substitute_numbers": False,
-            "machine_translation_settings": None,
-            "memory_ids": [1, 2],
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
-        },
-    )
-    assert response.status_code == 200
-
-    with session as s:
-        doc = s.query(Document).filter_by(id=1).one()
-        assert len(doc.memories) == 2
-        assert doc.memories[0].id == 1
-        assert doc.memories[1].id == 2
-
-
-def test_process_checks_for_nonexisting_memories(
-    user_logged_client: TestClient, session: Session
-):
-    with session as s:
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.commit()
-
-    with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
-
-    response = user_logged_client.post(
-        "/document/1/process",
-        json={
-            "substitute_numbers": False,
-            "machine_translation_settings": None,
-            "memory_ids": [1, 42],
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
-        },
-    )
-
-    assert response.status_code == 400
-
-    with session as s:
-        doc = s.query(Document).filter_by(id=1).one()
-        assert doc.processing_status == DocumentStatus.UPLOADED.value
-        assert not len(doc.memories)
 
 
 def test_returns_404_when_processing_nonexistent_doc(
@@ -503,7 +403,6 @@ def test_returns_404_when_processing_nonexistent_doc(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_ids": [],
             "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )

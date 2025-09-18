@@ -6,6 +6,7 @@ import {
   createDoc,
   processDoc,
   setGlossaries,
+  setTranslationMemories,
 } from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
 import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSettings'
@@ -78,6 +79,11 @@ const startProcessing = async () => {
   try {
     uploading.value = true
     status.value = 'Processing...'
+    await setTranslationMemories(uploadedFile.value!.id, {
+      memories: selectedTms.value.map((tm) => {
+        return {id: tm.id, mode: 'read'}
+      }),
+    })
     await setGlossaries(uploadedFile.value!.id, {
       glossaries: selectedGlossaries.value.map((g) => {
         return {id: g.id}
@@ -88,7 +94,6 @@ const startProcessing = async () => {
       machine_translation_settings: useMachineTranslation.value
         ? machineTranslationSettings.value
         : null,
-      memory_ids: selectedTms.value.map((tm) => tm.id),
       memory_usage: memoryMode.value,
       similarity_threshold: similarityThreshold.value,
     })

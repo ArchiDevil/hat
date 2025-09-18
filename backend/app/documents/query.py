@@ -73,16 +73,8 @@ class GenericDocsQuery:
             self.__db.add(TxtDocument(**args))
         self.__db.commit()
 
-    def enqueue_document(
-        self, document: Document, memories: Iterable[TranslationMemory]
-    ):
+    def enqueue_document(self, document: Document):
         document.processing_status = DocumentStatus.PENDING.value
-        self.__db.add_all(
-            [
-                DocMemoryAssociation(doc_id=document.id, tm_id=memory.id, mode="read")
-                for memory in memories
-            ]
-        )
         self.__db.commit()
 
     def get_document_records_count(self, doc: Document) -> tuple[int, int]:

@@ -34,7 +34,6 @@ class DocumentRecordUpdate(BaseModel):
 class DocumentProcessingSettings(BaseModel):
     substitute_numbers: bool
     machine_translation_settings: Optional[MachineTranslationSettings]
-    memory_ids: list[int]
     memory_usage: TranslationMemoryUsage
     similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
 
