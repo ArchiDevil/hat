@@ -1,11 +1,5 @@
 <template>
-  <div class="content">
+  <div class="text-color font-medium font-ui">
     <router-view />
   </div>
 </template>
-
-<style scoped>
-.content {
-  @apply text-color font-medium font-ui;
-}
-</style>
