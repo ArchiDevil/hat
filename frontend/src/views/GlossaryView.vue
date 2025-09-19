@@ -52,6 +52,10 @@ onMounted(async () => {
           :field="(record: GlossaryRecordSchema) => new Date(record.updated_at).toLocaleString()"
           header="Last update"
         />
+        <Column
+          field="created_by_user.username"
+          header="Created by"
+        />
       </DataTable>
     </div>
   </div>
