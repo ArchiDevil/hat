@@ -1,6 +1,7 @@
 import {createApp} from 'vue'
 import {createPinia} from 'pinia'
 import {defaults} from 'mande'
+import {setupWorker} from 'msw/browser'
 
 import PrimeVue from 'primevue/config'
 import {definePreset} from '@primevue/themes'
@@ -8,6 +9,7 @@ import Aura from '@primevue/themes/aura'
 
 import App from './App.vue'
 import {getRouter} from './router'
+import {mocks} from '../mocks/mocks'
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const themePreset = definePreset(Aura, {
@@ -30,31 +32,46 @@ const themePreset = definePreset(Aura, {
 
 const pinia = createPinia()
 
+const startApp = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  const app = createApp(App)
+  app.use(pinia)
+  app.use(PrimeVue, {
+    theme: {
+      preset: themePreset as unknown,
+      options: {
+        darkModeSelector: '',
+        cssLayer: {
+          name: 'primevue',
+          order: 'tailwind-base, primevue, tailwind-utilities',
+        },
+      },
+    },
+  })
+
+  app.use(getRouter())
+  app.config.errorHandler = (err, instance, info) => {
+    // TODO: add some kind of a monitoring system like sentry
+    console.log('Error: ', err, '- ', info)
+    console.log(instance)
+  }
+  app.mount('#app')
+}
+
 if (import.meta.env.DEV) {
   // to test it locally
   defaults.credentials = 'include'
-}
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-const app = createApp(App)
-app.use(pinia)
-app.use(PrimeVue, {
-  theme: {
-    preset: themePreset as unknown,
-    options: {
-      darkModeSelector: '',
-      cssLayer: {
-        name: 'primevue',
-        order: 'tailwind-base, primevue, tailwind-utilities',
-      },
-    },
-  },
-})
+  const worker = setupWorker(...mocks)
 
-app.use(getRouter())
-app.config.errorHandler = (err, instance, info) => {
-  // TODO: add some kind of a monitoring system like sentry
-  console.log('Error: ', err, '- ', info)
-  console.log(instance)
+  worker
+    .start()
+    .then(() => {
+      startApp()
+    })
+    .catch((e) => {
+      console.log('MSW init failed', e)
+    })
+} else {
+  startApp()
 }
-app.mount('#app')

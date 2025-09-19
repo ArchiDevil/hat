@@ -12,6 +12,7 @@ export default tsEslint.config([
       'tailwind.config.js',
       'vite.config.ts',
       'src/client/**',
+      'public/**'
     ],
   },
   ...vueEslint.configs['flat/essential'],
