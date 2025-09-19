@@ -762,7 +762,7 @@ def test_can_get_glossaries_substitutions(
     assert response_json[0]["target"] == "Региональные эффекты"
     assert response_json[0]["glossary_id"] == 1
     assert response_json[0]["comment"] is None
-    assert response_json[0]["created_by"] == 1
+    assert response_json[0]["created_by_user"]["id"] == 1
 
 
 def test_glossary_substitution_returns_404_for_non_existent_document(

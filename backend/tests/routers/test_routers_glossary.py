@@ -73,10 +73,10 @@ def test_get_glossary_list(user_logged_client: TestClient, session: Session):
     assert response.status_code == status.HTTP_200_OK
 
     assert resp_1["processing_status"] == glossary_1.processing_status
-    assert resp_1["created_by"] == glossary_1.created_by
+    assert resp_1["created_by_user"]["id"] == glossary_1.created_by
 
     assert resp_2["processing_status"] == glossary_2.processing_status
-    assert resp_2["created_by"] == glossary_2.created_by
+    assert resp_2["created_by_user"]["id"] == glossary_2.created_by
 
 
 def test_get_glossary_retrieve(user_logged_client: TestClient, session: Session):
@@ -95,7 +95,7 @@ def test_get_glossary_retrieve(user_logged_client: TestClient, session: Session)
 
     assert response_json["id"] == glossary_1.id
     assert response_json["processing_status"] == glossary_1.processing_status
-    assert response_json["created_by"] == glossary_1.created_by
+    assert response_json["created_by_user"]["id"] == glossary_1.created_by
 
 
 def test_update_glossary(user_logged_client: TestClient, session: Session):
@@ -136,7 +136,7 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     response = user_logged_client.get(path)
     [resp_rec] = response.json()
 
-    assert resp_rec["created_by"] == record.created_by
+    assert resp_rec["created_by_user"]["id"] == record.created_by
     assert resp_rec["comment"] == record.comment
     assert resp_rec["source"] == record.source
     assert resp_rec["target"] == record.target
@@ -167,7 +167,7 @@ def test_update_glossary_record(user_logged_client: TestClient, session: Session
     response = user_logged_client.put(url=path, json=dumped_record.model_dump())
     response_json = response.json()
 
-    assert response_json["created_by"] == expected_user_id
+    assert response_json["created_by_user"]["id"] == expected_user_id
 
     record = repo.get_glossary_record_by_id(record.id)
     assert record.created_by == expected_user_id
@@ -266,7 +266,7 @@ def test_create_glossary_record(user_logged_client: TestClient, session: Session
     response = user_logged_client.post(url=path, json=record_scheme.model_dump())
     response_json = response.json()
 
-    assert response_json["created_by"] == 1
+    assert response_json["created_by_user"]["id"] == 1
     assert response_json["comment"] == record_scheme.comment
     assert response_json["source"] == record_scheme.source
     assert response_json["target"] == record_scheme.target

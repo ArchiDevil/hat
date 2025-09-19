@@ -37,7 +37,7 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan", order_by="Document.id"
     )
     glossaries: Mapped[list["Glossary"]] = relationship(
-        back_populates="user",
+        back_populates="created_by_user",
         cascade="all, delete-orphan",
         order_by="Glossary.id",
     )

@@ -34,7 +34,7 @@ class Glossary(Base):
         cascade="all, delete-orphan",
         order_by="GlossaryRecord.id",
     )
-    user: Mapped["User"] = relationship(back_populates="glossaries")
+    created_by_user: Mapped["User"] = relationship(back_populates="glossaries")
 
     document_associations: Mapped[list["DocGlossaryAssociation"]] = relationship(
         back_populates="glossary", cascade="all, delete-orphan"
@@ -60,6 +60,6 @@ class GlossaryRecord(Base):
 
     glossary_id: Mapped[int] = mapped_column(ForeignKey("glossary.id"))
     glossary: Mapped["Glossary"] = relationship(back_populates="records")
-    user: Mapped["User"] = relationship()
+    created_by_user: Mapped["User"] = relationship()
 
     stemmed_source: Mapped[str] = mapped_column()
