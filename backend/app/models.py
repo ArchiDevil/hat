@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.base.schema import Identified
 
@@ -48,6 +48,11 @@ class UserFields(BaseModel):
 
 class UserToCreate(UserFields):
     password: str
+
+
+class ShortUser(Identified):
+    username: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class User(Identified, UserFields):

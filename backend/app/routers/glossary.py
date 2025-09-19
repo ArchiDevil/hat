@@ -148,7 +148,7 @@ def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
     response_model=list[GlossaryRecordSchema],
     status_code=status.HTTP_200_OK,
 )
-def list_records(glossary_id: int | None = None, db: Session = Depends(get_db)):
+def list_records(glossary_id: int, db: Session = Depends(get_db)):
     return list_glossary_records_controller(db, glossary_id)
 
 

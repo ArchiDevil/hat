@@ -78,17 +78,13 @@ class GlossaryQuery:
     def list_glossary(self) -> list[Glossary]:
         return self.db.query(Glossary).order_by(Glossary.id).all()
 
-    def list_glossary_records(
-        self, glossary_id: int | None = None
-    ) -> list[GlossaryRecord]:
-        if glossary_id:
-            return (
-                self.db.query(GlossaryRecord)
-                .filter(GlossaryRecord.glossary_id == glossary_id)  # type: ignore
-                .order_by(GlossaryRecord.id)
-                .all()
-            )
-        return self.db.query(GlossaryRecord).order_by(GlossaryRecord.id).all()
+    def list_glossary_records(self, glossary_id: int):
+        return (
+            self.db.query(GlossaryRecord)
+            .filter(GlossaryRecord.glossary_id == glossary_id)  # type: ignore
+            .order_by(GlossaryRecord.id)
+            .all()
+        )
 
     def create_glossary(
         self,
