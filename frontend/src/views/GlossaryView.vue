@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {useRoute} from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -19,15 +19,20 @@ onMounted(async () => {
   document.value = await retrieveGlossary(Number(route.params.id))
   records.value = await listRecords(Number(route.params.id))
 })
+
+const docName = computed(
+  () =>
+    `${document.value?.name} (ID: ${document.value?.id}): ${records.value?.length} records`
+)
 </script>
 
 <template>
   <div class="container">
     <PageNav />
-    <PageTitle title="Glossary viewer" />
-    <p>File ID: {{ document?.id }}</p>
-    <p>File name: {{ document?.name }}</p>
-    <p class="mb-4">Number of records: {{ records?.length }}</p>
+    <PageTitle
+      :title="docName"
+      class="mb-4"
+    />
     <div
       v-if="records"
       class="flex flex-col gap-1"
