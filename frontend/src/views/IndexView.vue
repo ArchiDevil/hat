@@ -41,16 +41,24 @@ onMounted(async () => {
 
     <Panel
       class="mt-4"
-      header="Translation Memories"
+      header="Documents"
       toggleable
     >
-      <TmxUploadingDialog @uploaded="tmStore.fetchMemories()" />
-      <TmRecord
-        v-for="file in tmStore.memories"
-        :key="file.id"
-        :file="file"
-        :delete-method="() => tmStore.delete(file)"
-        @delete="tmStore.fetchMemories()"
+      <DocUploadingDialog
+        title="Select a file to upload:"
+        @processed="
+          (fileId) => router.push({name: 'document', params: {id: fileId}})
+        "
+      />
+      <DocumentList
+        :documents="docStore.docs"
+        @delete="docStore.fetchDocs()"
+        @open-settings="
+          (docId) => {
+            selectedDocumentId = docId
+            tmSettingsVisible = true
+          }
+        "
       />
     </Panel>
 
@@ -71,24 +79,16 @@ onMounted(async () => {
 
     <Panel
       class="mt-4"
-      header="Documents"
+      header="Translation Memories"
       toggleable
     >
-      <DocUploadingDialog
-        title="Select a file to upload:"
-        @processed="
-          (fileId) => router.push({name: 'document', params: {id: fileId}})
-        "
-      />
-      <DocumentList
-        :documents="docStore.docs"
-        @delete="docStore.fetchDocs()"
-        @open-settings="
-          (docId) => {
-            selectedDocumentId = docId
-            tmSettingsVisible = true
-          }
-        "
+      <TmxUploadingDialog @uploaded="tmStore.fetchMemories()" />
+      <TmRecord
+        v-for="file in tmStore.memories"
+        :key="file.id"
+        :file="file"
+        :delete-method="() => tmStore.delete(file)"
+        @delete="tmStore.fetchMemories()"
       />
     </Panel>
   </div>
