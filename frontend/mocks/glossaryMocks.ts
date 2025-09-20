@@ -1,6 +1,7 @@
 import {http, HttpResponse} from 'msw'
 import {
   createGlossaryRecord,
+  deleteGlossary,
   deleteGlossaryRecord,
   listGlossary,
   listRecords,
@@ -12,6 +13,20 @@ import {defaultUser} from './userMocks'
 import {GlossaryRecordCreate} from '../src/client/schemas/GlossaryRecordCreate'
 import {GlossaryRecordSchema} from '../src/client/schemas/GlossaryRecordSchema'
 import {GlossaryRecordUpdate} from '../src/client/schemas/GlossaryRecordUpdate'
+import {GlossaryResponse} from '../src/client/schemas/GlossaryResponse'
+import {GlossarySchema} from '../src/client/schemas/GlossarySchema'
+
+const glossaries: GlossaryResponse[] = [
+  {
+    id: 51,
+    name: 'Some glossary',
+    created_at: '2024-12-03T12:31:22',
+    updated_at: '2024-12-03T16:32:22',
+    processing_status: 'done',
+    upload_time: '2024-12-03T12:32:05',
+    created_by_user: defaultUser,
+  },
+]
 
 const glossarySegments: GlossaryRecordSchema[] = [
   {
@@ -38,30 +53,48 @@ const glossarySegments: GlossaryRecordSchema[] = [
 
 export const glossaryMocks = [
   http.get('http://localhost:8000/glossary/', () =>
-    HttpResponse.json<AwaitedReturnType<typeof listGlossary>>([
-      {
-        id: 51,
-        name: 'Some glossary',
-        created_at: '2024-12-03T12:31:22',
-        updated_at: '2024-12-03T16:32:22',
-        processing_status: 'done',
-        upload_time: '2024-12-03T12:32:05',
-        created_by_user: defaultUser,
-      },
-    ])
+    HttpResponse.json<AwaitedReturnType<typeof listGlossary>>(glossaries)
   ),
-  http.get('http://localhost:8000/glossary/:id', ({params}) =>
-    HttpResponse.json<AwaitedReturnType<typeof retrieveGlossary>>({
-      id: Number(params.id),
-      name: 'Some glossary',
-      created_at: '2024-12-03T12:31:22',
-      updated_at: '2024-12-03T16:32:22',
-      processing_status: 'done',
-      upload_time: '2024-12-03T12:32:05',
-      created_by_user: defaultUser,
-    })
+  http.get<{id: string}>('http://localhost:8000/glossary/:id', ({params}) => {
+    const idx = glossaries.findIndex((g) => g.id === Number(params.id))
+    if (idx !== -1) {
+      return HttpResponse.json<AwaitedReturnType<typeof retrieveGlossary>>(
+        glossaries.at(idx)
+      )
+    } else {
+      return new HttpResponse(null, {status: 404})
+    }
+  }),
+  http.put<{id: string}, GlossarySchema>(
+    'http://localhost:8000/glossary/:id',
+    async ({request, params}) => {
+      const idx = glossaries.findIndex((g) => g.id === Number(params.id))
+      if (idx !== -1) {
+        const json = await request.json()
+        glossaries.at(idx)!.name = json.name
+        return HttpResponse.json<AwaitedReturnType<typeof deleteGlossary>>({
+          message: 'Ok',
+        })
+      } else {
+        return new HttpResponse(null, {status: 404})
+      }
+    }
   ),
-  http.get('http://localhost:8000/glossary/:id/records', () =>
+  http.delete<{id: string}>(
+    'http://localhost:8000/glossary/:id',
+    ({params}) => {
+      const idx = glossaries.findIndex((g) => g.id === Number(params.id))
+      if (idx !== -1) {
+        glossaries.splice(idx)
+        return HttpResponse.json<AwaitedReturnType<typeof deleteGlossary>>({
+          message: 'Ok',
+        })
+      } else {
+        return new HttpResponse(null, {status: 404})
+      }
+    }
+  ),
+  http.get<{id: string}>('http://localhost:8000/glossary/:id/records', () =>
     HttpResponse.json<AwaitedReturnType<typeof listRecords>>(glossarySegments)
   ),
   http.post<{id: string}, GlossaryRecordCreate>(

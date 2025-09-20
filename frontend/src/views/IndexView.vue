@@ -72,8 +72,7 @@ onMounted(async () => {
         v-for="file in glossaryStore.glossaries"
         :key="file.id"
         :file="file"
-        :delete-method="() => glossaryStore.delete(file)"
-        @delete="glossaryStore.fetchGlossaries()"
+        @update="glossaryStore.fetchGlossaries()"
       />
     </Panel>
 

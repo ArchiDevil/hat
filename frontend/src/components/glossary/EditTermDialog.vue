@@ -60,12 +60,13 @@ const deleteRecord = async () => {
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-2">
         <label
-          for="username"
+          for="source"
           class="font-semibold w-24"
         >
           Source
         </label>
         <InputText
+          id="source"
           v-model="source"
           class="flex-auto"
           autocomplete="off"
@@ -74,12 +75,13 @@ const deleteRecord = async () => {
       </div>
       <div class="flex items-center gap-2">
         <label
-          for="email"
+          for="target"
           class="font-semibold w-24"
         >
           Target
         </label>
         <InputText
+          id="target"
           v-model="target"
           class="flex-auto"
           autocomplete="off"
@@ -88,12 +90,13 @@ const deleteRecord = async () => {
       </div>
       <div class="flex items-center gap-2">
         <label
-          for="email"
+          for="comment"
           class="font-semibold w-24"
         >
           Comment
         </label>
         <InputText
+          id="comment"
           v-model="comment"
           class="flex-auto"
           autocomplete="off"
@@ -103,6 +106,7 @@ const deleteRecord = async () => {
 
       <div class="flex justify-end gap-2">
         <Button
+          class="mr-auto"
           type="button"
           label="Delete"
           severity="danger"
