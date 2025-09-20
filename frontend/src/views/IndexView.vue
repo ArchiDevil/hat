@@ -41,36 +41,6 @@ onMounted(async () => {
 
     <Panel
       class="mt-4"
-      header="Translation Memories"
-      toggleable
-    >
-      <TmxUploadingDialog @uploaded="tmStore.fetchMemories()" />
-      <TmRecord
-        v-for="file in tmStore.memories"
-        :key="file.id"
-        :file="file"
-        :delete-method="() => tmStore.delete(file)"
-        @delete="tmStore.fetchMemories()"
-      />
-    </Panel>
-
-    <Panel
-      class="mt-4"
-      header="Glossaries"
-      toggleable
-    >
-      <GlossaryUploadingDialog @uploaded="glossaryStore.fetchGlossaries()" />
-      <GlossaryRecord
-        v-for="file in glossaryStore.glossaries"
-        :key="file.id"
-        :file="file"
-        :delete-method="() => glossaryStore.delete(file)"
-        @delete="glossaryStore.fetchGlossaries()"
-      />
-    </Panel>
-
-    <Panel
-      class="mt-4"
       header="Documents"
       toggleable
     >
@@ -89,6 +59,35 @@ onMounted(async () => {
             tmSettingsVisible = true
           }
         "
+      />
+    </Panel>
+
+    <Panel
+      class="mt-4"
+      header="Glossaries"
+      toggleable
+    >
+      <GlossaryUploadingDialog @uploaded="glossaryStore.fetchGlossaries()" />
+      <GlossaryRecord
+        v-for="file in glossaryStore.glossaries"
+        :key="file.id"
+        :file="file"
+        @update="glossaryStore.fetchGlossaries()"
+      />
+    </Panel>
+
+    <Panel
+      class="mt-4"
+      header="Translation Memories"
+      toggleable
+    >
+      <TmxUploadingDialog @uploaded="tmStore.fetchMemories()" />
+      <TmRecord
+        v-for="file in tmStore.memories"
+        :key="file.id"
+        :file="file"
+        :delete-method="() => tmStore.delete(file)"
+        @delete="tmStore.fetchMemories()"
       />
     </Panel>
   </div>

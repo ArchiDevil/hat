@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from app.base.schema import IdentifiedTimestampedModel
+from app.models import ShortUser
 
 
 class GlossaryLoadFileResponse(BaseModel):
@@ -18,16 +19,16 @@ class GlossarySchema(BaseModel):
 class GlossaryResponse(IdentifiedTimestampedModel):
     processing_status: str
     upload_time: datetime.datetime
-    created_by: int
+    created_by_user: ShortUser
     name: str
     model_config = ConfigDict(from_attributes=True)
 
 
 class GlossaryRecordSchema(IdentifiedTimestampedModel):
-    created_by: int
     comment: Optional[str]
     source: str
     target: str
+    created_by_user: ShortUser
 
     glossary_id: int
     model_config = ConfigDict(from_attributes=True)

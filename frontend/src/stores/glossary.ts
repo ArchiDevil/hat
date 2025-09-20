@@ -4,9 +4,11 @@ import {
   createGlossaryFromFile,
   listGlossary,
   deleteGlossary,
+  updateGlossary,
 } from '../client/services/GlossaryService'
 import {GlossaryResponse} from '../client/schemas/GlossaryResponse'
 import {GlossaryLoadFileResponse} from '../client/schemas/GlossaryLoadFileResponse'
+import {GlossarySchema} from '../client/schemas/GlossarySchema'
 
 export const useGlossaryStore = defineStore('glossary', {
   state() {
@@ -21,8 +23,11 @@ export const useGlossaryStore = defineStore('glossary', {
     async fetchGlossaries() {
       this.glossaries = await listGlossary()
     },
-    async delete(glossary: GlossaryResponse) {
-      await deleteGlossary(glossary.id)
+    async delete(glossaryId: number) {
+      await deleteGlossary(glossaryId)
+    },
+    async update(glossaryId: number, content: GlossarySchema) {
+      await updateGlossary(glossaryId, content)
     },
   },
 })

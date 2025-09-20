@@ -5,34 +5,17 @@ import {GlossaryResponse} from '../../client/schemas/GlossaryResponse'
 
 import Button from 'primevue/button'
 import RoutingLink from '../RoutingLink.vue'
+import EditGlossaryDialog from './EditGlossaryDialog.vue'
 
-const emit = defineEmits<{
-  delete: []
+defineEmits<{
+  update: []
 }>()
 
-const props = defineProps<{
+defineProps<{
   file: GlossaryResponse
-  deleteMethod: () => Promise<unknown>
 }>()
 
-const busy = ref(false)
-const status = ref()
-
-const deleteFile = async () => {
-  try {
-    busy.value = true
-    status.value = 'Busy...'
-    await props.deleteMethod()
-    status.value = undefined
-  } catch (error) {
-    console.log(error)
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    status.value = `${error} :(`
-  } finally {
-    busy.value = false
-    emit('delete')
-  }
-}
+const editDialogVisible = ref(false)
 </script>
 
 <template>
@@ -43,23 +26,22 @@ const deleteFile = async () => {
       class="w-[24rem] text-ellipsis whitespace-nowrap overflow-hidden"
       :title="file.name"
     >
-      #{{ file.id }} {{ file.name ?? 'Noname' }}
+      #{{ file.id }} {{ file.name ?? 'No name' }}
     </div>
     <RoutingLink
       name="glossary"
       :params="{id: file.id}"
-      :disabled="busy"
       title="Open"
     />
-    <span v-if="status">
-      {{ status }}
-    </span>
     <Button
-      class="ml-auto"
-      label="Delete"
-      severity="danger"
-      :disabled="busy"
-      @click="deleteFile()"
+      label="Edit"
+      severity="secondary"
+      @click="editDialogVisible = true"
+    />
+    <EditGlossaryDialog
+      v-model="editDialogVisible"
+      :glossary-id="file.id"
+      @close="$emit('update')"
     />
   </div>
 </template>
