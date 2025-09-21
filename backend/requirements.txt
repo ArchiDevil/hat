@@ -1,10 +1,10 @@
-fastapi[standard]==0.115.*
+fastapi[standard]==0.117.*
 python-multipart==0.0.20
 httpx==0.28.*
-pydantic_settings==2.7.*
+pydantic_settings==2.10.*
 lxml==5.3.*
-uvicorn==0.34.*
-alembic==1.13.*
+uvicorn==0.36.*
+alembic==1.16.*
 sqlalchemy==2.0.*
 psycopg2-binary==2.9.*
 requests==2.32.*
