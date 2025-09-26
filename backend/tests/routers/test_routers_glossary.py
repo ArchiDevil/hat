@@ -96,6 +96,40 @@ def test_get_glossary_retrieve(user_logged_client: TestClient, session: Session)
     assert response_json["id"] == glossary_1.id
     assert response_json["processing_status"] == glossary_1.processing_status
     assert response_json["created_by_user"]["id"] == glossary_1.created_by
+    assert response_json["records_count"] == 0
+
+
+def test_get_glossary_retrieve_with_records(
+    user_logged_client: TestClient, session: Session
+):
+    """GET /glossary/{glossary_id}/"""
+
+    glossary_1 = GlossaryQuery(session).create_glossary(
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
+    )
+    record_scheme = GlossaryRecordCreate(
+        comment="Comment",
+        source="Test",
+        target="Тест",
+    )
+    for _ in range(140):  # two pages with 100 records per page
+        GlossaryQuery(session).create_glossary_record(
+            user_id=1,
+            record=record_scheme,
+            glossary_id=glossary_1.id,
+        )
+
+    path = app.url_path_for("retrieve_glossary", **{"glossary_id": glossary_1.id})
+
+    response = user_logged_client.get(path)
+    response_json = response.json()
+
+    assert response.status_code == status.HTTP_200_OK
+
+    assert response_json["id"] == glossary_1.id
+    assert response_json["processing_status"] == glossary_1.processing_status
+    assert response_json["created_by_user"]["id"] == glossary_1.created_by
+    assert response_json["records_count"] == 140
 
 
 def test_update_glossary(user_logged_client: TestClient, session: Session):
@@ -141,6 +175,38 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     assert resp_rec["source"] == record.source
     assert resp_rec["target"] == record.target
     assert resp_rec["glossary_id"] == record.glossary_id
+
+
+def test_list_glossary_records_paged(user_logged_client: TestClient, session: Session):
+    """GET /glossary/{glossary_id}/records/"""
+
+    glossary = GlossaryQuery(session).create_glossary(
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
+    )
+    record_scheme = GlossaryRecordCreate(
+        comment="Comment",
+        source="Test",
+        target="Тест",
+    )
+
+    for _ in range(140):  # two pages with 100 records per page
+        record = GlossaryQuery(session).create_glossary_record(
+            user_id=1,
+            record=record_scheme,
+            glossary_id=glossary.id,
+        )
+
+    path = app.url_path_for("list_records", **{"glossary_id": glossary.id})
+
+    response = user_logged_client.get(path, params={"page": 1})
+    resp_records = response.json()
+
+    assert resp_records[0]["created_by_user"]["id"] == record.created_by
+    assert resp_records[0]["id"] == 101  # 100th record
+    assert resp_records[0]["comment"] == record.comment
+    assert resp_records[0]["source"] == record.source
+    assert resp_records[0]["target"] == record.target
+    assert resp_records[0]["glossary_id"] == record.glossary_id
 
 
 def test_update_glossary_record(user_logged_client: TestClient, session: Session):

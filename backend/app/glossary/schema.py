@@ -21,6 +21,7 @@ class GlossaryResponse(IdentifiedTimestampedModel):
     upload_time: datetime.datetime
     created_by_user: ShortUser
     name: str
+    records_count: int
     model_config = ConfigDict(from_attributes=True)
 
 

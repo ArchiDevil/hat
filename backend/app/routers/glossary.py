@@ -1,10 +1,11 @@
-from typing import Annotated
+from typing import Annotated, Final
 
 from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
     HTTPException,
+    Query,
     UploadFile,
     status,
 )
@@ -144,12 +145,20 @@ def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
 
 @router.get(
     "/{glossary_id}/records",
-    description="Get list glossary record ",
+    description="Get list glossary record",
     response_model=list[GlossaryRecordSchema],
     status_code=status.HTTP_200_OK,
 )
-def list_records(glossary_id: int, db: Session = Depends(get_db)):
-    return list_glossary_records_controller(db, glossary_id)
+def list_records(
+    glossary_id: int,
+    db: Session = Depends(get_db),
+    page: Annotated[int | None, Query(ge=0)] = None,
+):
+    page_records: Final = 100
+    if not page:
+        page = 0
+
+    return list_glossary_records_controller(db, glossary_id, page, page_records)
 
 
 @router.post(
