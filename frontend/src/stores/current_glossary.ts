@@ -8,16 +8,23 @@ export const useCurrentGlossaryStore = defineStore('current_glossary', {
     return {
       glossary: undefined as GlossaryResponse | undefined,
       records: [] as GlossaryRecordSchema[],
+      filteredRecordsCount: 0,
     }
   },
   actions: {
     async loadGlossary(glossaryId: number) {
       this.glossary = await retrieveGlossary(glossaryId)
-      this.records = await listRecords(glossaryId, 0)
+
+      const resp = await listRecords(glossaryId, 0, '')
+      this.records = resp.records
+      this.filteredRecordsCount = resp.total_rows
     },
-    async loadRecords(page: number | undefined) {
+    async loadRecords(page: number | undefined, search?: string) {
       if (!this.glossary) throw new Error('No glossary loaded')
-      this.records = await listRecords(this.glossary?.id, page ?? 0)
+
+      const resp = await listRecords(this.glossary?.id, page ?? 0, search)
+      this.records = resp.records
+      this.filteredRecordsCount = resp.total_rows
     },
   },
 })
