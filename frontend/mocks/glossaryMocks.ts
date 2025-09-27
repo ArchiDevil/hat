@@ -1,4 +1,7 @@
 import {http, HttpResponse} from 'msw'
+import {faker} from '@faker-js/faker'
+import {fakerRU} from '@faker-js/faker'
+
 import {
   createGlossaryRecord,
   deleteGlossary,
@@ -16,38 +19,31 @@ import {GlossaryRecordUpdate} from '../src/client/schemas/GlossaryRecordUpdate'
 import {GlossaryResponse} from '../src/client/schemas/GlossaryResponse'
 import {GlossarySchema} from '../src/client/schemas/GlossarySchema'
 
+const glossarySegments: GlossaryRecordSchema[] = new Array(125)
+  .fill(null)
+  .map((_, idx) => {
+    return {
+      id: idx + 1,
+      glossary_id: 51,
+      created_at: faker.date.recent().toISOString().split('.')[0],
+      updated_at: faker.date.recent().toISOString().split('.')[0],
+      source: faker.commerce.productName(),
+      target: fakerRU.commerce.productName(),
+      comment: fakerRU.commerce.productDescription(),
+      created_by_user: defaultUser,
+    }
+  })
+
 const glossaries: GlossaryResponse[] = [
   {
     id: 51,
     name: 'Some glossary',
-    created_at: '2024-12-03T12:31:22',
-    updated_at: '2024-12-03T16:32:22',
+    created_at: faker.date.recent().toISOString().split('.')[0],
+    updated_at: faker.date.recent().toISOString().split('.')[0],
     processing_status: 'done',
-    upload_time: '2024-12-03T12:32:05',
+    upload_time: faker.date.recent().toISOString().split('.')[0],
     created_by_user: defaultUser,
-  },
-]
-
-const glossarySegments: GlossaryRecordSchema[] = [
-  {
-    id: 1,
-    glossary_id: 51,
-    created_at: '2024-12-03T12:31:22',
-    updated_at: '2024-12-03T12:31:22',
-    source: 'Some source',
-    target: 'Some target',
-    comment: 'This is a comment',
-    created_by_user: defaultUser,
-  },
-  {
-    id: 2,
-    glossary_id: 51,
-    created_at: '2024-12-03T12:31:22',
-    updated_at: '2024-12-03T12:31:22',
-    source: 'Another source',
-    target: 'Another target',
-    comment: 'Some comment from another segment',
-    created_by_user: defaultUser,
+    records_count: glossarySegments.length,
   },
 ]
 
@@ -94,8 +90,16 @@ export const glossaryMocks = [
       }
     }
   ),
-  http.get<{id: string}>('http://localhost:8000/glossary/:id/records', () =>
-    HttpResponse.json<AwaitedReturnType<typeof listRecords>>(glossarySegments)
+  http.get<{id: string}>(
+    'http://localhost:8000/glossary/:id/records',
+    ({request}) => {
+      const searchParams = new URL(request.url).searchParams
+      const page = Number(searchParams.get('page') ?? '0')
+
+      return HttpResponse.json<AwaitedReturnType<typeof listRecords>>(
+        glossarySegments.slice(page * 100, page * 100 + 100)
+      )
+    }
   ),
   http.post<{id: string}, GlossaryRecordCreate>(
     'http://localhost:8000/glossary/:id/records',
