@@ -28,6 +28,7 @@ from app.glossary.query import GlossaryQuery
 from app.glossary.schema import (
     GlossaryLoadFileResponse,
     GlossaryRecordCreate,
+    GlossaryRecordResponse,
     GlossaryRecordSchema,
     GlossaryRecordUpdate,
     GlossaryResponse,
@@ -146,19 +147,23 @@ def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
 @router.get(
     "/{glossary_id}/records",
     description="Get list glossary record",
-    response_model=list[GlossaryRecordSchema],
+    response_model=GlossaryRecordResponse,
     status_code=status.HTTP_200_OK,
 )
 def list_records(
     glossary_id: int,
     db: Session = Depends(get_db),
     page: Annotated[int | None, Query(ge=0)] = None,
+    search: Annotated[str | None, Query()] = None,
 ):
     page_records: Final = 100
     if not page:
         page = 0
 
-    return list_glossary_records_controller(db, glossary_id, page, page_records)
+    records, total_rows = list_glossary_records_controller(
+        db, glossary_id, page, page_records, search
+    )
+    return GlossaryRecordResponse(records=records, total_rows=total_rows)
 
 
 @router.post(

@@ -13,6 +13,7 @@ class GlossaryLoadFileResponse(BaseModel):
 
 class GlossarySchema(BaseModel):
     name: str
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -22,6 +23,7 @@ class GlossaryResponse(IdentifiedTimestampedModel):
     created_by_user: ShortUser
     name: str
     records_count: int
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -30,8 +32,15 @@ class GlossaryRecordSchema(IdentifiedTimestampedModel):
     source: str
     target: str
     created_by_user: ShortUser
-
     glossary_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GlossaryRecordResponse(BaseModel):
+    records: list[GlossaryRecordSchema]
+    total_rows: int
+
     model_config = ConfigDict(from_attributes=True)
 
 

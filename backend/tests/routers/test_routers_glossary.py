@@ -168,13 +168,14 @@ def test_list_glossary_records(user_logged_client: TestClient, session: Session)
     path = app.url_path_for("list_records", **{"glossary_id": glossary.id})
 
     response = user_logged_client.get(path)
-    [resp_rec] = response.json()
+    resp_records = response.json()
 
-    assert resp_rec["created_by_user"]["id"] == record.created_by
-    assert resp_rec["comment"] == record.comment
-    assert resp_rec["source"] == record.source
-    assert resp_rec["target"] == record.target
-    assert resp_rec["glossary_id"] == record.glossary_id
+    assert resp_records["total_rows"] == 1
+    assert resp_records["records"][0]["created_by_user"]["id"] == record.created_by
+    assert resp_records["records"][0]["comment"] == record.comment
+    assert resp_records["records"][0]["source"] == record.source
+    assert resp_records["records"][0]["target"] == record.target
+    assert resp_records["records"][0]["glossary_id"] == record.glossary_id
 
 
 def test_list_glossary_records_paged(user_logged_client: TestClient, session: Session):
@@ -201,12 +202,50 @@ def test_list_glossary_records_paged(user_logged_client: TestClient, session: Se
     response = user_logged_client.get(path, params={"page": 1})
     resp_records = response.json()
 
-    assert resp_records[0]["created_by_user"]["id"] == record.created_by
-    assert resp_records[0]["id"] == 101  # 100th record
-    assert resp_records[0]["comment"] == record.comment
-    assert resp_records[0]["source"] == record.source
-    assert resp_records[0]["target"] == record.target
-    assert resp_records[0]["glossary_id"] == record.glossary_id
+    assert resp_records["total_rows"] == 140
+    assert resp_records["records"][0]["created_by_user"]["id"] == record.created_by
+    assert resp_records["records"][0]["id"] == 101  # 100th record
+    assert resp_records["records"][0]["comment"] == record.comment
+    assert resp_records["records"][0]["source"] == record.source
+    assert resp_records["records"][0]["target"] == record.target
+    assert resp_records["records"][0]["glossary_id"] == record.glossary_id
+
+
+def test_list_glossary_records_search(user_logged_client: TestClient, session: Session):
+    """GET /glossary/{glossary_id}/records/?search=..."""
+    glossary = GlossaryQuery(session).create_glossary(
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
+    )
+    records = [
+        GlossaryRecordCreate(comment="Comment", source="Alpha", target="Альфа"),
+        GlossaryRecordCreate(comment="Comment", source="Beta", target="Бета"),
+        GlossaryRecordCreate(comment="Comment", source="Gamma", target="Гамма"),
+    ]
+    for rec in records:
+        GlossaryQuery(session).create_glossary_record(
+            user_id=1, record=rec, glossary_id=glossary.id
+        )
+
+    path = app.url_path_for("list_records", **{"glossary_id": glossary.id})
+
+    # Search by source
+    response = user_logged_client.get(path, params={"search": "Alpha"})
+    resp_records = response.json()
+    assert resp_records["total_rows"] == 1
+    assert resp_records["records"][0]["source"] == "Alpha"
+    assert resp_records["records"][0]["target"] == "Альфа"
+
+    # Search by target
+    response = user_logged_client.get(path, params={"search": "Бета"})
+    resp_records = response.json()
+    assert resp_records["total_rows"] == 1
+    assert resp_records["records"][0]["source"] == "Beta"
+    assert resp_records["records"][0]["target"] == "Бета"
+
+    # Search by nonexistent
+    response = user_logged_client.get(path, params={"search": "Delta"})
+    resp_records = response.json()
+    assert resp_records == {"total_rows": 0, "records": []}
 
 
 def test_update_glossary_record(user_logged_client: TestClient, session: Session):
