@@ -10,4 +10,5 @@ export interface GlossaryResponse {
   upload_time: string
   created_by_user: ShortUser
   name: string
+  records_count: number
 }
