@@ -5,6 +5,7 @@ import {getApiBase, api} from '../defaults'
 import {GlossaryResponse} from '../schemas/GlossaryResponse'
 import {GlossarySchema} from '../schemas/GlossarySchema'
 import {StatusMessage} from '../schemas/StatusMessage'
+import {GlossaryRecordResponse} from '../schemas/GlossaryRecordResponse'
 import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
 import {GlossaryRecordCreate} from '../schemas/GlossaryRecordCreate'
 import {GlossaryRecordUpdate} from '../schemas/GlossaryRecordUpdate'
@@ -26,8 +27,8 @@ export const updateGlossary = async (glossary_id: number, content: GlossarySchem
 export const deleteGlossary = async (glossary_id: number): Promise<StatusMessage> => {
   return await api.delete<StatusMessage>(`/glossary/${glossary_id}`)
 }
-export const listRecords = async (glossary_id: number, page?: number | null): Promise<GlossaryRecordSchema[]> => {
-  return await api.get<GlossaryRecordSchema[]>(`/glossary/${glossary_id}/records`, {query: {page}})
+export const listRecords = async (glossary_id: number, page?: number | null, search?: string | null): Promise<GlossaryRecordResponse> => {
+  return await api.get<GlossaryRecordResponse>(`/glossary/${glossary_id}/records`, {query: {page, search}})
 }
 export const createGlossaryRecord = async (glossary_id: number, content: GlossaryRecordCreate): Promise<GlossaryRecordSchema> => {
   return await api.post<GlossaryRecordSchema>(`/glossary/${glossary_id}/records`, content)

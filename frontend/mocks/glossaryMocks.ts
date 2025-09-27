@@ -95,10 +95,21 @@ export const glossaryMocks = [
     ({request}) => {
       const searchParams = new URL(request.url).searchParams
       const page = Number(searchParams.get('page') ?? '0')
+      let search = searchParams.get('search')
+      if (search == 'null' || search == 'undefined') search = ''
 
-      return HttpResponse.json<AwaitedReturnType<typeof listRecords>>(
-        glossarySegments.slice(page * 100, page * 100 + 100)
-      )
+      const records = glossarySegments
+        .filter(
+          (seg) =>
+            seg.source.includes(search ?? '') ||
+            seg.target.includes(search ?? '')
+        )
+        .slice(page * 100, page * 100 + 100)
+
+      return HttpResponse.json<AwaitedReturnType<typeof listRecords>>({
+        records,
+        total_rows: records.length,
+      })
     }
   ),
   http.post<{id: string}, GlossaryRecordCreate>(

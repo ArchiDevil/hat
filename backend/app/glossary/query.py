@@ -78,15 +78,26 @@ class GlossaryQuery:
     def list_glossary(self) -> list[Glossary]:
         return self.db.query(Glossary).order_by(Glossary.id).all()
 
-    def list_glossary_records(self, glossary_id: int, page: int, page_records: int):
-        return (
-            self.db.query(GlossaryRecord)
-            .filter(GlossaryRecord.glossary_id == glossary_id)  # type: ignore
-            .order_by(GlossaryRecord.id)
+    def list_glossary_records(
+        self, glossary_id: int, page: int, page_records: int, search: str | None = None
+    ):
+        query = self.db.query(GlossaryRecord).filter(
+            GlossaryRecord.glossary_id == glossary_id
+        )
+        if search:
+            like_pattern = f"%{search}%"
+            query = query.filter(
+                (GlossaryRecord.source.ilike(like_pattern))
+                | (GlossaryRecord.target.ilike(like_pattern))
+            )
+        selected_rows = (
+            query.order_by(GlossaryRecord.id)
             .offset(page * page_records)
             .limit(page_records)
             .all()
         )
+        total_rows = query.count()
+        return selected_rows, total_rows
 
     def create_glossary(
         self,

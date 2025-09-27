@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import {computed, onMounted, ref, watchEffect} from 'vue'
+import {computed, onMounted, ref, watch} from 'vue'
 import {storeToRefs} from 'pinia'
 import {useRoute, useRouter} from 'vue-router'
 
-import Paginator, {PageState} from 'primevue/paginator'
+import Paginator from 'primevue/paginator'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
+import InputText from 'primevue/inputtext'
 
 import AddTermDialog from '../components/glossary/AddTermDialog.vue'
 import PageTitle from '../components/PageTitle.vue'
@@ -15,21 +18,24 @@ import PageNav from '../components/PageNav.vue'
 import {GlossaryRecordSchema} from '../client/schemas/GlossaryRecordSchema'
 import EditTermDialog from '../components/glossary/EditTermDialog.vue'
 import {useCurrentGlossaryStore} from '../stores/current_glossary'
+import {debounce} from '../utilities/utils'
 
 const store = useCurrentGlossaryStore()
 const {glossary, records} = storeToRefs(store)
 
+const route = useRoute()
 const glossaryId = computed(() => Number(route.params.id))
 
-const route = useRoute()
 const loadGlossary = async () => {
   await store.loadGlossary(glossaryId.value)
-  await store.loadRecords(page.value)
+  await store.loadRecords(page.value, search.value)
 }
 
-onMounted(async () => {
+watch(glossaryId, async () => {
   await loadGlossary()
 })
+
+onMounted(() => loadGlossary())
 
 const docName = computed(
   () =>
@@ -41,20 +47,32 @@ const page = computed(() => {
 })
 
 const router = useRouter()
-const updatePage = async (event: PageState) => {
+const updatePage = async (page: number) => {
   await router.push({
     query: {
-      page: event.page,
+      page,
     },
   })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-watchEffect(async () => {
+watch(page, async () => {
   if (!glossary.value) {
     return
   }
-  await store.loadRecords(page.value)
+  await store.loadRecords(page.value, search.value)
+})
+
+const search = ref('')
+const searchRecords = debounce(() => {
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  store.loadRecords(page.value, search.value)
+
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  updatePage(0)
+}, 500)
+
+watch(search, () => {
+  searchRecords()
 })
 
 const addTermDialogVisible = ref(false)
@@ -77,13 +95,20 @@ const currentRecordId = ref<number>(-1)
         severity="secondary"
         @click="addTermDialogVisible = true"
       />
+      <IconField class="ml-auto">
+        <InputIcon class="pi pi-search" />
+        <InputText
+          v-model="search"
+          placeholder="Search"
+        />
+      </IconField>
     </div>
     <Paginator
       v-if="records && records?.length"
       :rows="100"
-      :total-records="glossary?.records_count"
+      :total-records="store.filteredRecordsCount"
       :first="page * 100"
-      @page="(event) => updatePage(event)"
+      @page="updatePage($event.page)"
     />
     <div
       v-if="records"
@@ -140,9 +165,9 @@ const currentRecordId = ref<number>(-1)
     <Paginator
       v-if="records && records?.length"
       :rows="100"
-      :total-records="glossary?.records_count"
+      :total-records="store.filteredRecordsCount"
       :first="page * 100"
-      @page="(event) => updatePage(event)"
+      @page="updatePage($event.page)"
     />
 
     <AddTermDialog
