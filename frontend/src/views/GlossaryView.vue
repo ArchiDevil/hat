@@ -96,10 +96,12 @@ const currentRecordId = ref<number>(-1)
         <Column
           field="source"
           header="Source"
+          header-style="width: 28rem"
         />
         <Column
           field="target"
           header="Target"
+          header-style="width: 28rem"
         />
         <Column
           field="comment"
@@ -108,12 +110,14 @@ const currentRecordId = ref<number>(-1)
         <Column
           :field="(record: GlossaryRecordSchema) => new Date(record.updated_at).toLocaleString()"
           header="Last update"
+          header-style="width: 14rem;"
         />
         <Column
           field="created_by_user.username"
           header="Created by"
+          header-style="width: 7rem;"
         />
-        <Column header="Actions">
+        <Column header-style="width: 3rem">
           <template #body="{data}">
             <Button
               icon="pi pi-pencil"
