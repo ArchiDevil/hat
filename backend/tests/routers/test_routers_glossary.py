@@ -209,6 +209,43 @@ def test_list_glossary_records_paged(user_logged_client: TestClient, session: Se
     assert resp_records[0]["glossary_id"] == record.glossary_id
 
 
+def test_list_glossary_records_search(user_logged_client: TestClient, session: Session):
+    """GET /glossary/{glossary_id}/records/?search=..."""
+    glossary = GlossaryQuery(session).create_glossary(
+        user_id=1, glossary=GlossarySchema(name="Glossary name")
+    )
+    records = [
+        GlossaryRecordCreate(comment="Comment", source="Alpha", target="Альфа"),
+        GlossaryRecordCreate(comment="Comment", source="Beta", target="Бета"),
+        GlossaryRecordCreate(comment="Comment", source="Gamma", target="Гамма"),
+    ]
+    for rec in records:
+        GlossaryQuery(session).create_glossary_record(
+            user_id=1, record=rec, glossary_id=glossary.id
+        )
+
+    path = app.url_path_for("list_records", **{"glossary_id": glossary.id})
+
+    # Поиск по source
+    response = user_logged_client.get(path, params={"search": "Alpha"})
+    resp_records = response.json()
+    assert len(resp_records) == 1
+    assert resp_records[0]["source"] == "Alpha"
+    assert resp_records[0]["target"] == "Альфа"
+
+    # Поиск по target
+    response = user_logged_client.get(path, params={"search": "Бета"})
+    resp_records = response.json()
+    assert len(resp_records) == 1
+    assert resp_records[0]["source"] == "Beta"
+    assert resp_records[0]["target"] == "Бета"
+
+    # Поиск по несуществующему
+    response = user_logged_client.get(path, params={"search": "Delta"})
+    resp_records = response.json()
+    assert resp_records == []
+
+
 def test_update_glossary_record(user_logged_client: TestClient, session: Session):
     """PUT /glossary/records/{record_id}/"""
     expected_user_id = 1

@@ -153,12 +153,13 @@ def list_records(
     glossary_id: int,
     db: Session = Depends(get_db),
     page: Annotated[int | None, Query(ge=0)] = None,
+    search: Annotated[str | None, Query()] = None,
 ):
     page_records: Final = 100
     if not page:
         page = 0
 
-    return list_glossary_records_controller(db, glossary_id, page, page_records)
+    return list_glossary_records_controller(db, glossary_id, page, page_records, search)
 
 
 @router.post(
