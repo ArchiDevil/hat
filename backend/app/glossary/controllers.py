@@ -38,8 +38,10 @@ def list_glossary_controller(db: Session):
     return [GlossaryResponse.model_validate(glossary) for glossary in glossaries]
 
 
-def list_glossary_records_controller(db: Session, glossary_id: int):
-    records = GlossaryQuery(db).list_glossary_records(glossary_id)
+def list_glossary_records_controller(
+    db: Session, glossary_id: int, page: int, page_records: int
+):
+    records = GlossaryQuery(db).list_glossary_records(glossary_id, page, page_records)
     return [GlossaryRecordSchema.model_validate(record) for record in records]
 
 

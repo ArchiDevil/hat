@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue'
+import {computed, onMounted, ref, watchEffect} from 'vue'
 import {storeToRefs} from 'pinia'
-import {useRoute} from 'vue-router'
+import {useRoute, useRouter} from 'vue-router'
 
+import Paginator, {PageState} from 'primevue/paginator'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -15,13 +16,15 @@ import {GlossaryRecordSchema} from '../client/schemas/GlossaryRecordSchema'
 import EditTermDialog from '../components/glossary/EditTermDialog.vue'
 import {useCurrentGlossaryStore} from '../stores/current_glossary'
 
-const route = useRoute()
 const store = useCurrentGlossaryStore()
-
 const {glossary, records} = storeToRefs(store)
 
+const glossaryId = computed(() => Number(route.params.id))
+
+const route = useRoute()
 const loadGlossary = async () => {
-  await store.loadGlossary(Number(route.params.id))
+  await store.loadGlossary(glossaryId.value)
+  await store.loadRecords(page.value)
 }
 
 onMounted(async () => {
@@ -30,8 +33,29 @@ onMounted(async () => {
 
 const docName = computed(
   () =>
-    `${glossary.value?.name} (ID: ${glossary.value?.id}): ${records.value?.length} records`
+    `${glossary.value?.name} (ID: ${glossaryId.value}): ${glossary.value?.records_count} records`
 )
+
+const page = computed(() => {
+  return Number(route.query.page ?? '0')
+})
+
+const router = useRouter()
+const updatePage = async (event: PageState) => {
+  await router.push({
+    query: {
+      page: event.page,
+    },
+  })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
+watchEffect(async () => {
+  if (!glossary.value) {
+    return
+  }
+  await store.loadRecords(page.value)
+})
 
 const addTermDialogVisible = ref(false)
 
@@ -54,6 +78,13 @@ const currentRecordId = ref<number>(-1)
         @click="addTermDialogVisible = true"
       />
     </div>
+    <Paginator
+      v-if="records && records?.length"
+      :rows="100"
+      :total-records="glossary?.records_count"
+      :first="page * 100"
+      @page="(event) => updatePage(event)"
+    />
     <div
       v-if="records"
       class="flex flex-col gap-1"
@@ -65,10 +96,12 @@ const currentRecordId = ref<number>(-1)
         <Column
           field="source"
           header="Source"
+          header-style="width: 28rem"
         />
         <Column
           field="target"
           header="Target"
+          header-style="width: 28rem"
         />
         <Column
           field="comment"
@@ -77,12 +110,14 @@ const currentRecordId = ref<number>(-1)
         <Column
           :field="(record: GlossaryRecordSchema) => new Date(record.updated_at).toLocaleString()"
           header="Last update"
+          header-style="width: 14rem;"
         />
         <Column
           field="created_by_user.username"
           header="Created by"
+          header-style="width: 7rem;"
         />
-        <Column header="Actions">
+        <Column header-style="width: 3rem">
           <template #body="{data}">
             <Button
               icon="pi pi-pencil"
@@ -102,6 +137,13 @@ const currentRecordId = ref<number>(-1)
         </Column>
       </DataTable>
     </div>
+    <Paginator
+      v-if="records && records?.length"
+      :rows="100"
+      :total-records="glossary?.records_count"
+      :first="page * 100"
+      @page="(event) => updatePage(event)"
+    />
 
     <AddTermDialog
       v-if="glossary !== undefined"

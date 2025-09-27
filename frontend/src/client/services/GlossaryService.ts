@@ -26,8 +26,8 @@ export const updateGlossary = async (glossary_id: number, content: GlossarySchem
 export const deleteGlossary = async (glossary_id: number): Promise<StatusMessage> => {
   return await api.delete<StatusMessage>(`/glossary/${glossary_id}`)
 }
-export const listRecords = async (glossary_id: number): Promise<GlossaryRecordSchema[]> => {
-  return await api.get<GlossaryRecordSchema[]>(`/glossary/${glossary_id}/records`)
+export const listRecords = async (glossary_id: number, page?: number | null): Promise<GlossaryRecordSchema[]> => {
+  return await api.get<GlossaryRecordSchema[]>(`/glossary/${glossary_id}/records`, {query: {page}})
 }
 export const createGlossaryRecord = async (glossary_id: number, content: GlossaryRecordCreate): Promise<GlossaryRecordSchema> => {
   return await api.post<GlossaryRecordSchema>(`/glossary/${glossary_id}/records`, content)

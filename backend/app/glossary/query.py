@@ -78,11 +78,13 @@ class GlossaryQuery:
     def list_glossary(self) -> list[Glossary]:
         return self.db.query(Glossary).order_by(Glossary.id).all()
 
-    def list_glossary_records(self, glossary_id: int):
+    def list_glossary_records(self, glossary_id: int, page: int, page_records: int):
         return (
             self.db.query(GlossaryRecord)
             .filter(GlossaryRecord.glossary_id == glossary_id)  # type: ignore
             .order_by(GlossaryRecord.id)
+            .offset(page * page_records)
+            .limit(page_records)
             .all()
         )
 

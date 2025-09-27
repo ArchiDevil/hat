@@ -29,6 +29,10 @@ class Glossary(Base):
     upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
+    @property
+    def records_count(self):
+        return len(self.records)
+
     records: Mapped[list["GlossaryRecord"]] = relationship(
         back_populates="glossary",
         cascade="all, delete-orphan",
