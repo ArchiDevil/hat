@@ -96,8 +96,9 @@ def get_doc_records(
             source=record.source,
             target=record.target,
             approved=record.approved,
+            repetitions_count=repetitions_count,
         )
-        for record in records
+        for record, repetitions_count in records
     ]
 
 

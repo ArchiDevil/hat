@@ -24,6 +24,7 @@ class DocumentRecord(Identified):
     source: str
     target: str
     approved: bool
+    repetitions_count: int
 
 
 class DocumentRecordUpdate(BaseModel):

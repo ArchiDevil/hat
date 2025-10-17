@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, select, Row
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
@@ -91,14 +91,32 @@ class GenericDocsQuery:
 
     def get_document_records_paged(
         self, doc: Document, page: int, page_records=100
-    ) -> Iterable[DocumentRecord]:
-        return self.__db.execute(
-            select(DocumentRecord)
+    ) -> Iterable[Row[tuple[DocumentRecord, int]]]:
+        # Subquery to count repetitions for each source text within the document
+        repetitions_subquery = (
+            select(
+                DocumentRecord.source,
+                func.count(DocumentRecord.id).label('repetitions_count')
+            )
             .filter(DocumentRecord.document_id == doc.id)
+            .group_by(DocumentRecord.source)
+            .subquery()
+        )
+
+        return self.__db.execute(
+            select(
+                DocumentRecord,
+                func.coalesce(repetitions_subquery.c.repetitions_count, 0).label('repetitions_count')
+            )
+            .filter(DocumentRecord.document_id == doc.id)
+            .outerjoin(
+                repetitions_subquery,
+                DocumentRecord.source == repetitions_subquery.c.source
+            )
             .order_by(DocumentRecord.id)
             .offset(page_records * page)
             .limit(page_records)
-        ).scalars()
+        ).all()
 
     def get_record(self, record_id: int) -> DocumentRecord | None:
         return self.__db.execute(
