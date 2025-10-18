@@ -152,8 +152,13 @@ def update_doc_record(
     db: Annotated[Session, Depends(get_db)],
 ) -> doc_schema.DocumentRecordUpdateResponse:
     try:
-        record = GenericDocsQuery(db).update_record(record_id, record)
-        return record
+        updated_record = GenericDocsQuery(db).update_record(record_id, record)
+        return doc_schema.DocumentRecordUpdateResponse(
+            id=updated_record.id,
+            source=updated_record.source,
+            target=updated_record.target,
+            approved=updated_record.approved,
+        )
     except NotFoundDocumentRecordExc as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Record not found"
