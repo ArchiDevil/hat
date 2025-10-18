@@ -130,23 +130,57 @@ class GenericDocsQuery:
         if not record:
             raise NotFoundDocumentRecordExc()
 
-        record.target = data.target
-        if data.approved is not None:
-            record.approved = data.approved
+        # If update_repetitions is True, find all records with the same source
+        if data.update_repetitions:
+            self._update_repeated_records(record, data)
+        else:
+            # Update only the single record
+            record.target = data.target
+            if data.approved is not None:
+                record.approved = data.approved
 
-            if data.approved is True:
-                bound_tm = None
-                for memory in record.document.memory_associations:
-                    if memory.mode == TmMode.write:
-                        bound_tm = memory.tm_id
+                if data.approved is True:
+                    bound_tm = None
+                    for memory in record.document.memory_associations:
+                        if memory.mode == TmMode.write:
+                            bound_tm = memory.tm_id
 
-                if bound_tm:
-                    TranslationMemoryQuery(self.__db).add_or_update_record(
-                        bound_tm, record.source, record.target
-                    )
+                    if bound_tm:
+                        TranslationMemoryQuery(self.__db).add_or_update_record(
+                            bound_tm, record.source, record.target
+                        )
 
         self.__db.commit()
         return record
+
+    def _update_repeated_records(self, record: DocumentRecord, data: DocumentRecordUpdate):
+        """Update all records with the same source text within the same document"""
+        # Find all records with the same source in the same document
+        repeated_records = self.__db.execute(
+            select(DocumentRecord)
+            .filter(
+                DocumentRecord.document_id == record.document_id,
+                DocumentRecord.source == record.source
+            )
+        ).scalars().all()
+
+        # Update all repeated records
+        for repeated_record in repeated_records:
+            repeated_record.target = data.target
+            if data.approved is not None:
+                repeated_record.approved = data.approved
+
+        # If approved is True, update translation memory for the source
+        if data.approved is True:
+            bound_tm = None
+            for memory in record.document.memory_associations:
+                if memory.mode == TmMode.write:
+                    bound_tm = memory.tm_id
+
+            if bound_tm:
+                TranslationMemoryQuery(self.__db).add_or_update_record(
+                    bound_tm, record.source, data.target
+                )
 
     def set_document_memories(
         self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]
