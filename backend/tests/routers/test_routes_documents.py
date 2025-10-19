@@ -917,7 +917,9 @@ def test_setting_glossaries_returns_404_for_non_existing_glossaries(
     assert response.status_code == 404
 
 
-def test_get_doc_records_with_repetitions(user_logged_client: TestClient, session: Session):
+def test_get_doc_records_with_repetitions(
+    user_logged_client: TestClient, session: Session
+):
     """Test that document records endpoint returns repetition counts"""
     with session as s:
         records = [
@@ -947,7 +949,9 @@ def test_get_doc_records_with_repetitions(user_logged_client: TestClient, sessio
 
     # Check that repetition counts are correct
     # "Hello World" appears 3 times, others appear once
-    record_counts = {record["source"]: record["repetitions_count"] for record in response_json}
+    record_counts = {
+        record["source"]: record["repetitions_count"] for record in response_json
+    }
     assert record_counts["Hello World"] == 3
     assert record_counts["Goodbye"] == 1
     assert record_counts["Test"] == 1

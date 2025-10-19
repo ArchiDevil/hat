@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import case, func, select, Row
+from sqlalchemy import Row, case, func, select
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
@@ -96,7 +96,7 @@ class GenericDocsQuery:
         repetitions_subquery = (
             select(
                 DocumentRecord.source,
-                func.count(DocumentRecord.id).label('repetitions_count')
+                func.count(DocumentRecord.id).label("repetitions_count"),
             )
             .filter(DocumentRecord.document_id == doc.id)
             .group_by(DocumentRecord.source)
@@ -106,12 +106,14 @@ class GenericDocsQuery:
         return self.__db.execute(
             select(
                 DocumentRecord,
-                func.coalesce(repetitions_subquery.c.repetitions_count, 0).label('repetitions_count')
+                func.coalesce(repetitions_subquery.c.repetitions_count, 0).label(
+                    "repetitions_count"
+                ),
             )
             .filter(DocumentRecord.document_id == doc.id)
             .outerjoin(
                 repetitions_subquery,
-                DocumentRecord.source == repetitions_subquery.c.source
+                DocumentRecord.source == repetitions_subquery.c.source,
             )
             .order_by(DocumentRecord.id)
             .offset(page_records * page)
@@ -153,16 +155,21 @@ class GenericDocsQuery:
         self.__db.commit()
         return record
 
-    def _update_repeated_records(self, record: DocumentRecord, data: DocumentRecordUpdate):
+    def _update_repeated_records(
+        self, record: DocumentRecord, data: DocumentRecordUpdate
+    ):
         """Update all records with the same source text within the same document"""
         # Find all records with the same source in the same document
-        repeated_records = self.__db.execute(
-            select(DocumentRecord)
-            .filter(
-                DocumentRecord.document_id == record.document_id,
-                DocumentRecord.source == record.source
+        repeated_records = (
+            self.__db.execute(
+                select(DocumentRecord).filter(
+                    DocumentRecord.document_id == record.document_id,
+                    DocumentRecord.source == record.source,
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         # Update all repeated records
         for repeated_record in repeated_records:

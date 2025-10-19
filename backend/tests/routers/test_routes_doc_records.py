@@ -324,7 +324,7 @@ def test_can_update_doc_record_with_repetitions(
     # Update record 1 with repetition update enabled
     response = user_logged_client.put(
         "/document/record/1",
-        json={"target": "Updated Hello", "approved": True, "update_repetitions": True}
+        json={"target": "Updated Hello", "approved": True, "update_repetitions": True},
     )
     assert response.status_code == 200
 
@@ -366,8 +366,7 @@ def test_update_repetitions_default_behavior(
 
     # Update without specifying update_repetitions (should default to False)
     response = user_logged_client.put(
-        "/document/record/1",
-        json={"target": "Updated Hello", "approved": True}
+        "/document/record/1", json={"target": "Updated Hello", "approved": True}
     )
     assert response.status_code == 200
 
