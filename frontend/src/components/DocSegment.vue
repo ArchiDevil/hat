@@ -13,6 +13,7 @@ const props = defineProps<{
   editable?: boolean
   disabled?: boolean
   approved?: boolean
+  repetitionsCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -67,8 +68,13 @@ watchEffect(() => {
 
 <template>
   <div class="flex flex-row gap-2 font-text">
-    <div class="p-2 text-center w-16">
+    <div class="p-2 text-center w-16 relative">
       {{ id }}
+      <div
+        v-if="editable && repetitionsCount && repetitionsCount > 1"
+        class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"
+        :title="`Repeated ${repetitionsCount} times`"
+      />
     </div>
     <div
       class="border rounded-border border-surface p-2 w-1/2 bg-white"

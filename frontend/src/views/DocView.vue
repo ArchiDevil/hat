@@ -165,6 +165,7 @@ onMounted(async () => {
               :disabled="record.loading"
               :focused-id="store.currentFocusId"
               :approved="record.approved"
+              :repetitions-count="record.repetitions_count"
               @commit="(text) => onSegmentCommit(record.id, text)"
               @update-record="(text) => onSegmentUpdate(record.id, text, false)"
               @focus="store.focusSegment(idx)"

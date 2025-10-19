@@ -65,6 +65,7 @@ export const useCurrentDocStore = defineStore('current_document', {
       this.records[idx] = {
         ...newRecord,
         loading: false,
+        repetitions_count: this.records[idx].repetitions_count,
       }
       // rerequest a document to update its records count
       // this is because more than one record can be updated by a backend

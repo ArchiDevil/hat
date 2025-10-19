@@ -40,12 +40,14 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "source": "Regional Effects",
             "target": "Translation",
             "approved": False,
+            "repetitions_count": 1,
         },
         {
             "id": 2,
             "source": "User Interface",
             "target": "UI",
             "approved": True,
+            "repetitions_count": 1,
         },
     ]
 
@@ -81,6 +83,7 @@ def test_doc_records_returns_second_page(
         "source": "line100",
         "target": "line100",
         "approved": False,
+        "repetitions_count": 1,
     }
 
 
