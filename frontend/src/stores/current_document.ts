@@ -47,7 +47,12 @@ export const useCurrentDocStore = defineStore('current_document', {
         (record) => ({...record, loading: false})
       )
     },
-    async updateRecord(record_id: number, content: string, approved: boolean) {
+    async updateRecord(
+      record_id: number,
+      content: string,
+      approved: boolean,
+      updateRepeats: boolean
+    ) {
       if (!this.document) {
         return
       }
@@ -61,7 +66,7 @@ export const useCurrentDocStore = defineStore('current_document', {
       const newRecord = await updateDocRecord(record_id, {
         target: content,
         approved: approved,
-        update_repetitions: false,
+        update_repetitions: updateRepeats,
       })
       this.records[idx] = {
         ...newRecord,

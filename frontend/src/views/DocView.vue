@@ -78,12 +78,21 @@ const updatePage = async (event: PageState) => {
   await router.push({query: {page: event.page}})
 }
 
-const onSegmentUpdate = async (id: number, text: string, approved: boolean) => {
-  await store.updateRecord(id, text, approved)
+const onSegmentUpdate = async (
+  id: number,
+  text: string,
+  approved: boolean,
+  updateRepeats: boolean
+) => {
+  await store.updateRecord(id, text, approved, updateRepeats)
 }
 
-const onSegmentCommit = async (id: number, text: string) => {
-  await onSegmentUpdate(id, text, true)
+const onSegmentCommit = async (
+  id: number,
+  text: string,
+  updateRepeats: boolean
+) => {
+  await onSegmentUpdate(id, text, true, updateRepeats)
   store.focusNextSegment()
 }
 
@@ -166,8 +175,14 @@ onMounted(async () => {
               :focused-id="store.currentFocusId"
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
-              @commit="(text) => onSegmentCommit(record.id, text)"
-              @update-record="(text) => onSegmentUpdate(record.id, text, false)"
+              @commit="
+                (text, updateRepeats) =>
+                  onSegmentCommit(record.id, text, updateRepeats)
+              "
+              @update-record="
+                (text, updateRepeats) =>
+                  onSegmentUpdate(record.id, text, false, updateRepeats)
+              "
               @focus="store.focusSegment(idx)"
             />
           </div>

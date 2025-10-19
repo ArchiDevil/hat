@@ -11,7 +11,6 @@ import App from './App.vue'
 import {getRouter} from './router'
 import {mocks} from '../mocks/mocks'
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const themePreset = definePreset(Aura, {
   semantic: {
     primary: {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {nextTick, ref, watch, watchEffect} from 'vue'
+import {computed, nextTick, ref, watch, watchEffect} from 'vue'
 
 import Button from 'primevue/button'
 
@@ -17,8 +17,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  commit: [string]
-  updateRecord: [string]
+  commit: [string, boolean]
+  updateRecord: [string, boolean]
   focus: []
 }>()
 
@@ -28,7 +28,7 @@ const commitData = debounce(() => {
   if (!targetInput.value?.textContent) {
     return
   }
-  emit('updateRecord', targetInput.value.textContent)
+  emit('updateRecord', targetInput.value.textContent, repeatEnabled.value)
 }, 1000)
 
 const onKeyPress = (event: KeyboardEvent) => {
@@ -36,7 +36,7 @@ const onKeyPress = (event: KeyboardEvent) => {
     return
   }
   if (event.key == 'Enter' && event.ctrlKey) {
-    emit('commit', targetInput.value.textContent)
+    emit('commit', targetInput.value.textContent, repeatEnabled.value)
   }
 }
 
@@ -64,17 +64,34 @@ watchEffect(() => {
     targetInput.value?.focus()
   }
 })
+
+const repeatEnabled = ref(true)
+const enableRepeat = () => {
+  repeatEnabled.value = !repeatEnabled.value
+}
+const repetitionTitle = computed(() => {
+  return (
+    'Click to ' +
+    (repeatEnabled.value ? 'disable' : 'enable') +
+    ` updating of the same segments. Repeated ${props.repetitionsCount} times.`
+  )
+})
 </script>
 
 <template>
   <div class="flex flex-row gap-2 font-text">
-    <div class="p-2 text-center w-16 relative">
-      {{ id }}
-      <div
+    <div class="p-2 text-end w-28 relative">
+      <i
         v-if="editable && repetitionsCount && repetitionsCount > 1"
-        class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"
-        :title="`Repeated ${repetitionsCount} times`"
+        class="pi align-middle mr-1 cursor-pointer"
+        :class="{
+          'pi-arrow-circle-down': repeatEnabled,
+          'pi-times-circle text-red-800': !repeatEnabled,
+        }"
+        :title="repetitionTitle"
+        @click="enableRepeat"
       />
+      {{ id }}
     </div>
     <div
       class="border rounded-border border-surface p-2 w-1/2 bg-white"
@@ -107,7 +124,7 @@ watchEffect(() => {
         size="small"
         :severity="approved ? 'success' : 'primary'"
         :outlined="!approved"
-        @click="emit('commit', targetInput?.textContent ?? '')"
+        @click="emit('commit', targetInput?.textContent ?? '', repeatEnabled)"
       />
     </div>
   </div>
