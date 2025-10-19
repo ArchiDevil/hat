@@ -273,7 +273,7 @@ def test_process_task_uses_correct_tm_ids(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(),
-                DocMemoryAssociation(doc_id=1, tm_id=2, mode='read')
+                DocMemoryAssociation(doc_id=1, tm_id=2, mode="read"),
             ]
         )
         s.commit()
@@ -318,8 +318,8 @@ def test_process_task_uses_tm_mode(mode: str, trans_result: str, session: Sessio
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(usage=TranslationMemoryUsage(mode)),
-                DocMemoryAssociation(doc_id=1, tm_id=1, mode='read'),
-                DocMemoryAssociation(doc_id=1, tm_id=2, mode='read')
+                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
+                DocMemoryAssociation(doc_id=1, tm_id=2, mode="read"),
             ]
         )
         s.commit()

@@ -106,7 +106,9 @@ def process_document(
     )
 
     start_time = time.time()
-    translate_indices = substitute_segments(settings, session, segments, tm_ids, glossary_ids)
+    translate_indices = substitute_segments(
+        settings, session, segments, tm_ids, glossary_ids
+    )
     logging.info(
         "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
         time.time() - start_time,
