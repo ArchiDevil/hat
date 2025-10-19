@@ -27,9 +27,9 @@ describe('DocSegment', () => {
       },
     })
 
-    const dot = wrapper.find('.bg-orange-500')
-    expect(dot.exists()).toBe(true)
-    expect(dot.attributes('title')).toBe('Repeated 3 times')
+    const dot = wrapper.find('.pi')
+    expect(dot.classes()).not.toContain('opacity-0')
+    expect(dot.attributes('title')).toContain('Repeated 3 times')
   })
 
   it('does not show repetition dot when repetitionsCount = 1', () => {
@@ -43,8 +43,8 @@ describe('DocSegment', () => {
       },
     })
 
-    const dot = wrapper.find('.bg-orange-500')
-    expect(dot.exists()).toBe(false)
+    const dot = wrapper.find('.pi')
+    expect(dot.classes()).toContain('opacity-0')
   })
 
   it('does not show repetition dot when not editable', () => {
@@ -58,8 +58,8 @@ describe('DocSegment', () => {
       },
     })
 
-    const dot = wrapper.find('.bg-orange-500')
-    expect(dot.exists()).toBe(false)
+    const dot = wrapper.find('.pi')
+    expect(dot.classes()).toContain('opacity-0')
   })
 
   it('does not show repetition dot when repetitionsCount is undefined', () => {
@@ -72,7 +72,7 @@ describe('DocSegment', () => {
       },
     })
 
-    const dot = wrapper.find('.bg-orange-500')
-    expect(dot.exists()).toBe(false)
+    const dot = wrapper.find('.pi')
+    expect(dot.classes()).toContain('opacity-0')
   })
 })
