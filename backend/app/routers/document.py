@@ -150,7 +150,7 @@ def update_doc_record(
     record_id: int,
     record: doc_schema.DocumentRecordUpdate,
     db: Annotated[Session, Depends(get_db)],
-) -> doc_schema.DocumentRecord:
+) -> doc_schema.DocumentRecordUpdateResponse:
     try:
         record = GenericDocsQuery(db).update_record(record_id, record)
         return record
