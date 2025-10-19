@@ -5,4 +5,5 @@ export interface DocumentRecord {
   source: string
   target: string
   approved: boolean
+  repetitions_count: number
 }
