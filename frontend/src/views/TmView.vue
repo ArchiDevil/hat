@@ -77,7 +77,7 @@ onMounted(async () => {
     />
     <div
       v-if="records"
-      class="flex flex-col gap-1"
+      class="grid grid-cols-[auto_auto_1fr_1fr] gap-1"
     >
       <DocSegment
         v-for="record in records"

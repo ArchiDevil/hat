@@ -79,53 +79,51 @@ const repetitionTitle = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-row gap-2 font-text">
-    <div class="p-2 text-end w-28 relative">
-      <i
-        v-if="editable && repetitionsCount && repetitionsCount > 1"
-        class="pi align-middle mr-1 cursor-pointer"
-        :class="{
-          'pi-arrow-circle-down': repeatEnabled,
-          'pi-times-circle text-red-800': !repeatEnabled,
-        }"
-        :title="repetitionTitle"
-        @click="enableRepeat"
-      />
-      {{ id }}
-    </div>
-    <div
-      class="border rounded-border border-surface p-2 w-1/2 bg-white"
-      :class="{'bg-surface-200': disabled ?? false}"
-    >
-      {{ source }}
-    </div>
-    <div
-      ref="targetInput"
-      class="border rounded-border border-surface p-2 bg-white w-1/2"
-      :class="{
-        'bg-surface-200': disabled ?? false,
-        'active:border-primary': editable ?? false,
-        'focus:border-primary': editable ?? false,
-        'focus:outline-none': editable ?? false,
-      }"
-      :contenteditable="editable"
-      @input="onInput"
-      @keypress="onKeyPress"
-      @focus="emit('focus')"
-    >
-      {{ target }}
-    </div>
-    <div
-      v-if="editable"
-      class="mr-2 text-center w-16 py-1"
-    >
-      <Button
-        icon="pi pi-check"
-        size="small"
-        :severity="approved ? 'success' : 'primary'"
-        :outlined="!approved"
-        @click="emit('commit', targetInput?.textContent ?? '', repeatEnabled)"
-      />
-    </div>
+  <i
+    class="pi align-middle ml-2 cursor-pointer self-center"
+    :class="{
+      'pi-arrow-circle-down': repeatEnabled,
+      'pi-times-circle text-red-800': !repeatEnabled,
+      'opacity-0': !(editable && repetitionsCount && repetitionsCount > 1),
+    }"
+    :title="repetitionTitle"
+    @click="enableRepeat"
+  />
+  <div class="p-2 text-end relative">
+    {{ id }}
+  </div>
+  <div
+    class="border rounded-border border-surface p-2 bg-white h-full"
+    :class="{'bg-surface-200': disabled ?? false}"
+  >
+    {{ source }}
+  </div>
+  <div
+    ref="targetInput"
+    class="border rounded-border border-surface p-2 bg-white h-full"
+    :class="{
+      'bg-surface-200': disabled ?? false,
+      'active:border-primary': editable ?? false,
+      'focus:border-primary': editable ?? false,
+      'focus:outline-none': editable ?? false,
+    }"
+    :contenteditable="editable"
+    @input="onInput"
+    @keypress="onKeyPress"
+    @focus="emit('focus')"
+  >
+    {{ target }}
+  </div>
+  <div
+    v-if="editable"
+    class="text-center w-16 self-start"
+  >
+    <Button
+      icon="pi pi-check"
+      size="small"
+      :severity="approved ? 'success' : 'primary'"
+      :outlined="!approved"
+      @click="emit('commit', targetInput?.textContent ?? '', repeatEnabled)"
+    />
   </div>
 </template>
