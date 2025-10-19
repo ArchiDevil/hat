@@ -61,6 +61,7 @@ export const useCurrentDocStore = defineStore('current_document', {
       const newRecord = await updateDocRecord(record_id, {
         target: content,
         approved: approved,
+        update_repetitions: false,
       })
       this.records[idx] = {
         ...newRecord,
