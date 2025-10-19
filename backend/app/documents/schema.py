@@ -36,7 +36,7 @@ class DocumentRecordUpdateResponse(Identified):
 class DocumentRecordUpdate(BaseModel):
     target: str
     approved: Optional[bool]
-    update_repetitions: Optional[bool] = False
+    update_repetitions: bool
 
 
 class DocumentProcessingSettings(BaseModel):
