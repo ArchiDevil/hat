@@ -160,10 +160,12 @@ onMounted(async () => {
         />
       </div>
     </div>
-    <div class="overflow-hidden grid grid-cols-[auto_1fr] gap-2">
+    <div class="overflow-hidden grid grid-cols-[auto_1fr] gap-2 items-start">
       <template v-if="store.documentReady && !store.documentLoading">
         <template v-if="store.records">
-          <div class="flex flex-col gap-1 overflow-scroll my-1 bg-surface-50">
+          <div
+            class="grid grid-cols-[auto_auto_1fr_1fr_auto] gap-1 overflow-scroll my-1 bg-surface-50 max-h-full py-2"
+          >
             <DocSegment
               v-for="(record, idx) in store.records"
               :id="record.id"
@@ -187,7 +189,7 @@ onMounted(async () => {
             />
           </div>
           <SubstitutionsList
-            class="border-l border-y rounded-l-lg px-2 my-1 overflow-scroll bg-surface-50"
+            class="border-l border-y rounded-l-lg px-2 my-1 overflow-scroll bg-surface-50 self-stretch max-h-full"
             :substitutions="substitutions"
           />
         </template>
