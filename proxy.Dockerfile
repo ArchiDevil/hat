@@ -1,8 +1,11 @@
 FROM node:20-slim AS build
-COPY ./frontend /app
-WORKDIR /app
 RUN npm install -g pnpm
-RUN pnpm install && pnpm run build
+COPY ./frontend/package.json /app/package.json
+COPY ./frontend/pnpm-lock.yaml /app/pnpm-lock.yaml
+WORKDIR /app
+RUN pnpm install
+COPY ./frontend /app
+RUN pnpm run build:prod
 
 FROM caddy:2.7-alpine
 COPY Caddyfile /etc/caddy/Caddyfile
