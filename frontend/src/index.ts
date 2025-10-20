@@ -1,7 +1,5 @@
 import {createApp} from 'vue'
 import {createPinia} from 'pinia'
-import {defaults} from 'mande'
-import {setupWorker} from 'msw/browser'
 
 import PrimeVue from 'primevue/config'
 import {definePreset} from '@primevue/themes'
@@ -9,7 +7,6 @@ import Aura from '@primevue/themes/aura'
 
 import App from './App.vue'
 import {getRouter} from './router'
-import {mocks} from '../mocks/mocks'
 
 const themePreset = definePreset(Aura, {
   semantic: {
@@ -29,9 +26,8 @@ const themePreset = definePreset(Aura, {
   },
 })
 
-const pinia = createPinia()
-
 const startApp = () => {
+  const pinia = createPinia()
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   const app = createApp(App)
   app.use(pinia)
@@ -57,20 +53,31 @@ const startApp = () => {
   app.mount('#app')
 }
 
+if (import.meta.env.PROD) {
+  startApp()
+}
+
+// Dev server things
+
+import {defaults} from 'mande'
+import {setupWorker} from 'msw/browser'
+
 if (import.meta.env.DEV) {
-  // to test it locally
   defaults.credentials = 'include'
 
-  const worker = setupWorker(...mocks)
-
-  worker
-    .start()
-    .then(() => {
-      startApp()
+  const mocksImport = () => import('../mocks/mocks')
+  mocksImport()
+    .then((imp) => {
+      setupWorker(...imp.mocks)
+        .start()
+        .then(() => {
+          startApp()
+        })
+        .catch((e) => {
+          console.log('MSW init failed', e)
+        })
     })
-    .catch((e) => {
-      console.log('MSW init failed', e)
+    .catch(() => {
+      console.log('Failed to load mocks')
     })
-} else {
-  startApp()
 }
