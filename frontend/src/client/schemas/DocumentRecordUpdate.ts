@@ -3,4 +3,5 @@
 export interface DocumentRecordUpdate {
   target: string
   approved: boolean | null
+  update_repetitions: boolean
 }

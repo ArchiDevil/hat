@@ -9,6 +9,7 @@ import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentRecord} from '../schemas/DocumentRecord'
 import {MemorySubstitution} from '../schemas/MemorySubstitution'
 import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
+import {DocumentRecordUpdateResponse} from '../schemas/DocumentRecordUpdateResponse'
 import {DocumentRecordUpdate} from '../schemas/DocumentRecordUpdate'
 import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
 import {DocTranslationMemoryUpdate} from '../schemas/DocTranslationMemoryUpdate'
@@ -39,8 +40,8 @@ export const getRecordSubstitutions = async (doc_id: number, record_id: number):
 export const getRecordGlossaryRecords = async (doc_id: number, record_id: number): Promise<GlossaryRecordSchema[]> => {
   return await api.get<GlossaryRecordSchema[]>(`/document/${doc_id}/records/${record_id}/glossary_records`)
 }
-export const updateDocRecord = async (record_id: number, content: DocumentRecordUpdate): Promise<DocumentRecord> => {
-  return await api.put<DocumentRecord>(`/document/record/${record_id}`, content)
+export const updateDocRecord = async (record_id: number, content: DocumentRecordUpdate): Promise<DocumentRecordUpdateResponse> => {
+  return await api.put<DocumentRecordUpdateResponse>(`/document/record/${record_id}`, content)
 }
 export const getTranslationMemories = async (doc_id: number): Promise<DocTranslationMemory[]> => {
   return await api.get<DocTranslationMemory[]>(`/document/${doc_id}/memories`)
