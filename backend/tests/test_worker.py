@@ -21,7 +21,10 @@ from app.documents.schema import (
     DocumentTaskDescription,
 )
 from app.glossary.models import Glossary, GlossaryRecord
-from app.models import DocumentStatus, MachineTranslationSettings
+from app.models import (
+    DocumentStatus,
+    YandexTranslatorSettings,
+)
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 from app.translation_memory.schema import TranslationMemoryUsage
@@ -53,7 +56,7 @@ def create_task(
     type_: Literal["xliff", "txt"] = "xliff",
     usage: TranslationMemoryUsage = TranslationMemoryUsage.NEWEST,
     substitute_numbers: bool = False,
-    mt_settings: MachineTranslationSettings | None = None,
+    mt_settings: YandexTranslatorSettings | None = None,
 ):
     return DocumentTask(
         data=DocumentTaskDescription(
@@ -273,7 +276,7 @@ def test_process_task_uses_correct_tm_ids(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(),
-                DocMemoryAssociation(doc_id=1, tm_id=2, mode='read')
+                DocMemoryAssociation(doc_id=1, tm_id=2, mode="read"),
             ]
         )
         s.commit()
@@ -318,8 +321,8 @@ def test_process_task_uses_tm_mode(mode: str, trans_result: str, session: Sessio
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(usage=TranslationMemoryUsage(mode)),
-                DocMemoryAssociation(doc_id=1, tm_id=1, mode='read'),
-                DocMemoryAssociation(doc_id=1, tm_id=2, mode='read')
+                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
+                DocMemoryAssociation(doc_id=1, tm_id=2, mode="read"),
             ]
         )
         s.commit()
@@ -425,8 +428,8 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(
-                    mt_settings=MachineTranslationSettings(
-                        folder_id="12345", oauth_token="fake"
+                    mt_settings=YandexTranslatorSettings(
+                        type="yandex", folder_id="12345", oauth_token="fake"
                     ),
                 ),
             ]

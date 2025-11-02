@@ -29,7 +29,8 @@ from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
 from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import TranslationMemoryUsage
-from app.translators import yandex
+from app.translators import llm, yandex
+from app.translators.common import LineWithGlossaries
 
 
 def segment_needs_processing(segment: BaseSegment) -> bool:
@@ -106,7 +107,9 @@ def process_document(
     )
 
     start_time = time.time()
-    translate_indices = substitute_segments(settings, session, segments, tm_ids, glossary_ids)
+    translate_indices = substitute_segments(
+        settings, session, segments, tm_ids, glossary_ids
+    )
     logging.info(
         "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
         time.time() - start_time,
@@ -116,12 +119,16 @@ def process_document(
     )
 
     start_time = time.time()
-    mt_result = translate_segments(
-        segments,
-        translate_indices,
-        glossary_ids,
-        settings.machine_translation_settings,
-        session,
+    mt_result = (
+        translate_segments(
+            segments,
+            translate_indices,
+            glossary_ids,
+            settings.machine_translation_settings,
+            session,
+        )
+        if settings.machine_translation_settings is not None
+        else True
     )
     logging.info(
         "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
@@ -193,33 +200,45 @@ def translate_segments(
     segments: Sequence[BaseSegment],
     translate_indices: Sequence[int],
     glossary_ids: list[int],
-    mt_settings: MachineTranslationSettings | None,
+    mt_settings: MachineTranslationSettings,
     session: Session,
 ) -> bool:
-    # TODO: it is better to make solution more translation service agnostic
+    if not translate_indices:
+        return True
+
     mt_failed = False
-    if mt_settings and translate_indices:
-        try:
-            original_segments = [segments[idx].original for idx in translate_indices]
-            data_to_translate: list[yandex.LineWithGlossaries] = []
-            for segment in original_segments:
-                glossary_records = GlossaryQuery(
-                    session
-                ).get_glossary_records_for_segment(segment, glossary_ids)
-                data_to_translate.append(
-                    (segment, [(x.source, x.target) for x in glossary_records])
-                )
+    try:
+        # TODO: this might be harmful with LLM translation as it is loses
+        # the connectivity of the context
+        segments_to_translate = [segments[idx].original for idx in translate_indices]
+        data_to_translate: list[LineWithGlossaries] = []
+        for segment in segments_to_translate:
+            glossary_records = GlossaryQuery(session).get_glossary_records_for_segment(
+                segment, glossary_ids
+            )
+            data_to_translate.append(
+                (segment, [(x.source, x.target) for x in glossary_records])
+            )
+        if mt_settings.type == "yandex":
             translated, mt_failed = yandex.translate_lines(
                 data_to_translate,
                 oauth_token=mt_settings.oauth_token,
                 folder_id=mt_settings.folder_id,
             )
-            for idx, translated_line in enumerate(translated):
-                segments[translate_indices[idx]].translation = translated_line
-        # TODO: handle specific exceptions instead of a generic one
-        except Exception as e:
-            logging.error("Yandex translation error %s", e)
-            return False
+        elif mt_settings.type == "llm":
+            translated, mt_failed = llm.translate_lines(
+                data_to_translate, api_key=mt_settings.api_key
+            )
+        else:
+            logging.fatal("Unknown translation API")
+            raise RuntimeError("Unknown translation API")
+        for idx, translated_line in enumerate(translated):
+            segments[translate_indices[idx]].translation = translated_line
+    # TODO: handle specific exceptions instead of a generic one
+    except Exception as e:
+        logging.error("Machine translation error %s", e)
+        return False
+
     return not mt_failed
 
 
@@ -317,7 +336,11 @@ def process_task(session: Session, task: DocumentTask) -> bool:
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     logging.info("Starting document processing")
 
     session = next(get_db())
