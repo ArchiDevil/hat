@@ -7,6 +7,7 @@ import requests
 from pydantic import BaseModel, PositiveInt, ValidationError
 
 from app.settings import settings
+from app.translators.common import LineWithGlossaries, TranslationError
 
 
 class YandexTranslatorResponse(BaseModel):
@@ -18,17 +19,6 @@ class YandexTranslatorResponse(BaseModel):
     """
 
     translations: list[dict[str, str]]
-
-
-class TranslationError(Exception):
-    """
-    An error raised when Yandex Translator API returns an error.
-    """
-
-
-GlossaryPair = tuple[str, str]
-GlossaryPairs = list[GlossaryPair]
-LineWithGlossaries = tuple[str, GlossaryPairs]
 
 
 # Currently Yandex rejects requests larger than 10k symbols and more than

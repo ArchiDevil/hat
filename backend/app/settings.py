@@ -1,3 +1,4 @@
+import base64
 from typing import Literal
 
 from pydantic_settings import BaseSettings
@@ -16,6 +17,16 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:8000",
     )
+
+    llm_base_api: str | None = None
+    llm_model: str | None = None
+    llm_base64_prompt: str | None = None
+
+    @property
+    def llm_prompt(self):
+        if not self.llm_base64_prompt:
+            return ""
+        base64.decodebytes(self.llm_base64_prompt.encode()).decode()
 
 
 settings = Settings()

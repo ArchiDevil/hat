@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -27,12 +28,19 @@ class UserRole(Enum):
         return tuple(role.value for role in cls)
 
 
-class MachineTranslationSettings(BaseModel):
-    # Yandex only for now
-    # source_language: str
-    # target_language: str
+class LlmTranslatorSettings(BaseModel):
+    type: Literal["llm"]
+    api_key: str
+    # base_api: str # reserved for universal OpenAI translation
+
+
+class YandexTranslatorSettings(BaseModel):
+    type: Literal["yandex"]
     folder_id: str
     oauth_token: str
+
+
+MachineTranslationSettings = LlmTranslatorSettings | YandexTranslatorSettings
 
 
 class StatusMessage(BaseModel):
