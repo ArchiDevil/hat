@@ -9,7 +9,7 @@ import {
   setTranslationMemories,
 } from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
-import {MachineTranslationSettings} from '../client/schemas/MachineTranslationSettings'
+import {YandexTranslatorSettings} from '../client/schemas/YandexTranslatorSettings'
 import {TranslationMemoryUsage} from '../client/schemas/TranslationMemoryUsage'
 
 import {useTmStore} from '../stores/tm'
@@ -36,7 +36,8 @@ const status = ref('')
 
 const substituteNumbers = ref(false)
 const useMachineTranslation = ref(false)
-const machineTranslationSettings = ref<MachineTranslationSettings>({
+const machineTranslationSettings = ref<YandexTranslatorSettings>({
+  type: 'yandex',
   folder_id: '',
   oauth_token: '',
 })
