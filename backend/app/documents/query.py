@@ -133,19 +133,39 @@ class GenericDocsQuery:
             raise NotFoundDocumentRecordExc()
 
         record.target = data.target
+
         if data.approved is not None:
             record.approved = data.approved
 
-            if data.approved is True:
-                bound_tm = None
-                for memory in record.document.memory_associations:
-                    if memory.mode == TmMode.write:
-                        bound_tm = memory.tm_id
-
-                if bound_tm:
-                    TranslationMemoryQuery(self.__db).add_or_update_record(
-                        bound_tm, record.source, record.target
+        # If update_repetitions is True, find all records with the same source
+        if data.update_repetitions:
+            repeated_records = (
+                self.__db.execute(
+                    select(DocumentRecord).filter(
+                        DocumentRecord.document_id == record.document_id,
+                        DocumentRecord.source == record.source,
                     )
+                )
+                .scalars()
+                .all()
+            )
+
+            # Update all repeated records
+            for repeated_record in repeated_records:
+                repeated_record.target = data.target
+                if data.approved is not None:
+                    repeated_record.approved = data.approved
+
+        if data.approved is True:
+            bound_tm = None
+            for memory in record.document.memory_associations:
+                if memory.mode == TmMode.write:
+                    bound_tm = memory.tm_id
+
+            if bound_tm:
+                TranslationMemoryQuery(self.__db).add_or_update_record(
+                    bound_tm, record.source, record.target
+                )
 
         self.__db.commit()
         return record

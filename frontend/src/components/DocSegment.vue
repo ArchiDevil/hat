@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {nextTick, ref, watch, watchEffect} from 'vue'
+import {computed, nextTick, ref, watch, watchEffect} from 'vue'
 
 import Button from 'primevue/button'
 
@@ -17,8 +17,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  commit: [string]
-  updateRecord: [string]
+  commit: [string, boolean]
+  updateRecord: [string, boolean]
   focus: []
 }>()
 
@@ -28,7 +28,7 @@ const commitData = debounce(() => {
   if (!targetInput.value?.textContent) {
     return
   }
-  emit('updateRecord', targetInput.value.textContent)
+  emit('updateRecord', targetInput.value.textContent, repeatEnabled.value)
 }, 1000)
 
 const onKeyPress = (event: KeyboardEvent) => {
@@ -36,7 +36,7 @@ const onKeyPress = (event: KeyboardEvent) => {
     return
   }
   if (event.key == 'Enter' && event.ctrlKey) {
-    emit('commit', targetInput.value.textContent)
+    emit('commit', targetInput.value.textContent, repeatEnabled.value)
   }
 }
 
@@ -64,51 +64,66 @@ watchEffect(() => {
     targetInput.value?.focus()
   }
 })
+
+const repeatEnabled = ref(true)
+const enableRepeat = () => {
+  repeatEnabled.value = !repeatEnabled.value
+}
+const repetitionTitle = computed(() => {
+  return (
+    'Click to ' +
+    (repeatEnabled.value ? 'disable' : 'enable') +
+    ` updating of the same segments. Repeated ${props.repetitionsCount} times.`
+  )
+})
 </script>
 
 <template>
-  <div class="flex flex-row gap-2 font-text">
-    <div class="p-2 text-center w-16 relative">
-      {{ id }}
-      <div
-        v-if="editable && repetitionsCount && repetitionsCount > 1"
-        class="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"
-        :title="`Repeated ${repetitionsCount} times`"
-      />
-    </div>
-    <div
-      class="border rounded-border border-surface p-2 w-1/2 bg-white"
-      :class="{'bg-surface-200': disabled ?? false}"
-    >
-      {{ source }}
-    </div>
-    <div
-      ref="targetInput"
-      class="border rounded-border border-surface p-2 bg-white w-1/2"
-      :class="{
-        'bg-surface-200': disabled ?? false,
-        'active:border-primary': editable ?? false,
-        'focus:border-primary': editable ?? false,
-        'focus:outline-none': editable ?? false,
-      }"
-      :contenteditable="editable"
-      @input="onInput"
-      @keypress="onKeyPress"
-      @focus="emit('focus')"
-    >
-      {{ target }}
-    </div>
-    <div
-      v-if="editable"
-      class="mr-2 text-center w-16 py-1"
-    >
-      <Button
-        icon="pi pi-check"
-        size="small"
-        :severity="approved ? 'success' : 'primary'"
-        :outlined="!approved"
-        @click="emit('commit', targetInput?.textContent ?? '')"
-      />
-    </div>
+  <i
+    class="pi align-middle ml-2 cursor-pointer self-center"
+    :class="{
+      'pi-arrow-circle-down': repeatEnabled,
+      'pi-times-circle text-red-800': !repeatEnabled,
+      'opacity-0': !(editable && repetitionsCount && repetitionsCount > 1),
+    }"
+    :title="repetitionTitle"
+    @click="enableRepeat"
+  />
+  <div class="p-2 text-end relative">
+    {{ id }}
+  </div>
+  <div
+    class="border rounded-border border-surface p-2 bg-white h-full"
+    :class="{'bg-surface-200': disabled ?? false}"
+  >
+    {{ source }}
+  </div>
+  <div
+    ref="targetInput"
+    class="border rounded-border border-surface p-2 bg-white h-full"
+    :class="{
+      'bg-surface-200': disabled ?? false,
+      'active:border-primary': editable ?? false,
+      'focus:border-primary': editable ?? false,
+      'focus:outline-none': editable ?? false,
+    }"
+    :contenteditable="editable"
+    @input="onInput"
+    @keypress="onKeyPress"
+    @focus="emit('focus')"
+  >
+    {{ target }}
+  </div>
+  <div
+    v-if="editable"
+    class="text-center w-16 self-start"
+  >
+    <Button
+      icon="pi pi-check"
+      size="small"
+      :severity="approved ? 'success' : 'primary'"
+      :outlined="!approved"
+      @click="emit('commit', targetInput?.textContent ?? '', repeatEnabled)"
+    />
   </div>
 </template>

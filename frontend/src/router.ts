@@ -1,4 +1,4 @@
-import {MandeError} from 'mande'
+import {type MandeError} from 'mande'
 import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
 
 const IndexView = () => import('./views/IndexView.vue')

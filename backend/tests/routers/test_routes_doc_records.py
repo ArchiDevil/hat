@@ -125,8 +125,8 @@ def test_doc_records_returns_404_for_nonexistent_document(
 @pytest.mark.parametrize(
     "arguments",
     [
-        {"target": "Updated", "approved": None},
-        {"target": "Updated", "approved": True},
+        {"target": "Updated", "approved": None, "update_repetitions": False},
+        {"target": "Updated", "approved": True, "update_repetitions": False},
     ],
 )
 def test_can_update_doc_record(
@@ -201,7 +201,12 @@ def test_record_approving_creates_memory(
         s.commit()
 
     response = user_logged_client.put(
-        "/document/record/1", json={"target": "Updated", "approved": True}
+        "/document/record/1",
+        json={
+            "target": "Updated",
+            "approved": True,
+            "update_repetitions": False,
+        },
     )
     assert response.status_code == 200, response.text
 
@@ -251,7 +256,12 @@ def test_record_approving_updates_memory(
         s.commit()
 
     response = user_logged_client.put(
-        "/document/record/1", json={"target": "Updated", "approved": True}
+        "/document/record/1",
+        json={
+            "target": "Updated",
+            "approved": True,
+            "update_repetitions": False,
+        },
     )
     assert response.status_code == 200, response.text
 
@@ -274,7 +284,12 @@ def test_returns_404_for_nonexistent_doc_when_updating_record(
     user_logged_client: TestClient,
 ):
     response = user_logged_client.put(
-        "/document/record/3", json={"target": "Updated", "approved": None}
+        "/document/record/3",
+        json={
+            "target": "Updated",
+            "approved": None,
+            "update_repetitions": False,
+        },
     )
     assert response.status_code == 404
 
@@ -298,3 +313,90 @@ def test_returns_404_for_nonexistent_record(
         "/document/1/record/3", json={"target": "Updated"}
     )
     assert response.status_code == 404
+
+
+def test_can_update_doc_record_with_repetitions(
+    user_logged_client: TestClient, session: Session
+):
+    """Test updating all records with the same source text"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Hello World", target="Здравствуйте Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Update record 1 with repetition update enabled
+    response = user_logged_client.put(
+        "/document/record/1",
+        json={"target": "Updated Hello", "approved": True, "update_repetitions": True},
+    )
+    assert response.status_code == 200
+
+    with session as s:
+        # Check that all records with "Hello World" source were updated
+        record1 = s.query(DocumentRecord).filter(DocumentRecord.id == 1).one()
+        record2 = s.query(DocumentRecord).filter(DocumentRecord.id == 2).one()
+        record3 = s.query(DocumentRecord).filter(DocumentRecord.id == 3).one()
+
+        assert record1.target == "Updated Hello"
+        assert record1.approved is True
+
+        assert record2.target == "Updated Hello"  # updated
+        assert record2.approved is True
+
+        assert record3.target == "Пока"  # unchanged (different source)
+        assert record3.approved is False
+
+
+def test_update_repetitions_default_behavior(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that update_repetitions defaults to False when not specified"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Hello World", target="Здравствуйте Мир"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Update without specifying update_repetitions (should default to False)
+    response = user_logged_client.put(
+        "/document/record/1",
+        json={
+            "target": "Updated Hello",
+            "approved": True,
+            "update_repetitions": False,
+        },
+    )
+    assert response.status_code == 200
+
+    with session as s:
+        # Check that only record 1 was updated
+        record1 = s.query(DocumentRecord).filter(DocumentRecord.id == 1).one()
+        record2 = s.query(DocumentRecord).filter(DocumentRecord.id == 2).one()
+
+        assert record1.target == "Updated Hello"
+        assert record1.approved is True
+
+        assert record2.target == "Здравствуйте Мир"  # unchanged
+        assert record2.approved is False
