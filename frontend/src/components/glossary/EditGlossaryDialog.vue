@@ -2,6 +2,7 @@
 import {ref, watchEffect} from 'vue'
 import {Button, Dialog, InputText} from 'primevue'
 import {useGlossaryStore} from '../../stores/glossary'
+import {isAdmin} from '../../utilities/auth'
 
 const store = useGlossaryStore()
 
@@ -79,6 +80,7 @@ const updateGlossary = async () => {
 
       <div class="flex justify-end gap-2">
         <Button
+          v-if="isAdmin()"
           class="mr-auto"
           type="button"
           label="Delete"

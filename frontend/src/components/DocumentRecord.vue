@@ -7,6 +7,7 @@ import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
 
 import RoutingLink from './RoutingLink.vue'
+import {isAdmin} from '../utilities/auth'
 
 const emit = defineEmits<{
   delete: []
@@ -87,6 +88,7 @@ const deleteFile = async () => {
       @click="$emit('openSettings', document.id)"
     />
     <Button
+      v-if="isAdmin()"
       class="ml-auto"
       label="Delete"
       severity="danger"

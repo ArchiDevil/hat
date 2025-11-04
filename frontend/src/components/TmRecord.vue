@@ -5,6 +5,7 @@ import {TranslationMemory} from '../client/schemas/TranslationMemory'
 
 import Button from 'primevue/button'
 import RoutingLink from './RoutingLink.vue'
+import {isAdmin} from '../utilities/auth'
 
 const emit = defineEmits<{
   delete: []
@@ -55,6 +56,7 @@ const deleteFile = async () => {
       {{ status }}
     </span>
     <Button
+      v-if="isAdmin()"
       class="ml-auto"
       label="Delete"
       severity="danger"
