@@ -9,14 +9,16 @@ import {
   setTranslationMemories,
 } from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
-import {YandexTranslatorSettings} from '../client/schemas/YandexTranslatorSettings'
 import {TranslationMemoryUsage} from '../client/schemas/TranslationMemoryUsage'
 
 import {useTmStore} from '../stores/tm'
 import {useGlossaryStore} from '../stores/glossary'
 
+import MachineTranslationOptions, {
+  MtType,
+} from './MachineTranslationOptions.vue'
+
 import Checkbox from 'primevue/checkbox'
-import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import FileUpload, {FileUploadSelectEvent} from 'primevue/fileupload'
@@ -34,12 +36,20 @@ const uploadedFile = ref(null) as Ref<Document | null>
 const uploading = ref(false)
 const status = ref('')
 
-const substituteNumbers = ref(false)
-const useMachineTranslation = ref(false)
-const machineTranslationSettings = ref<YandexTranslatorSettings>({
-  type: 'yandex',
-  folder_id: '',
-  oauth_token: '',
+const substituteNumbers = ref(true)
+const mtOptions = ref({
+  enabled: false,
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  type: 'yandex' as MtType,
+  yandexSettings: {
+    type: 'yandex',
+    folder_id: '',
+    oauth_token: '',
+  },
+  llmSettings: {
+    type: 'llm',
+    api_key: '',
+  },
 })
 const similarityThreshold = ref<number>(1.0)
 
@@ -90,10 +100,13 @@ const startProcessing = async () => {
         return {id: g.id}
       }),
     })
+    const mtSettings = mtOptions.value
     await processDoc(uploadedFile.value!.id, {
       substitute_numbers: substituteNumbers.value,
-      machine_translation_settings: useMachineTranslation.value
-        ? machineTranslationSettings.value
+      machine_translation_settings: mtSettings.enabled
+        ? mtSettings.type === 'yandex'
+          ? mtSettings.yandexSettings
+          : mtSettings.llmSettings
         : null,
       memory_usage: memoryMode.value,
       similarity_threshold: similarityThreshold.value,
@@ -200,61 +213,7 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
               filter-placeholder="Search glossaries..."
             />
           </div>
-          <div class="flex items-center">
-            <Checkbox
-              id="umt"
-              v-model="useMachineTranslation"
-              :binary="true"
-            />
-            <label
-              for="umt"
-              class="ml-2"
-              @click="useMachineTranslation = !useMachineTranslation"
-            >
-              Use Yandex machine translation
-            </label>
-          </div>
-          <div
-            v-if="useMachineTranslation"
-            class="flex flex-col gap-2 max-w-[32rem]"
-          >
-            <p class="font-semibold mt-3">
-              Yandex translator options
-              <a
-                href="https://yandex.cloud/ru/docs/translate/api-ref/authentication"
-                class="font-normal underline decoration-1 hover:decoration-2"
-                target="_blank"
-              >
-                (Where to get credentials?)
-              </a>
-            </p>
-            <div class="flex items-center flex-row gap-2">
-              <label
-                for="fid"
-                class="flex-grow"
-              >
-                Folder ID
-              </label>
-              <InputText
-                id="fid"
-                v-model="machineTranslationSettings.folder_id"
-                class="w-96"
-              />
-            </div>
-            <div class="flex items-center flex-row gap-2">
-              <label
-                for="oauth"
-                class="flex-grow"
-              >
-                OAuth token
-              </label>
-              <InputText
-                id="oauth"
-                v-model="machineTranslationSettings.oauth_token"
-                class="w-96"
-              />
-            </div>
-          </div>
+          <MachineTranslationOptions v-model="mtOptions" />
         </div>
         <div v-else>
           {{ status }}
