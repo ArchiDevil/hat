@@ -400,3 +400,207 @@ def test_update_repetitions_default_behavior(
 
         assert record2.target == "Здравствуйте Мир"  # unchanged
         assert record2.approved is False
+
+
+def test_doc_records_source_filter(user_logged_client: TestClient, session: Session):
+    """Test filtering document records by source text"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+            DocumentRecord(source="Hello Universe", target="Привет Вселенная"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Test filtering by "Hello"
+    response = user_logged_client.get("/document/1/records", params={"source": "Hello"})
+    assert response.status_code == 200
+    records_response = response.json()
+    assert len(records_response) == 2
+
+    # Should return records with "Hello World" and "Hello Universe"
+    sources = [record["source"] for record in records_response]
+    assert "Hello World" in sources
+    assert "Hello Universe" in sources
+    assert "Goodbye" not in sources
+
+
+def test_doc_records_target_filter(user_logged_client: TestClient, session: Session):
+    """Test filtering document records by target text"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+            DocumentRecord(source="Hello Universe", target="Привет Вселенная"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Test filtering by "Привет"
+    response = user_logged_client.get(
+        "/document/1/records", params={"target": "Привет"}
+    )
+    assert response.status_code == 200
+    records_response = response.json()
+    assert len(records_response) == 2
+
+    # Should return records with "Привет Мир" and "Привет Вселенная"
+    targets = [record["target"] for record in records_response]
+    assert "Привет Мир" in targets
+    assert "Привет Вселенная" in targets
+    assert "Пока" not in targets
+
+
+def test_doc_records_both_filters(user_logged_client: TestClient, session: Session):
+    """Test filtering document records by both source and target text"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+            DocumentRecord(source="Hello Universe", target="Привет Вселенная"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Test filtering by both source "Hello" and target "Привет"
+    response = user_logged_client.get(
+        "/document/1/records",
+        params={"source": "Hello", "target": "Вселенная"},
+    )
+    assert response.status_code == 200
+    records_response = response.json()
+    assert len(records_response) == 1
+
+    # Should return records that match either filter
+    sources = [record["source"] for record in records_response]
+    targets = [record["target"] for record in records_response]
+
+    assert "Hello Universe" in sources and "Привет Вселенная" in targets
+    assert "Goodbye" not in sources
+
+
+def test_doc_records_no_filter_matches(
+    user_logged_client: TestClient, session: Session
+):
+    """Test filtering with no matching results"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Test filtering by text that doesn't exist
+    response = user_logged_client.get(
+        "/document/1/records", params={"source": "Nonexistent"}
+    )
+    assert response.status_code == 200
+    records_response = response.json()
+    assert len(records_response) == 0
+
+
+def test_doc_records_case_insensitive_filter(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that filtering is case insensitive"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="hello universe", target="Привет Вселенная"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Test filtering with different case
+    response = user_logged_client.get("/document/1/records", params={"source": "HELLO"})
+    assert response.status_code == 200
+    records_response = response.json()
+    assert len(records_response) == 2
+
+    sources = [record["source"] for record in records_response]
+    assert "Hello World" in sources
+    assert "hello universe" in sources
+
+
+def test_doc_records_filter_with_pagination(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that filtering works with pagination"""
+    with session as s:
+        records = [
+            DocumentRecord(source=f"Hello {i}", target=f"Привет {i}") for i in range(10)
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # First, test page 0 to see how many records we get
+    response = user_logged_client.get(
+        "/document/1/records", params={"source": "Hello", "page": 0}
+    )
+    assert response.status_code == 200
+    records_response = response.json()
+    assert len(records_response) == 10  # Should get all 10 records on page 0
+
+    # Test filtering with pagination to page 1
+    response = user_logged_client.get(
+        "/document/1/records", params={"source": "Hello", "page": 1}
+    )
+    assert response.status_code == 200
+    records_response = response.json()
+    assert (
+        len(records_response) == 0
+    )  # Should get no records on page 1 since default page size is 100
+
+    # All should contain "Hello" in source (if any records were returned)
+    for record in records_response:
+        assert "Hello" in record["source"]

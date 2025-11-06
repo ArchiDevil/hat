@@ -8,6 +8,11 @@ from app.models import DocumentStatus, Identified, MachineTranslationSettings
 from app.translation_memory.schema import TranslationMemory, TranslationMemoryUsage
 
 
+class DocumentRecordFilter(BaseModel):
+    source_filter: Optional[str]
+    target_filter: Optional[str]
+
+
 class Document(Identified):
     name: str
     status: DocumentStatus

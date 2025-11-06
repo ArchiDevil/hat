@@ -84,12 +84,26 @@ def get_doc_records(
     doc_id: int,
     db: Annotated[Session, Depends(get_db)],
     page: Annotated[int | None, Query(ge=0)] = None,
+    source: Annotated[
+        str | None, Query(description="Filter by source text (contains search)")
+    ] = None,
+    target: Annotated[
+        str | None, Query(description="Filter by target text (contains search)")
+    ] = None,
 ) -> list[doc_schema.DocumentRecord]:
     if not page:
         page = 0
 
+    filters = None
+    if source or target:
+        filters = doc_schema.DocumentRecordFilter(
+            source_filter=source, target_filter=target
+        )
+
     doc = get_doc_by_id(db, doc_id)
-    records = GenericDocsQuery(db).get_document_records_paged(doc, page)
+    records = GenericDocsQuery(db).get_document_records_paged(
+        doc, page, filters=filters
+    )
     return [
         doc_schema.DocumentRecord(
             id=record.id,
