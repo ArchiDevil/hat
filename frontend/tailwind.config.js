@@ -14,7 +14,6 @@ module.exports = {
     },
     fontFamily: {
       ui: ['Inter', 'sans-serif'],
-      text: ['Open Sans', 'sans-serif'],
     },
     container: {
       center: true,
