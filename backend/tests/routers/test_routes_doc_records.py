@@ -34,7 +34,10 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
 
     response = user_logged_client.get("/document/1/records")
     assert response.status_code == 200
-    assert response.json() == [
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 2
+    assert response_data["records"] == [
         {
             "id": 1,
             "source": "Regional Effects",
@@ -77,8 +80,11 @@ def test_doc_records_returns_second_page(
 
     response = user_logged_client.get("/document/1/records", params={"page": "1"})
     assert response.status_code == 200
-    assert len(response.json()) == 50
-    assert response.json()[0] == {
+    response_data = response.json()
+    assert response_data["page"] == 1
+    assert response_data["total_records"] == 150
+    assert len(response_data["records"]) == 50
+    assert response_data["records"][0] == {
         "id": 101,
         "source": "line100",
         "target": "line100",
@@ -112,7 +118,10 @@ def test_doc_records_returns_empty_for_too_large_page(
 
     response = user_logged_client.get("/document/1/records", params={"page": "20"})
     assert response.status_code == 200
-    assert response.json() == []
+    response_data = response.json()
+    assert response_data["page"] == 20
+    assert response_data["total_records"] == 150
+    assert response_data["records"] == []
 
 
 def test_doc_records_returns_404_for_nonexistent_document(
@@ -424,7 +433,10 @@ def test_doc_records_source_filter(user_logged_client: TestClient, session: Sess
     # Test filtering by "Hello"
     response = user_logged_client.get("/document/1/records", params={"source": "Hello"})
     assert response.status_code == 200
-    records_response = response.json()
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 2
+    records_response = response_data["records"]
     assert len(records_response) == 2
 
     # Should return records with "Hello World" and "Hello Universe"
@@ -458,7 +470,10 @@ def test_doc_records_target_filter(user_logged_client: TestClient, session: Sess
         "/document/1/records", params={"target": "Привет"}
     )
     assert response.status_code == 200
-    records_response = response.json()
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 2
+    records_response = response_data["records"]
     assert len(records_response) == 2
 
     # Should return records with "Привет Мир" and "Привет Вселенная"
@@ -493,7 +508,10 @@ def test_doc_records_both_filters(user_logged_client: TestClient, session: Sessi
         params={"source": "Hello", "target": "Вселенная"},
     )
     assert response.status_code == 200
-    records_response = response.json()
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 1
+    records_response = response_data["records"]
     assert len(records_response) == 1
 
     # Should return records that match either filter
@@ -529,7 +547,10 @@ def test_doc_records_no_filter_matches(
         "/document/1/records", params={"source": "Nonexistent"}
     )
     assert response.status_code == 200
-    records_response = response.json()
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 0
+    records_response = response_data["records"]
     assert len(records_response) == 0
 
 
@@ -556,7 +577,10 @@ def test_doc_records_case_insensitive_filter(
     # Test filtering with different case
     response = user_logged_client.get("/document/1/records", params={"source": "HELLO"})
     assert response.status_code == 200
-    records_response = response.json()
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 2
+    records_response = response_data["records"]
     assert len(records_response) == 2
 
     sources = [record["source"] for record in records_response]
@@ -588,7 +612,10 @@ def test_doc_records_filter_with_pagination(
         "/document/1/records", params={"source": "Hello", "page": 0}
     )
     assert response.status_code == 200
-    records_response = response.json()
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 10
+    records_response = response_data["records"]
     assert len(records_response) == 10  # Should get all 10 records on page 0
 
     # Test filtering with pagination to page 1
@@ -596,7 +623,10 @@ def test_doc_records_filter_with_pagination(
         "/document/1/records", params={"source": "Hello", "page": 1}
     )
     assert response.status_code == 200
-    records_response = response.json()
+    response_data = response.json()
+    assert response_data["page"] == 1
+    assert response_data["total_records"] == 10
+    records_response = response_data["records"]
     assert (
         len(records_response) == 0
     )  # Should get no records on page 1 since default page size is 100

@@ -32,6 +32,12 @@ class DocumentRecord(Identified):
     repetitions_count: int
 
 
+class DocumentRecordListResponse(BaseModel):
+    records: list[DocumentRecord]
+    page: int
+    total_records: int
+
+
 class DocumentRecordUpdateResponse(Identified):
     source: str
     target: str

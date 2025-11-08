@@ -77,17 +77,39 @@ class GenericDocsQuery:
         document.processing_status = DocumentStatus.PENDING.value
         self.__db.commit()
 
-    def get_document_records_count(self, doc: Document) -> tuple[int, int]:
-        stmt = (
-            select(
-                func.count(case((DocumentRecord.approved.is_(True), 1))),
-                func.count(),
-            )
-            .select_from(DocumentRecord)
-            .where(DocumentRecord.document_id == doc.id)
-        )
+    def get_document_records_count_with_approved(
+        self, doc: Document
+    ) -> tuple[int, int]:
+        stmt = select(
+            func.count(case((DocumentRecord.approved.is_(True), 1))),
+            func.count(DocumentRecord.id),
+        ).where(DocumentRecord.document_id == doc.id)
         result = self.__db.execute(stmt).one()
         return result[0], result[1]
+
+    def get_document_records_count_filtered(
+        self, doc: Document, filters: DocumentRecordFilter | None = None
+    ) -> int:
+        base_query = select(func.count(DocumentRecord.id)).filter(
+            DocumentRecord.document_id == doc.id
+        )
+
+        filter_conditions = []
+        if filters:
+            if filters.source_filter:
+                filter_conditions.append(
+                    DocumentRecord.source.ilike(f"%{filters.source_filter}%")
+                )
+
+            if filters.target_filter:
+                filter_conditions.append(
+                    DocumentRecord.target.ilike(f"%{filters.target_filter}%")
+                )
+
+            if filter_conditions:
+                base_query = base_query.filter(and_(*filter_conditions))
+
+        return self.__db.execute(base_query).scalar_one()
 
     def get_document_records_paged(
         self,

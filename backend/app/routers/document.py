@@ -46,7 +46,7 @@ def get_docs(
     docs = query.get_documents_list()
     output = []
     for doc in docs:
-        records = query.get_document_records_count(doc)
+        records = query.get_document_records_count_with_approved(doc)
         output.append(
             doc_schema.DocumentWithRecordsCount(
                 id=doc.id,
@@ -67,7 +67,7 @@ def get_doc(
 ) -> doc_schema.DocumentWithRecordsCount:
     doc = get_doc_by_id(db, doc_id)
     query = GenericDocsQuery(db)
-    records = query.get_document_records_count(doc)
+    records = query.get_document_records_count_with_approved(doc)
     return doc_schema.DocumentWithRecordsCount(
         id=doc.id,
         name=doc.name,
@@ -90,7 +90,7 @@ def get_doc_records(
     target: Annotated[
         str | None, Query(description="Filter by target text (contains search)")
     ] = None,
-) -> list[doc_schema.DocumentRecord]:
+) -> doc_schema.DocumentRecordListResponse:
     if not page:
         page = 0
 
@@ -101,10 +101,11 @@ def get_doc_records(
         )
 
     doc = get_doc_by_id(db, doc_id)
-    records = GenericDocsQuery(db).get_document_records_paged(
-        doc, page, filters=filters
-    )
-    return [
+    query = GenericDocsQuery(db)
+    total_records = query.get_document_records_count_filtered(doc, filters)
+    records = query.get_document_records_paged(doc, page, filters=filters)
+
+    record_list = [
         doc_schema.DocumentRecord(
             id=record.id,
             source=record.source,
@@ -114,6 +115,12 @@ def get_doc_records(
         )
         for record, repetitions_count in records
     ]
+
+    return doc_schema.DocumentRecordListResponse(
+        records=record_list,
+        page=page,
+        total_records=total_records,
+    )
 
 
 @router.get("/{doc_id}/records/{record_id}/substitutions")

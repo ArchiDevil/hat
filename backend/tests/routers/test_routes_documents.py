@@ -945,12 +945,13 @@ def test_get_doc_records_with_repetitions(
     response_json = response.json()
 
     # Should return all 5 records
-    assert len(response_json) == 5
+    assert len(response_json["records"]) == 5
 
     # Check that repetition counts are correct
     # "Hello World" appears 3 times, others appear once
     record_counts = {
-        record["source"]: record["repetitions_count"] for record in response_json
+        record["source"]: record["repetitions_count"]
+        for record in response_json["records"]
     }
     assert record_counts["Hello World"] == 3
     assert record_counts["Goodbye"] == 1
