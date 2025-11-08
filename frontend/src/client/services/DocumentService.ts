@@ -6,7 +6,7 @@ import {DocumentWithRecordsCount} from '../schemas/DocumentWithRecordsCount'
 import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {StatusMessage} from '../schemas/StatusMessage'
-import {DocumentRecord} from '../schemas/DocumentRecord'
+import {DocumentRecordListResponse} from '../schemas/DocumentRecordListResponse'
 import {MemorySubstitution} from '../schemas/MemorySubstitution'
 import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
 import {DocumentRecordUpdateResponse} from '../schemas/DocumentRecordUpdateResponse'
@@ -31,8 +31,8 @@ export const getDoc = async (doc_id: number): Promise<DocumentWithRecordsCount> 
 export const deleteDoc = async (doc_id: number): Promise<StatusMessage> => {
   return await api.delete<StatusMessage>(`/document/${doc_id}`)
 }
-export const getDocRecords = async (doc_id: number, page?: number | null): Promise<DocumentRecord[]> => {
-  return await api.get<DocumentRecord[]>(`/document/${doc_id}/records`, {query: {page}})
+export const getDocRecords = async (doc_id: number, page?: number | null, source?: string | null, target?: string | null): Promise<DocumentRecordListResponse> => {
+  return await api.get<DocumentRecordListResponse>(`/document/${doc_id}/records`, {query: {page, source, target}})
 }
 export const getRecordSubstitutions = async (doc_id: number, record_id: number): Promise<MemorySubstitution[]> => {
   return await api.get<MemorySubstitution[]>(`/document/${doc_id}/records/${record_id}/substitutions`)

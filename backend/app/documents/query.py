@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Iterable
 
-from sqlalchemy import Row, case, func, select
+from sqlalchemy import Row, and_, case, func, select
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
-from app.documents.schema import DocumentRecordUpdate
+from app.documents.schema import DocumentRecordFilter, DocumentRecordUpdate
 from app.glossary.models import Glossary
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
@@ -77,20 +77,46 @@ class GenericDocsQuery:
         document.processing_status = DocumentStatus.PENDING.value
         self.__db.commit()
 
-    def get_document_records_count(self, doc: Document) -> tuple[int, int]:
-        stmt = (
-            select(
-                func.count(case((DocumentRecord.approved.is_(True), 1))),
-                func.count(),
-            )
-            .select_from(DocumentRecord)
-            .where(DocumentRecord.document_id == doc.id)
-        )
+    def get_document_records_count_with_approved(
+        self, doc: Document
+    ) -> tuple[int, int]:
+        stmt = select(
+            func.count(case((DocumentRecord.approved.is_(True), 1))),
+            func.count(DocumentRecord.id),
+        ).where(DocumentRecord.document_id == doc.id)
         result = self.__db.execute(stmt).one()
         return result[0], result[1]
 
+    def get_document_records_count_filtered(
+        self, doc: Document, filters: DocumentRecordFilter | None = None
+    ) -> int:
+        base_query = select(func.count(DocumentRecord.id)).filter(
+            DocumentRecord.document_id == doc.id
+        )
+
+        filter_conditions = []
+        if filters:
+            if filters.source_filter:
+                filter_conditions.append(
+                    DocumentRecord.source.ilike(f"%{filters.source_filter}%")
+                )
+
+            if filters.target_filter:
+                filter_conditions.append(
+                    DocumentRecord.target.ilike(f"%{filters.target_filter}%")
+                )
+
+            if filter_conditions:
+                base_query = base_query.filter(and_(*filter_conditions))
+
+        return self.__db.execute(base_query).scalar_one()
+
     def get_document_records_paged(
-        self, doc: Document, page: int, page_records=100
+        self,
+        doc: Document,
+        page: int,
+        page_records=100,
+        filters: DocumentRecordFilter | None = None,
     ) -> Iterable[Row[tuple[DocumentRecord, int]]]:
         # Subquery to count repetitions for each source text within the document
         repetitions_subquery = (
@@ -103,7 +129,8 @@ class GenericDocsQuery:
             .subquery()
         )
 
-        return self.__db.execute(
+        # Build the base query
+        query = (
             select(
                 DocumentRecord,
                 func.coalesce(repetitions_subquery.c.repetitions_count, 0).label(
@@ -115,7 +142,27 @@ class GenericDocsQuery:
                 repetitions_subquery,
                 DocumentRecord.source == repetitions_subquery.c.source,
             )
-            .order_by(DocumentRecord.id)
+        )
+
+        # Apply filters if provided
+        if filters:
+            filter_conditions = []
+
+            if filters.source_filter:
+                filter_conditions.append(
+                    DocumentRecord.source.ilike(f"%{filters.source_filter}%")
+                )
+
+            if filters.target_filter:
+                filter_conditions.append(
+                    DocumentRecord.target.ilike(f"%{filters.target_filter}%")
+                )
+
+            if filter_conditions:
+                query = query.filter(and_(*filter_conditions))
+
+        return self.__db.execute(
+            query.order_by(DocumentRecord.id)
             .offset(page_records * page)
             .limit(page_records)
         ).all()

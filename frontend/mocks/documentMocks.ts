@@ -1,9 +1,13 @@
 import {http, HttpResponse} from 'msw'
+import {faker} from '@faker-js/faker'
+
 import {AwaitedReturnType} from './utils'
 import {
   getDoc,
   getDocRecords,
   getDocs,
+  getRecordGlossaryRecords,
+  getRecordSubstitutions,
 } from '../src/client/services/DocumentService'
 import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
 
@@ -17,13 +21,6 @@ const segments = [
   },
   {
     id: 10001,
-    approved: true,
-    source: 'Adventure Hooks',
-    target: 'Зацепки приключения',
-    repetitions_count: 2,
-  },
-  {
-    id: 10002,
     approved: false,
     source:
       'The moment the Cynidiceans pried the horn from the monolith, their city was doomed.',
@@ -31,7 +28,20 @@ const segments = [
       'В тот момент, когда кинидийцы извлекли рог из монолита, их город был обречен.',
     repetitions_count: 1,
   },
+  {
+    id: 10002,
+    approved: true,
+    source: 'Adventure Hooks',
+    target: 'Зацепки приключения',
+    repetitions_count: 2,
+  },
 ]
+
+const recordsData = {
+  page: 0,
+  total_records: segments.length,
+  records: segments,
+}
 
 const docs = [
   {
@@ -63,8 +73,72 @@ export const documentMocks = [
       const doc = docs.find((doc) => doc.id === Number(params.id))
       if (doc !== undefined) {
         return HttpResponse.json<AwaitedReturnType<typeof getDocRecords>>(
-          segments
+          recordsData
         )
+      } else {
+        new HttpResponse(null, {status: 404})
+      }
+    }
+  ),
+  http.get<{id: string; segmentId: string}>(
+    'http://localhost:8000/document/:id/records/:segmentId/substitutions',
+    ({params}) => {
+      const doc = docs.find((doc) => doc.id === Number(params.id))
+      if (doc !== undefined) {
+        return HttpResponse.json<
+          AwaitedReturnType<typeof getRecordSubstitutions>
+        >([
+          {
+            source: 'Substitution test',
+            target: 'Тест подстановки',
+            similarity: 0.94,
+          },
+          {
+            source: 'Something else',
+            target: 'Что-то еще',
+            similarity: 0.84,
+          },
+        ])
+      } else {
+        new HttpResponse(null, {status: 404})
+      }
+    }
+  ),
+  http.get<{id: string; segmentId: string}>(
+    'http://localhost:8000/document/:id/records/:segmentId/glossary_records',
+    ({params}) => {
+      const doc = docs.find((doc) => doc.id === Number(params.id))
+      if (doc !== undefined) {
+        return HttpResponse.json<
+          AwaitedReturnType<typeof getRecordGlossaryRecords>
+        >([
+          {
+            id: 1,
+            source: 'Test',
+            target: 'Тест',
+            glossary_id: 2,
+            created_at: faker.date.recent().toISOString().split('.')[0],
+            updated_at: faker.date.recent().toISOString().split('.')[0],
+            comment: '',
+            created_by_user: {
+              id: 42,
+              username: 'User',
+            },
+          },
+          {
+            id: 2,
+            source: 'Another test',
+            target: 'Другой тест',
+            glossary_id: 2,
+            created_at: faker.date.recent().toISOString().split('.')[0],
+            updated_at: faker.date.recent().toISOString().split('.')[0],
+            comment: '',
+            created_by_user: {
+              id: 42,
+              username: 'User',
+            },
+          },
+        ])
       } else {
         new HttpResponse(null, {status: 404})
       }

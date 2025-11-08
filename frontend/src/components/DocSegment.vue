@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, ref, watch, watchEffect} from 'vue'
+import {computed, nextTick, ref, watch} from 'vue'
 
 import Button from 'primevue/button'
 
@@ -59,11 +59,14 @@ watch(
   }
 )
 
-watchEffect(() => {
-  if (props.focusedId == props.id) {
-    targetInput.value?.focus()
+watch(
+  () => props.focusedId,
+  () => {
+    if (props.focusedId == props.id) {
+      targetInput.value?.focus()
+    }
   }
-})
+)
 
 const repeatEnabled = ref(true)
 const enableRepeat = () => {
@@ -93,14 +96,14 @@ const repetitionTitle = computed(() => {
     {{ id }}
   </div>
   <div
-    class="border rounded-border border-surface p-2 bg-white h-full"
+    class="border rounded-border border-surface p-2 bg-white h-full h-min-11"
     :class="{'bg-surface-200': disabled ?? false}"
   >
     {{ source }}
   </div>
   <div
     ref="targetInput"
-    class="border rounded-border border-surface p-2 bg-white h-full"
+    class="border rounded-border border-surface p-2 bg-white h-full h-min-11"
     :class="{
       'bg-surface-200': disabled ?? false,
       'active:border-primary': editable ?? false,
@@ -119,6 +122,7 @@ const repetitionTitle = computed(() => {
     class="text-center w-16 self-start"
   >
     <Button
+      class="h-11 w-11"
       icon="pi pi-check"
       size="small"
       :severity="approved ? 'success' : 'primary'"

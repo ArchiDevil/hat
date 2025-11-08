@@ -1,5 +1,6 @@
 import {createApp} from 'vue'
 import {createPinia} from 'pinia'
+import {PiniaColada} from '@pinia/colada'
 
 import PrimeVue from 'primevue/config'
 import {definePreset} from '@primevue/themes'
@@ -31,6 +32,7 @@ const startApp = () => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   const app = createApp(App)
   app.use(pinia)
+  app.use(PiniaColada)
   app.use(PrimeVue, {
     theme: {
       preset: themePreset as unknown,

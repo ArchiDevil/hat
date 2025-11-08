@@ -8,6 +8,11 @@ from app.models import DocumentStatus, Identified, MachineTranslationSettings
 from app.translation_memory.schema import TranslationMemory, TranslationMemoryUsage
 
 
+class DocumentRecordFilter(BaseModel):
+    source_filter: Optional[str]
+    target_filter: Optional[str]
+
+
 class Document(Identified):
     name: str
     status: DocumentStatus
@@ -25,6 +30,12 @@ class DocumentRecord(Identified):
     target: str
     approved: bool
     repetitions_count: int
+
+
+class DocumentRecordListResponse(BaseModel):
+    records: list[DocumentRecord]
+    page: int
+    total_records: int
 
 
 class DocumentRecordUpdateResponse(Identified):
