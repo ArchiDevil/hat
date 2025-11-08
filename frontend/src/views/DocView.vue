@@ -12,6 +12,7 @@ import SubstitutionsList from '../components/document/SubstitutionsList.vue'
 import ProcessingErrorMessage from '../components/document/ProcessingErrorMessage.vue'
 import RoutingLink from '../components/RoutingLink.vue'
 import DocumentSkeleton from '../components/document/DocumentSkeleton.vue'
+import FilterPanel from '../components/document/FilterPanel.vue'
 import {
   getDoc,
   getDocRecords,
@@ -19,7 +20,6 @@ import {
   updateDocRecord,
 } from '../client/services/DocumentService'
 import {useDocStore} from '../stores/document'
-import FilterPanel from '../components/document/FilterPanel.vue'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow
@@ -65,6 +65,8 @@ const documentDownloadLink = computed(() => {
   return getDownloadDocLink(documentId.value)
 })
 
+const recordsCount = computed(() => recordsData.value?.total_records)
+
 const translationProgress = computed(() => {
   const doc = document.value
   if (!doc) return 0
@@ -78,7 +80,7 @@ const updatePage = async (event: PageState) => {
 const sourceFilter = ref('')
 const targetFilter = ref('')
 
-const {data: records} = useQuery({
+const {data: recordsData} = useQuery({
   key: () => [
     'doc-records',
     documentId.value,
@@ -87,17 +89,20 @@ const {data: records} = useQuery({
     targetFilter.value,
   ],
   query: async () => {
-    return (
-      await getDocRecords(
-        documentId.value,
-        page.value,
-        sourceFilter.value,
-        targetFilter.value
-      )
-    ).map((record) => ({
-      ...record,
-      loading: false,
-    }))
+    const data = await getDocRecords(
+      documentId.value,
+      page.value,
+      sourceFilter.value,
+      targetFilter.value
+    )
+    return {
+      page: data.page,
+      total_records: data.total_records,
+      records: data.records.map((record) => ({
+        ...record,
+        loading: false,
+      })),
+    }
   },
   enabled: () =>
     !documentLoading.value &&
@@ -111,30 +116,30 @@ const onSegmentUpdate = async (
   approved: boolean,
   updateRepeats: boolean
 ) => {
-  if (!document.value || !records.value) {
+  if (!document.value || !recordsData.value) {
     return
   }
 
   // TODO: this should be a kind of mutation instead of manual updating
-  const idx = records.value.findIndex((record) => record.id === id)
+  const idx = recordsData.value.records.findIndex((record) => record.id === id)
   if (idx < 0) {
     console.error('Record not found')
     return
   }
-  records.value[idx].loading = true
-  triggerRef(records)
+  recordsData.value.records[idx].loading = true
+  triggerRef(recordsData)
 
   const newRecord = await updateDocRecord(id, {
     target: text,
     approved: approved,
     update_repetitions: updateRepeats,
   })
-  records.value[idx] = {
+  recordsData.value.records[idx] = {
     ...newRecord,
     loading: false,
-    repetitions_count: records.value[idx].repetitions_count,
+    repetitions_count: recordsData.value.records[idx].repetitions_count,
   }
-  triggerRef(records)
+  triggerRef(recordsData)
 
   // rerequest a document to update its records count
   // this is because more than one record can be updated by a backend
@@ -146,25 +151,28 @@ const onSegmentUpdate = async (
 const onSegmentCommit = async (
   id: number,
   text: string,
-  updateRepeats: boolean
+  updateRepeats: boolean,
+  idx: number
 ) => {
   await onSegmentUpdate(id, text, true, updateRepeats)
-  focusNextSegment()
+  focusSegment(idx + 1)
 }
 
-const focusNextSegment = () => {
-  if (
-    focusedSegmentIdx.value &&
-    focusedSegmentIdx.value < (records.value?.length ?? 0) - 1
-  ) {
-    focusedSegmentIdx.value += 1
-  }
+const focusSegment = (newIdx: number) => {
+  if (!recordsData.value?.records.length) return
+  focusedSegmentIdx.value = Math.min(
+    newIdx,
+    recordsData.value?.records.length - 1
+  )
 }
 
 const focusedSegmentIdx = ref<number>()
 const currentSegmentId = computed(() => {
-  if (!records.value || !focusedSegmentIdx.value) return undefined
-  return records.value[focusedSegmentIdx.value].id
+  if (!recordsData.value || focusedSegmentIdx.value == undefined)
+    return undefined
+  if (focusedSegmentIdx.value >= recordsData.value.records.length)
+    return undefined
+  return recordsData.value.records[focusedSegmentIdx.value].id
 })
 </script>
 
@@ -217,33 +225,35 @@ const currentSegmentId = computed(() => {
       >
         <Paginator
           :rows="100"
-          :total-records="document?.records_count"
+          :total-records="recordsCount"
           :first="page * 100"
           class="inline-block"
           @page="(event) => updatePage(event)"
         />
       </div>
     </div>
-    <div class="overflow-hidden grid grid-cols-[auto_1fr] gap-2 items-start">
-      <template v-if="documentReady && !documentLoading">
-        <template v-if="records">
+    <div
+      class="overflow-hidden grid grid-cols-[1fr_auto] items-start bg-surface-50"
+    >
+      <template v-if="documentReady">
+        <template v-if="recordsData">
           <div
-            class="grid grid-cols-[auto_auto_1fr_1fr_auto] gap-1 overflow-scroll my-1 bg-surface-50 max-h-full py-2"
+            class="grid grid-cols-[auto_auto_1fr_1fr_auto] gap-1 overflow-scroll mb-1 max-h-full py-2"
           >
             <DocSegment
-              v-for="(record, idx) in records"
+              v-for="(record, idx) in recordsData?.records"
               :id="record.id"
               :key="record.id"
               editable
               :source="record.source"
               :target="record.target"
               :disabled="record.loading"
-              :focused-id="undefined /*store.currentFocusId*/"
+              :focused-id="currentSegmentId"
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
               @commit="
                 (text, updateRepeats) =>
-                  onSegmentCommit(record.id, text, updateRepeats)
+                  onSegmentCommit(record.id, text, updateRepeats, idx)
               "
               @update-record="
                 (text, updateRepeats) =>
@@ -253,12 +263,14 @@ const currentSegmentId = computed(() => {
             />
           </div>
           <SubstitutionsList
-            class="border-l border-y rounded-l-lg px-2 my-1 overflow-scroll bg-surface-50 self-stretch max-h-full"
+            class="border-l"
             :document-id="documentId"
             :current-segment-id="currentSegmentId"
           />
         </template>
-        <p v-else>Loading...</p>
+        <p v-else>
+          Loading...
+        </p>
       </template>
     </div>
   </div>
