@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import {GlossarySubstitution, MemorySubstitution} from './types'
+import {onMounted} from 'vue'
+import {useQuery} from '@pinia/colada'
 
-defineProps<{
-  substitutions: (MemorySubstitution | GlossarySubstitution)[]
+import {GlossarySubstitution, MemorySubstitution} from './types'
+import {
+  getRecordGlossaryRecords,
+  getRecordSubstitutions,
+} from '../../client/services/DocumentService'
+import {useGlossaryStore} from '../../stores/glossary'
+
+const {documentId, currentSegmentId = undefined} = defineProps<{
+  documentId: number
+  currentSegmentId?: number
 }>()
 
 const subClass = (sub: MemorySubstitution | GlossarySubstitution) => {
@@ -14,6 +23,44 @@ const subClass = (sub: MemorySubstitution | GlossarySubstitution) => {
   if (sub.similarity >= 0.75) return 'bg-amber-200'
   return 'bg-orange-200'
 }
+
+const {data: substitutions} = useQuery({
+  key: () => ['substitutions', documentId, currentSegmentId ?? -1],
+  query: async () => {
+    const memorySubs = (
+      await getRecordSubstitutions(documentId, currentSegmentId!)
+    )
+      .map((sub): MemorySubstitution => {
+        return {type: 'memory', ...sub}
+      })
+      .sort((a, b) => b.similarity - a.similarity)
+
+    const glossarySubs = (
+      await getRecordGlossaryRecords(documentId, currentSegmentId!)
+    )
+      .map((sub): GlossarySubstitution => {
+        return {
+          type: 'glossary',
+          source: sub.source,
+          target: sub.target,
+          comment: sub.comment ?? undefined,
+          parentName:
+            useGlossaryStore().glossaries.find((g) => g.id == sub.glossary_id)
+              ?.name ?? '',
+        }
+      })
+      .sort((a, b) =>
+        a.source.toLowerCase().localeCompare(b.source.toLowerCase())
+      )
+    return [...memorySubs, ...glossarySubs]
+  },
+  enabled: () => currentSegmentId !== undefined,
+  placeholderData: <T>(prevData: T) => prevData,
+})
+
+onMounted(async () => {
+  await useGlossaryStore().fetchGlossaries()
+})
 </script>
 
 <template>
