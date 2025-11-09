@@ -47,6 +47,9 @@ services:
       context: .
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - LLM_BASE_API=${LLM_BASE_API}
+      - LLM_MODEL=${LLM_MODEL}
+      - LLM_BASE64_PROMPT=${LLM_BASE64_PROMPT}
     restart: on-failure
     depends_on:
       db:
@@ -62,6 +65,9 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - SECRET_KEY=${SECRET_KEY}
       - DOMAIN_NAME=${DOMAIN_NAME}
+      - LLM_BASE_API=${LLM_BASE_API}
+      - LLM_MODEL=${LLM_MODEL}
+      - LLM_BASE64_PROMPT=${LLM_BASE64_PROMPT}
     restart: on-failure
     depends_on:
       db:

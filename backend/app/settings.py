@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     def llm_prompt(self):
         if not self.llm_base64_prompt:
             return ""
-        base64.decodebytes(self.llm_base64_prompt.encode()).decode()
+        return base64.decodebytes(self.llm_base64_prompt.encode()).decode()
 
 
 settings = Settings()

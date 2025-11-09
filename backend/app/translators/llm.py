@@ -13,7 +13,9 @@ from app.translators.common import LineWithGlossaries
 
 
 def generate_prompt_prologue() -> str:
-    return settings.llm_prompt or ""
+    if not settings.llm_prompt:
+        logging.error('No LLM prompt configured')
+    return settings.llm_prompt
 
 
 def generate_prompt_ctx(
@@ -86,6 +88,11 @@ def translate_lines(
     """
     # when settings are not set, it fails immediately
     if not settings.llm_base_api or not settings.llm_model:
+        logging.error(
+            "No LLM base or LLM model configured. LLM base: %s, LLM model: %s",
+            settings.llm_base_api,
+            settings.llm_model,
+        )
         return [], True
 
     client = OpenAI(api_key=api_key, base_url=settings.llm_base_api)
