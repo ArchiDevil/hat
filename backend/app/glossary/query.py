@@ -10,7 +10,7 @@ from app.glossary.schema import (
     GlossaryRecordUpdate,
     GlossarySchema,
 )
-from app.linguistic.utils import stem_sentence
+from app.linguistic.utils import postprocess_stemmed_segment, stem_sentence
 
 
 class NotFoundGlossaryExc(BaseQueryException):
@@ -55,7 +55,7 @@ class GlossaryQuery:
     def get_glossary_records_for_segment(
         self, segment: str, glossary_ids: list[int]
     ) -> list[GlossaryRecord]:
-        words = stem_sentence(segment)
+        words = postprocess_stemmed_segment(stem_sentence(segment))
         or_clauses = [GlossaryRecord.source.ilike(f"%{word}%") for word in words]
         records = self.db.execute(
             select(GlossaryRecord).where(
@@ -123,7 +123,9 @@ class GlossaryQuery:
         glossary_record = GlossaryRecord(
             glossary_id=glossary_id,
             created_by=user_id,
-            stemmed_source=" ".join(stem_sentence(record.source)),
+            stemmed_source=" ".join(
+                postprocess_stemmed_segment(stem_sentence(record.source))
+            ),
             **record.model_dump(),
         )
         self.db.add(glossary_record)
@@ -169,7 +171,9 @@ class GlossaryQuery:
 
     def update_record(self, record_id: int, record: GlossaryRecordUpdate):
         dump = record.model_dump()
-        dump["stemmed_source"] = " ".join(stem_sentence(record.source))
+        dump["stemmed_source"] = " ".join(
+            postprocess_stemmed_segment(stem_sentence(record.source))
+        )
         result = (
             self.db.query(GlossaryRecord)
             .filter(GlossaryRecord.id == record_id)  # type: ignore

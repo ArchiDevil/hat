@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.glossary.models import GlossaryRecord
 from app.glossary.query import GlossaryQuery
-from app.linguistic.utils import stem_sentence
+from app.linguistic.utils import postprocess_stemmed_segment, stem_sentence
 
 
 @dataclass
@@ -45,7 +45,9 @@ def extract_from_xlsx(user_id: int, sheet, glossary_id: int) -> list[GlossaryRec
             source=parsed_record.source,
             target=parsed_record.target,
             glossary_id=glossary_id,
-            stemmed_source=" ".join(stem_sentence(parsed_record.source)),
+            stemmed_source=" ".join(
+                postprocess_stemmed_segment(stem_sentence(parsed_record.source))
+            ),
         )
         record_for_save.append(record)
     return record_for_save
