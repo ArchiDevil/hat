@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.add_column('glossary_record', sa.Column('created_by', sa.Integer()))
     op.create_foreign_key(None, 'glossary_record', 'user', ['created_by'], ['id'])
     op.execute(
-        sa.update(sa.table("glossary_record", sa.Column("created_by"))).values(
+        sa.update(sa.table("glossary_record", sa.Column("created_by", sa.Integer()))).values(
             created_by=1  # first administrator account
         )
     )

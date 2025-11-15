@@ -24,7 +24,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # TMX part
     op.add_column("tmx_document", sa.Column("created_by", sa.Integer()))
-    update = sa.update(sa.table("tmx_document", sa.Column("created_by"))).values(
+    update = sa.update(
+        sa.table("tmx_document", sa.Column("created_by", sa.Integer()))
+    ).values(
         created_by=1  # first administrator account
     )
     op.execute(update)
@@ -35,7 +37,9 @@ def upgrade() -> None:
 
     # XLIFF part
     op.add_column("xliff_document", sa.Column("created_by", sa.Integer()))
-    update = sa.update(sa.table("xliff_document", sa.Column("created_by"))).values(
+    update = sa.update(
+        sa.table("xliff_document", sa.Column("created_by", sa.Integer()))
+    ).values(
         created_by=1  # first administrator account
     )
     op.execute(update)

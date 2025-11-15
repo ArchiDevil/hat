@@ -25,7 +25,11 @@ def upgrade() -> None:
     op.add_column("xliff_record", sa.Column("state", sa.String()))
     op.add_column("xliff_record", sa.Column("approved", sa.Boolean()))
     update = sa.update(
-        sa.table("xliff_record", sa.column("state"), sa.column("approved"))
+        sa.table(
+            "xliff_record",
+            sa.column("state", sa.String()),
+            sa.column("approved", sa.Boolean()),
+        )
     ).values(state="needs-translation", approved=False)
     op.execute(update)
     op.alter_column("xliff_record", "state", nullable=False)

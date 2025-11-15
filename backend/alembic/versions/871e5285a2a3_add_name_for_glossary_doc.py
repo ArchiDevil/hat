@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.add_column("glossary_document", sa.Column("name", sa.String()))
-    op.execute(sa.update(sa.table("glossary_document", sa.column('name'))).values(name='empty'))
+    op.execute(sa.update(sa.table("glossary_document", sa.column('name', sa.String()))).values(name='empty'))
     op.alter_column("glossary_document", "name", nullable=False)
 
 
