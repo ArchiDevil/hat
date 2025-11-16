@@ -634,3 +634,65 @@ def test_doc_records_filter_with_pagination(
     # All should contain "Hello" in source (if any records were returned)
     for record in records_response:
         assert "Hello" in record["source"]
+
+
+def test_update_repetitions_only_when_approved(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that repetitions are only updated when segment is approved, not just updated"""
+    with session as s:
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Hello World", target="Здравствуйте Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Update record 1 with repetition update enabled but NOT approved
+    response = user_logged_client.put(
+        "/document/record/1",
+        json={"target": "Updated Hello", "approved": False, "update_repetitions": True},
+    )
+    assert response.status_code == 200
+
+    with session as s:
+        # Check that only record 1 was updated (no repetitions updated since not approved)
+        record1 = s.query(DocumentRecord).filter(DocumentRecord.id == 1).one()
+        record2 = s.query(DocumentRecord).filter(DocumentRecord.id == 2).one()
+        record3 = s.query(DocumentRecord).filter(DocumentRecord.id == 3).one()
+
+        assert record1.target == "Updated Hello"
+        assert record1.approved is False
+
+        assert record2.target == "Здравствуйте Мир"  # unchanged - no repetition update
+        assert record2.approved is False
+
+        assert record3.target == "Пока"  # unchanged (different source)
+        assert record3.approved is False
+
+    # Now update record 1 with repetition update enabled AND approved
+    response = user_logged_client.put(
+        "/document/record/1",
+        json={"target": "Final Hello", "approved": True, "update_repetitions": True},
+    )
+    assert response.status_code == 200
+
+    with session as s:
+        # Check that all records with "Hello World" source were updated
+        record1 = s.query(DocumentRecord).filter(DocumentRecord.id == 1).one()
+        record2 = s.query(DocumentRecord).filter(DocumentRecord.id == 2).one()
+
+        assert record1.target == "Final Hello"
+        assert record1.approved is True
+
+        assert record2.target == "Final Hello"  # updated - repetition update since approved
+        assert record2.approved is True

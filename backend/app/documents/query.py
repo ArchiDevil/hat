@@ -184,8 +184,8 @@ class GenericDocsQuery:
         if data.approved is not None:
             record.approved = data.approved
 
-        # If update_repetitions is True, find all records with the same source
-        if data.update_repetitions:
+        # If update_repetitions is True AND the segment is being approved, find all records with the same source
+        if data.update_repetitions and data.approved is True:
             repeated_records = (
                 self.__db.execute(
                     select(DocumentRecord).filter(
@@ -200,8 +200,7 @@ class GenericDocsQuery:
             # Update all repeated records
             for repeated_record in repeated_records:
                 repeated_record.target = data.target
-                if data.approved is not None:
-                    repeated_record.approved = data.approved
+                repeated_record.approved = data.approved
 
         if data.approved is True:
             bound_tm = None
