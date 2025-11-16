@@ -79,7 +79,7 @@ onMounted(async () => {
         :key="i"
       >
         <div
-          class="border border-surface rounded px-1 text-center h-fit"
+          class="border border-surface rounded-sm px-1 text-center h-fit"
           :class="subClass(sub)"
         >
           <label v-if="sub.type == 'memory'">

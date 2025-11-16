@@ -87,7 +87,7 @@ const register = async () => {
 
 <template>
   <div
-    class="max-w-[432px] flex flex-col gap-4 border-2 border-surface shadow-lg rounded px-4 mt-4 pb-8 mx-auto"
+    class="max-w-[432px] flex flex-col gap-4 border-2 border-surface shadow-lg rounded-sm px-4 mt-4 pb-8 mx-auto"
   >
     <PageTitle
       title="Sign Up"
