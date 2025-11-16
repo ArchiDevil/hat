@@ -139,7 +139,7 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
       custom-upload
       accept=".xliff,.txt"
       :disabled="uploading"
-      @select="(event: FileUploadSelectEvent) => createFile(event)"
+      @select="createFile"
       @uploader="startProcessing"
     >
       <template #content="{files}">

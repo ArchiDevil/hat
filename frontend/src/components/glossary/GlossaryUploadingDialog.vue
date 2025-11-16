@@ -13,6 +13,11 @@ const emit = defineEmits<{
 const uploading = ref(false)
 const status = ref('')
 
+const removeFileCb = ref<(idx: number) => void>()
+const saveCallback = (removeFileCallback: (idx: number) => void) => {
+  removeFileCb.value = removeFileCallback
+}
+
 const uploadFile = async (event: FileUploadUploaderEvent) => {
   const files = event.files as File[]
   if (files.length != 1) {
@@ -24,7 +29,8 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
     status.value = 'Uploading...'
     await useGlossaryStore().create(files[0].name, files[0])
     uploading.value = false
-    status.value = 'Uploading finished!'
+    status.value = 'Uploading finished. You may choose another file.'
+    if (removeFileCb.value) removeFileCb.value(0)
     emit('uploaded')
   } catch (error: unknown) {
     uploading.value = false
@@ -39,19 +45,18 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
       mode="advanced"
       accept=".xlsx"
       custom-upload
+      auto
       :disabled="uploading"
       @uploader="(event: FileUploadUploaderEvent) => uploadFile(event)"
     >
-      <template #content="{files}">
-        <div v-if="files.length">
-          {{ files[0].name }} is waiting to upload.
-        </div>
-        <div v-else>
+      <template #content="{removeFileCallback}">
+        <span :ref="() => saveCallback(removeFileCallback)" />
+        <div v-if="status.length > 0">
           {{ status }}
         </div>
       </template>
       <template #empty>
-        <span v-if="!status">Choose XLSX file to upload.</span>
+        <span>Choose XLSX file to upload.</span>
       </template>
     </FileUpload>
   </div>
