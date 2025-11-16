@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, ref, watch} from 'vue'
+import {computed, ref, useTemplateRef, watch} from 'vue'
 
 import Button from 'primevue/button'
 
@@ -9,7 +9,7 @@ const props = defineProps<{
   id: number
   source: string
   target: string
-  focusedId?: number
+  focused?: boolean
   editable?: boolean
   disabled?: boolean
   approved?: boolean
@@ -22,14 +22,12 @@ const emit = defineEmits<{
   focus: []
 }>()
 
-const targetInput = ref<HTMLElement | null>(null)
+const targetInput = useTemplateRef('targetInput')
 
-const commitData = debounce(() => {
-  if (!targetInput.value?.textContent) {
-    return
-  }
+const updateData = debounce(() => {
+  if (!targetInput.value?.textContent) return
   emit('updateRecord', targetInput.value.textContent, repeatEnabled.value)
-}, 1000)
+}, 5000)
 
 const onKeyPress = (event: KeyboardEvent) => {
   if (!targetInput.value?.textContent) {
@@ -40,29 +38,10 @@ const onKeyPress = (event: KeyboardEvent) => {
   }
 }
 
-const onInput = () => {
-  commitData()
-}
-
 watch(
-  () => props.target,
-  async () => {
-    // to avoid cursor dropping to 0 position after backend response
-    const oldBaseOffset = document.getSelection()?.focusOffset
-    if (oldBaseOffset && targetInput.value) {
-      await nextTick(() => {
-        document
-          .getSelection()
-          ?.collapse(targetInput.value!.childNodes[0], oldBaseOffset)
-      })
-    }
-  }
-)
-
-watch(
-  () => props.focusedId,
+  () => props.focused,
   () => {
-    if (props.focusedId == props.id) {
+    if (props.focused) {
       targetInput.value?.focus()
     }
   }
@@ -106,12 +85,11 @@ const repetitionTitle = computed(() => {
     class="border rounded-border border-surface p-2 bg-white h-full h-min-11"
     :class="{
       'bg-surface-200': disabled ?? false,
-      'active:border-primary': editable ?? false,
-      'focus:border-primary': editable ?? false,
-      'focus:outline-none': editable ?? false,
+      'active:border-primary focus:border-primary focus:outline-none':
+        editable ?? false,
     }"
     :contenteditable="editable"
-    @input="onInput"
+    @input="updateData"
     @keypress="onKeyPress"
     @focus="emit('focus')"
   >
@@ -122,11 +100,10 @@ const repetitionTitle = computed(() => {
     class="text-center w-16 self-start"
   >
     <Button
-      class="h-11 w-11"
       icon="pi pi-check"
-      size="small"
-      :severity="approved ? 'success' : 'primary'"
-      :outlined="!approved"
+      rounded
+      :severity="approved ? 'contrast' : 'secondary'"
+      variant="outlined"
       @click="emit('commit', targetInput?.textContent ?? '', repeatEnabled)"
     />
   </div>

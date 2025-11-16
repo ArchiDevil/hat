@@ -51,6 +51,7 @@ watch(document, (newVal) => {
     newVal.status !== 'done' &&
     newVal.status !== 'error'
   ) {
+    // TODO: it must refetch infinitely until some of these conditions are met
     setTimeout(refetchDoc, 5000)
   }
 })
@@ -65,8 +66,6 @@ const documentDownloadLink = computed(() => {
   return getDownloadDocLink(documentId.value)
 })
 
-const recordsCount = computed(() => recordsData.value?.total_records)
-
 const translationProgress = computed(() => {
   const doc = document.value
   if (!doc) return 0
@@ -80,7 +79,7 @@ const updatePage = async (event: PageState) => {
 const sourceFilter = ref('')
 const targetFilter = ref('')
 
-const {data: recordsData} = useQuery({
+const {data: recordsData, refetch: refetchRecords} = useQuery({
   key: () => [
     'doc-records',
     documentId.value,
@@ -104,17 +103,19 @@ const {data: recordsData} = useQuery({
       })),
     }
   },
-  enabled: () =>
-    !documentLoading.value &&
-    (document.value?.status == 'done' || document.value?.status == 'error'),
+  // be cautious as incorrect changes here will trigger a lot of updates
+  enabled: () => documentReady.value,
   placeholderData: <T>(prevData: T) => prevData,
 })
+
+const recordsCount = computed(() => recordsData.value?.total_records)
 
 const onSegmentUpdate = async (
   id: number,
   text: string,
   approved: boolean,
-  updateRepeats: boolean
+  updateRepeats: boolean,
+  commit: boolean
 ) => {
   if (!document.value || !recordsData.value) {
     return
@@ -129,15 +130,15 @@ const onSegmentUpdate = async (
   recordsData.value.records[idx].loading = true
   triggerRef(recordsData)
 
-  const newRecord = await updateDocRecord(id, {
+  await updateDocRecord(id, {
     target: text,
     approved: approved,
     update_repetitions: updateRepeats,
   })
-  recordsData.value.records[idx] = {
-    ...newRecord,
-    loading: false,
-    repetitions_count: recordsData.value.records[idx].repetitions_count,
+  if (commit) {
+    await refetchRecords()
+  } else {
+    recordsData.value.records[idx].loading = false
   }
   triggerRef(recordsData)
 
@@ -154,7 +155,7 @@ const onSegmentCommit = async (
   updateRepeats: boolean,
   idx: number
 ) => {
-  await onSegmentUpdate(id, text, true, updateRepeats)
+  await onSegmentUpdate(id, text, true, updateRepeats, true)
   focusSegment(idx + 1)
 }
 
@@ -248,7 +249,7 @@ const currentSegmentId = computed(() => {
               :source="record.source"
               :target="record.target"
               :disabled="record.loading"
-              :focused-id="currentSegmentId"
+              :focused="currentSegmentId == record.id"
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
               @commit="
@@ -257,7 +258,7 @@ const currentSegmentId = computed(() => {
               "
               @update-record="
                 (text, updateRepeats) =>
-                  onSegmentUpdate(record.id, text, false, updateRepeats)
+                  onSegmentUpdate(record.id, text, false, updateRepeats, false)
               "
               @focus="focusedSegmentIdx = idx"
             />

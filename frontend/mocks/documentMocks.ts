@@ -8,8 +8,10 @@ import {
   getDocs,
   getRecordGlossaryRecords,
   getRecordSubstitutions,
+  updateDocRecord,
 } from '../src/client/services/DocumentService'
 import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
+import {DocumentRecordUpdate} from '../src/client/schemas/DocumentRecordUpdate'
 
 const segments = [
   {
@@ -64,7 +66,7 @@ export const documentMocks = [
     if (doc !== undefined) {
       return HttpResponse.json<AwaitedReturnType<typeof getDoc>>(doc)
     } else {
-      new HttpResponse(null, {status: 404})
+      return new HttpResponse(null, {status: 404})
     }
   }),
   http.get<{id: string}>(
@@ -76,8 +78,26 @@ export const documentMocks = [
           recordsData
         )
       } else {
-        new HttpResponse(null, {status: 404})
+        return new HttpResponse(null, {status: 404})
       }
+    }
+  ),
+  http.put<{id: string}, DocumentRecordUpdate>(
+    'http://localhost:8000/document/record/:id',
+    async ({params, request}) => {
+      const record = segments.find((s) => s.id === Number(params.id))
+      if (!record) {
+        return new HttpResponse(null, {status: 404})
+      }
+      const req = await request.json()
+      if (req.approved) record.approved = req.approved
+      record.target = req.target
+      return HttpResponse.json<AwaitedReturnType<typeof updateDocRecord>>({
+        approved: false,
+        id: record.id,
+        source: record.source,
+        target: record.target,
+      })
     }
   ),
   http.get<{id: string; segmentId: string}>(
@@ -100,7 +120,7 @@ export const documentMocks = [
           },
         ])
       } else {
-        new HttpResponse(null, {status: 404})
+        return new HttpResponse(null, {status: 404})
       }
     }
   ),
@@ -140,7 +160,7 @@ export const documentMocks = [
           },
         ])
       } else {
-        new HttpResponse(null, {status: 404})
+        return new HttpResponse(null, {status: 404})
       }
     }
   ),
