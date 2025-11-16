@@ -25,7 +25,7 @@ watch(targetFilter, (newVal) => updateTargetFilter(newVal))
 </script>
 
 <template>
-  <div class="mx-4 mt-4 p-4 bg-surface-50 rounded-lg border">
+  <div class="mx-4 mt-4 p-4 bg-surface-50 rounded-lg border border-surface">
     <h3 class="font-semibold mb-3 text-surface-700">
       Filter Segments
     </h3>

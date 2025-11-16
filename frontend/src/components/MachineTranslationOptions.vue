@@ -71,7 +71,7 @@ const machineTranslationTypes = [
         <div class="flex items-center flex-row gap-2">
           <label
             for="fid"
-            class="flex-grow"
+            class="grow"
           >
             Folder ID
           </label>
@@ -84,7 +84,7 @@ const machineTranslationTypes = [
         <div class="flex items-center flex-row gap-2">
           <label
             for="oauth"
-            class="flex-grow"
+            class="grow"
           >
             OAuth token
           </label>
@@ -107,7 +107,7 @@ const machineTranslationTypes = [
         <div class="flex items-center flex-row gap-2">
           <label
             for="apiKey"
-            class="flex-grow"
+            class="grow"
           >
             API Key
           </label>

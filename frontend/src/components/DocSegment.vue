@@ -85,7 +85,7 @@ const repetitionTitle = computed(() => {
     class="border rounded-border border-surface p-2 bg-white h-full h-min-11"
     :class="{
       'bg-surface-200': disabled ?? false,
-      'active:border-primary focus:border-primary focus:outline-none':
+      'active:border-primary focus:border-primary focus:outline-hidden':
         editable ?? false,
     }"
     :contenteditable="editable"

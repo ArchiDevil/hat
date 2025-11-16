@@ -27,7 +27,7 @@ const update = async () => {
 </script>
 
 <template>
-  <div class="border rounded border-slate p-4 mt-4 w-fit">
+  <div class="border rounded border-surface p-4 mt-4 w-fit">
     <h2 class="font-bold text-xl mb-2">
       Edit a user
     </h2>

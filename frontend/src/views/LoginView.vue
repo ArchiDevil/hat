@@ -53,7 +53,7 @@ const authenticate = async () => {
 
 <template>
   <div
-    class="max-w-96 flex flex-col gap-4 border-2 shadow-lg rounded px-4 mt-4 pb-8 mx-auto"
+    class="max-w-96 flex flex-col gap-4 border-2 border-surface shadow-lg rounded-sm px-4 mt-4 pb-8 mx-auto"
   >
     <PageTitle
       title="Login"
