@@ -1,3 +1,4 @@
+import {globalIgnores} from 'eslint/config'
 import tsEslint from 'typescript-eslint'
 import vueEslint from 'eslint-plugin-vue'
 import vueParser from 'vue-eslint-parser'
@@ -5,18 +6,18 @@ import vueParser from 'vue-eslint-parser'
 /** @type {import('eslint').Linter.Config[]} */
 export default tsEslint.config([
   {
-    ignores: [
-      'dist/**',
-      'eslint.config.mjs',
-      'postcss.config.js',
-      'tailwind.config.js',
-      'vite.config.ts',
-      'src/client/**',
-      'public/**'
-    ],
+    name: 'app/files-to-lint',
+    files: ['**/*.{ts,mts,vue}'],
   },
-  ...vueEslint.configs['flat/essential'],
-  ...vueEslint.configs['flat/strongly-recommended'],
+  globalIgnores([
+    'dist/**',
+    'eslint.config.mjs',
+    'postcss.config.js',
+    'tailwind.config.js',
+    'vite.config.ts',
+    'src/client/**',
+    'public/**',
+  ]),
   ...vueEslint.configs['flat/recommended'],
   tsEslint.configs.recommendedTypeChecked,
   tsEslint.configs.stylisticTypeChecked,
@@ -25,19 +26,21 @@ export default tsEslint.config([
     languageOptions: {
       parser: vueParser,
       parserOptions: {
-        parser: '@typescript-eslint/parser',
+        parser: tsEslint.parser,
         projectService: true,
         extraFileExtensions: ['.vue'],
       },
     },
+    rules: {
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+    },
   },
   {
     files: ['**/*.ts'],
-
     languageOptions: {
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname,
       },
     },
   },
