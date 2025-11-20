@@ -3,7 +3,7 @@ import {computed, ref, useTemplateRef, watch} from 'vue'
 
 import Button from 'primevue/button'
 
-import {debounce} from '../utilities/utils'
+import {cleanableDebounce} from '../utilities/utils'
 
 const props = defineProps<{
   id: number
@@ -20,21 +20,27 @@ const emit = defineEmits<{
   commit: [string, boolean]
   updateRecord: [string, boolean]
   focus: []
+  startEdit: []
 }>()
 
 const targetInput = useTemplateRef('targetInput')
 
-const updateData = debounce(() => {
+const {func: updateData, clear: clearUpdate} = cleanableDebounce(() => {
   if (!targetInput.value?.textContent) return
   emit('updateRecord', targetInput.value.textContent, repeatEnabled.value)
-}, 5000)
+}, 1000)
+
+const commitData = () => {
+  clearUpdate()
+  emit('commit', targetInput.value?.textContent ?? '', repeatEnabled.value)
+}
 
 const onKeyPress = (event: KeyboardEvent) => {
   if (!targetInput.value?.textContent) {
     return
   }
   if (event.key == 'Enter' && event.ctrlKey) {
-    emit('commit', targetInput.value.textContent, repeatEnabled.value)
+    commitData()
   }
 }
 
@@ -89,7 +95,12 @@ const repetitionTitle = computed(() => {
         editable ?? false,
     }"
     :contenteditable="editable"
-    @input="updateData"
+    @input="
+      () => {
+        emit('startEdit')
+        updateData()
+      }
+    "
     @keypress="onKeyPress"
     @focus="emit('focus')"
   >
@@ -102,9 +113,9 @@ const repetitionTitle = computed(() => {
     <Button
       icon="pi pi-check"
       rounded
-      :severity="approved ? 'contrast' : 'secondary'"
-      variant="outlined"
-      @click="emit('commit', targetInput?.textContent ?? '', repeatEnabled)"
+      :severity="approved ? 'success' : 'secondary'"
+      size="small"
+      @click="commitData"
     />
   </div>
 </template>

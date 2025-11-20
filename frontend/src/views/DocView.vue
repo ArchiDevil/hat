@@ -142,9 +142,8 @@ const onSegmentUpdate = async (
   }
   triggerRef(recordsData)
 
-  // rerequest a document to update its records count
-  // this is because more than one record can be updated by a backend
-  // (repetitions, for example)
+  // rerequest a document to update its records count this is because more than
+  // one record can be updated by a backend (repetitions, for example)
   await refetchDoc()
   await useDocStore().updateDocument(documentId.value)
 }
@@ -165,6 +164,21 @@ const focusSegment = (newIdx: number) => {
     newIdx,
     recordsData.value?.records.length - 1
   )
+}
+
+const onSegmentStartEdit = (id: number) => {
+  if (!document.value || !recordsData.value) {
+    return
+  }
+
+  const idx = recordsData.value.records.findIndex((record) => record.id === id)
+  if (idx < 0) {
+    console.error('Record not found')
+    return
+  }
+
+  recordsData.value.records[idx].approved = false
+  triggerRef(recordsData)
 }
 
 const focusedSegmentIdx = ref<number>()
@@ -261,6 +275,7 @@ const currentSegmentId = computed(() => {
                   onSegmentUpdate(record.id, text, false, updateRepeats, false)
               "
               @focus="focusedSegmentIdx = idx"
+              @start-edit="() => onSegmentStartEdit(record.id)"
             />
           </div>
           <SubstitutionsList

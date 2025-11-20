@@ -1,3 +1,26 @@
+export const cleanableDebounce = <Args extends unknown[]>(
+  func: (...args: Args) => void,
+  wait: number
+) => {
+  let timeout: ReturnType<typeof setTimeout> | null
+
+  const clear = () => {
+    if (timeout !== null) {
+      clearTimeout(timeout)
+    }
+  }
+
+  return {
+    func: (...args: Args): void => {
+      clear()
+      timeout = setTimeout(() => {
+        func(...args)
+      }, wait)
+    },
+    clear,
+  }
+}
+
 /**
  * Creates a debounced version of a function that delays execution until after the specified wait time.
  * The debounced function preserves the original function's parameter types.
@@ -11,15 +34,5 @@ export const debounce = <Args extends unknown[]>(
   func: (...args: Args) => void,
   wait: number
 ): ((...args: Args) => void) => {
-  let timeout: ReturnType<typeof setTimeout> | null
-
-  return (...args: Args): void => {
-    if (timeout !== null) {
-      clearTimeout(timeout)
-    }
-
-    timeout = setTimeout(() => {
-      func(...args)
-    }, wait)
-  }
+  return cleanableDebounce(func, wait).func
 }
