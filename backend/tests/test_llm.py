@@ -194,7 +194,7 @@ def test_parse_lines_invalid_format():
     result, success = llm.parse_lines(network_out, expected_size)
 
     assert not success
-    assert result == []
+    assert result == ["", "translation2"]
 
 
 def test_parse_lines_empty_content():

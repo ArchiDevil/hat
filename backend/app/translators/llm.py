@@ -14,7 +14,7 @@ from app.translators.common import LineWithGlossaries
 
 def generate_prompt_prologue() -> str:
     if not settings.llm_prompt:
-        logging.error('No LLM prompt configured')
+        logging.error("No LLM prompt configured")
     return settings.llm_prompt
 
 
@@ -55,22 +55,28 @@ def generate_prompt(
     return "\n\n".join(parts), len(task_lines)
 
 
+SEG_MATCHER = re.compile(r"<seg>(.*)</seg>")
+
+
 def parse_lines(network_out: str, expected_size: int) -> tuple[list[str], bool]:
-    output = []
+    output: list[str] = []
 
     split = network_out.strip().splitlines()
     if len(split) != expected_size:
         logging.warning("Unexpected LLM output, not enough lines returned %s", split)
         return [], False
 
+    failed = False
     for line in split:
-        m = re.match(r"<seg>(.*)</seg>", line)
+        m = re.match(SEG_MATCHER, line)
         if not m:
-            logging.warning("Unexpected LLM output, not match found in %s", line)
-            return [], False
+            logging.warning("Unexpected LLM output, no match found in %s", line)
+            output.append("")
+            failed = True
+            continue
         output.append(m.group(1))
 
-    return output, True
+    return output, not failed
 
 
 def translate_lines(
