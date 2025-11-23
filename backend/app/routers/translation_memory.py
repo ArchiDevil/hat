@@ -53,20 +53,30 @@ def get_memory_records(
     tm_id: int,
     db: Annotated[Session, Depends(get_db)],
     page: Annotated[int | None, Query(ge=0)] = None,
+    query: Annotated[str | None, Query(min_length=1)] = None,
 ) -> list[schema.TranslationMemoryRecord]:
     page_records: Final = 100
     if not page:
         page = 0
 
     get_memory_by_id(db, tm_id)
-    return [
-        schema.TranslationMemoryRecord(
-            id=record.id, source=record.source, target=record.target
-        )
-        for record in TranslationMemoryQuery(db).get_memory_records_paged(
-            tm_id, page, page_records
-        )
-    ]
+    return TranslationMemoryQuery(db).get_memory_records_paged(
+        tm_id, page, page_records, query
+    )
+
+
+@router.get("/{tm_id}/records/similar")
+def get_memory_records_similar(
+    tm_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    query: Annotated[str, Query(min_length=1)],
+) -> list[schema.TranslationMemoryRecordWithSimilarity]:
+    page_records: Final = 20
+
+    get_memory_by_id(db, tm_id)
+    return TranslationMemoryQuery(db).get_memory_records_paged_similar(
+        tm_id, page_records, query
+    )
 
 
 @router.post("/upload")
@@ -114,21 +124,6 @@ def create_translation_memory(
 def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
     TranslationMemoryQuery(db).delete_memory(get_memory_by_id(db, tm_id))
     return StatusMessage(message="Deleted")
-
-
-@router.get("/{tm_id}/search")
-def search_translation_memory(
-    tm_id: int,
-    query: Annotated[str, Query(min_length=1)],
-    mode: schema.TranslationMemorySearchMode,
-    db: Annotated[Session, Depends(get_db)],
-) -> list[schema.TranslationMemorySearchResult]:
-    get_memory_by_id(db, tm_id)
-    return TranslationMemoryQuery(db).search_memory_records(
-        query=query,
-        mode=mode,
-        tm_id=tm_id,
-    )
 
 
 @router.get(

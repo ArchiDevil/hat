@@ -30,14 +30,9 @@ class TranslationMemoryRecord(Identified):
     target: str
 
 
+class TranslationMemoryRecordWithSimilarity(TranslationMemoryRecord):
+    similarity: float | None = None
+
+
 class TranslationMemoryCreationSettings(BaseModel):
     name: str = Field(min_length=1)
-
-
-class TranslationMemorySearchMode(str, Enum):
-    EXACT = "exact"
-    SIMILAR = "similar"
-
-
-class TranslationMemorySearchResult(TranslationMemoryRecord):
-    similarity: float | None = None
