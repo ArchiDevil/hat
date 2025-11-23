@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useQuery} from '@pinia/colada'
 
@@ -7,14 +7,23 @@ import {
   getMemory,
   getMemoryRecords,
   getDownloadMemoryLink,
+  getMemoryRecordsSimilar,
 } from '../client/services/TmsService'
 
-import Paginator, {PageState} from 'primevue/paginator'
+import ToggleButton from 'primevue/togglebutton'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
+import InputText from 'primevue/inputtext'
+import Paginator from 'primevue/paginator'
 
 import DocSegment from '../components/DocSegment.vue'
 import PageTitle from '../components/PageTitle.vue'
 import PageNav from '../components/PageNav.vue'
 import Link from '../components/NavLink.vue'
+import {debounce} from '../utilities/utils'
+import {TranslationMemoryListSimilarResponse} from '../client/schemas/TranslationMemoryListSimilarResponse'
+import {TranslationMemoryListResponse} from '../client/schemas/TranslationMemoryListResponse'
+import {TranslationMemoryRecordWithSimilarity} from '../client/schemas/TranslationMemoryRecordWithSimilarity'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow.
@@ -33,67 +42,111 @@ const page = computed(() => {
   return Number(route.query.page ?? '0')
 })
 
-const {data: records} = useQuery({
-  key: () => ['tm-records', documentId.value, page.value],
-  query: () => getMemoryRecords(documentId.value, page.value),
-  enabled: () => document.value !== undefined,
-  placeholderData: <T>(prevData: T) => prevData,
-})
-
-const router = useRouter()
-const updatePage = async (event: PageState) => {
+const updatePage = async (page: number) => {
   await router.push({
     query: {
-      page: event.page,
+      page: page,
     },
   })
 }
 
+const debouncedSearch = ref('')
+const updateDebouncedSearch = debounce((newVal: string) => {
+  debouncedSearch.value = newVal
+  void updatePage(0)
+}, 1000)
+
+const toggleSimilar = ref(false)
+watch(toggleSimilar, async () => updatePage(0))
+
+const {data: recordsData} = useQuery({
+  key: () => [
+    'tm-records',
+    documentId.value,
+    page.value,
+    debouncedSearch.value,
+    toggleSimilar.value,
+  ],
+  query: async (): Promise<
+    TranslationMemoryListSimilarResponse | TranslationMemoryListResponse
+  > => {
+    if (toggleSimilar.value) {
+      return getMemoryRecordsSimilar(documentId.value, debouncedSearch.value)
+    } else {
+      return getMemoryRecords(
+        documentId.value,
+        page.value,
+        debouncedSearch.value
+      )
+    }
+  },
+  enabled: () => document.value !== undefined,
+  placeholderData: <T>(prevData: T) => prevData,
+  staleTime: 600 * 1000,
+})
+
+const searchQuery = ref('')
+watch(searchQuery, (newVal) => {
+  updateDebouncedSearch(newVal)
+})
+
+const router = useRouter()
 const downloadLink = computed(() =>
   document.value?.id ? getDownloadMemoryLink(document.value?.id) : undefined
+)
+
+const docName = computed(
+  () =>
+    `${document.value?.name} (ID: ${documentId.value}): ${document.value?.records_count} records`
 )
 </script>
 
 <template>
   <div class="container">
     <PageNav />
-    <PageTitle title="Translation memory viewer" />
+    <PageTitle :title="docName" />
     <div class="mb-4 flex flex-col">
-      <p>File ID: {{ document?.id }}</p>
-      <p>File name: {{ document?.name }}</p>
-      <p>Number of records: {{ document?.records_count }}</p>
       <Link
         v-if="downloadLink"
         :href="downloadLink"
-        class="block"
-        title="Download TMX file"
+        class="inline"
+        title="Download TMX"
       />
     </div>
+    <div class="flex flex-row gap-4 mb-4">
+      <ToggleButton
+        v-model="toggleSimilar"
+        class="ml-auto"
+        on-label="Search similar"
+        off-label="Search same"
+      />
+      <IconField class="w-96">
+        <InputIcon class="pi pi-search" />
+        <InputText
+          v-model="searchQuery"
+          class="w-full"
+          placeholder="Search in source"
+        />
+      </IconField>
+    </div>
     <Paginator
-      v-if="records && records?.length"
+      v-if="recordsData && recordsData?.records.length"
       :rows="100"
-      :total-records="document?.records_count"
+      :total-records="recordsData.total_records"
       :first="page * 100"
-      @page="(event) => updatePage(event)"
+      @page="(event) => updatePage(event.page)"
     />
     <div
-      v-if="records"
+      v-if="recordsData"
       class="grid grid-cols-[auto_auto_1fr_1fr] gap-1"
     >
       <DocSegment
-        v-for="record in records"
-        :id="record.id"
+        v-for="record in recordsData.records"
+        :id="!toggleSimilar ? record.id : (record as TranslationMemoryRecordWithSimilarity).similarity"
         :key="record.id"
         :source="record.source"
         :target="record.target"
       />
     </div>
-    <Paginator
-      v-if="records && records?.length"
-      :rows="100"
-      :total-records="document?.records_count"
-      :first="page * 100"
-      @page="(event) => updatePage(event)"
-    />
   </div>
 </template>
