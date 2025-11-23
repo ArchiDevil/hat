@@ -206,3 +206,85 @@ def test_can_download_document(user_logged_client: TestClient, session: Session)
 def test_download_returns_404_for_non_existing_tm(user_logged_client: TestClient):
     response = user_logged_client.get("/translation_memory/999/download")
     assert response.status_code == 404
+
+
+def test_search_exact_match(user_logged_client: TestClient, session: Session):
+    tm_records = [
+        TranslationMemoryRecord(source="Hello world", target="Hola mundo"),
+        TranslationMemoryRecord(source="Goodbye world", target="Adiós mundo"),
+        TranslationMemoryRecord(source="Welcome home", target="Bienvenido a casa"),
+    ]
+    with session as s:
+        s.add(TranslationMemory(name="test_doc.tmx", records=tm_records, created_by=1))
+        s.commit()
+
+    # Test exact search for "world"
+    response = user_logged_client.get(
+        "/translation_memory/1/search", params={"query": "world", "mode": "exact"}
+    )
+    assert response.status_code == 200
+
+    results = response.json()
+    assert len(results) == 2
+    # Should return records containing "world" in source
+    sources = [result["source"] for result in results]
+    assert "Hello world" in sources
+    assert "Goodbye world" in sources
+    # Similarity should be None for exact search
+    assert all(result["similarity"] is None for result in results)
+
+
+def test_search_in_specific_tm(user_logged_client: TestClient, session: Session):
+    # Create a TM with test records
+    tm_records = [
+        TranslationMemoryRecord(source="Hello world", target="Hola mundo"),
+        TranslationMemoryRecord(source="Goodbye world", target="Adiós mundo"),
+    ]
+    with session as s:
+        s.add(TranslationMemory(name="test.tmx", records=tm_records, created_by=1))
+        s.commit()
+
+    # Search in specific TM
+    response = user_logged_client.get(
+        "/translation_memory/1/search", params={"query": "world", "mode": "exact"}
+    )
+    assert response.status_code == 200
+
+    results = response.json()
+    assert len(results) == 2
+    sources = [result["source"] for result in results]
+    assert "Hello world" in sources
+    assert "Goodbye world" in sources
+
+
+def test_search_in_nonexistent_tm(user_logged_client: TestClient):
+    response = user_logged_client.get(
+        "/translation_memory/999/search", params={"query": "test", "mode": "exact"}
+    )
+    assert response.status_code == 404
+    assert "Memory not found" in response.json()["detail"]
+
+
+def test_search_empty_query(user_logged_client: TestClient):
+    response = user_logged_client.get(
+        "/translation_memory/1/search", params={"query": "", "mode": "exact"}
+    )
+    assert response.status_code == 422  # Validation error for empty query
+
+
+def test_search_no_results(user_logged_client: TestClient, session: Session):
+    tm_records = [
+        TranslationMemoryRecord(source="Hello world", target="Hola mundo"),
+    ]
+    with session as s:
+        s.add(TranslationMemory(name="test_doc.tmx", records=tm_records, created_by=1))
+        s.commit()
+
+    # Search for something that doesn't exist
+    response = user_logged_client.get(
+        "/translation_memory/1/search", params={"query": "nonexistent", "mode": "exact"}
+    )
+    assert response.status_code == 200
+
+    results = response.json()
+    assert len(results) == 0

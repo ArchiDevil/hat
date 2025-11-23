@@ -5,7 +5,11 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from .models import TranslationMemory, TranslationMemoryRecord
-from .schema import MemorySubstitution
+from .schema import (
+    MemorySubstitution,
+    TranslationMemorySearchMode,
+    TranslationMemorySearchResult,
+)
 
 
 class TranslationMemoryQuery:
@@ -89,6 +93,78 @@ class TranslationMemoryQuery:
     def delete_memory(self, memory: TranslationMemory):
         self.__db.delete(memory)
         self.__db.commit()
+
+    def search_memory_records(
+        self,
+        query: str,
+        mode: TranslationMemorySearchMode,
+        tm_id: int,
+    ) -> list[TranslationMemorySearchResult]:
+        if mode == TranslationMemorySearchMode.EXACT:
+            return self._search_exact(query, tm_id)
+        elif mode == TranslationMemorySearchMode.SIMILAR:
+            return self._search_similar(query, tm_id)
+        else:
+            raise ValueError(f"Unsupported search mode: {mode}")
+
+    def _search_exact(
+        self, query: str, tm_id: int
+    ) -> list[TranslationMemorySearchResult]:
+        query_filter = TranslationMemoryRecord.source.ilike(f"%{query}%")
+
+        records = self.__db.execute(
+            select(TranslationMemoryRecord)
+            .filter(query_filter, TranslationMemoryRecord.document_id == tm_id)
+            .order_by(TranslationMemoryRecord.id)
+            .limit(20)
+        ).scalars()
+
+        return [
+            TranslationMemorySearchResult(
+                id=record.id,
+                source=record.source,
+                target=record.target,
+                similarity=None,
+            )
+            for record in records
+        ]
+
+    def _search_similar(
+        self, query: str, tm_id: int
+    ) -> list[TranslationMemorySearchResult]:
+        # Use the same approach as get_substitutions but with different parameters
+        similarity_func = func.similarity(TranslationMemoryRecord.source, query)
+
+        # Set similarity threshold to 0.25 (25%) as required
+        self.__db.execute(
+            text("SET pg_trgm.similarity_threshold TO :threshold"),
+            {"threshold": 0.25},
+        )
+
+        records = self.__db.execute(
+            select(
+                TranslationMemoryRecord.id,
+                TranslationMemoryRecord.source,
+                TranslationMemoryRecord.target,
+                similarity_func,
+            )
+            .filter(
+                TranslationMemoryRecord.source.op("%")(query),
+                TranslationMemoryRecord.document_id == tm_id,
+            )
+            .order_by(similarity_func.desc())
+            .limit(20)
+        ).all()
+
+        return [
+            TranslationMemorySearchResult(
+                id=record.id,
+                source=record.source,
+                target=record.target,
+                similarity=record.similarity,
+            )
+            for record in records
+        ]
 
     def add_or_update_record(self, document_id: int, source: str, target: str):
         record = self.__db.execute(

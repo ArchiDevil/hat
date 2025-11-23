@@ -20,7 +20,7 @@ def get_memory_by_id(db: Session, memory_id: int):
     doc = TranslationMemoryQuery(db).get_memory(memory_id)
     if not doc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found"
         )
     return doc
 
@@ -114,6 +114,21 @@ def create_translation_memory(
 def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
     TranslationMemoryQuery(db).delete_memory(get_memory_by_id(db, tm_id))
     return StatusMessage(message="Deleted")
+
+
+@router.get("/{tm_id}/search")
+def search_translation_memory(
+    tm_id: int,
+    query: Annotated[str, Query(min_length=1)],
+    mode: schema.TranslationMemorySearchMode,
+    db: Annotated[Session, Depends(get_db)],
+) -> list[schema.TranslationMemorySearchResult]:
+    get_memory_by_id(db, tm_id)
+    return TranslationMemoryQuery(db).search_memory_records(
+        query=query,
+        mode=mode,
+        tm_id=tm_id,
+    )
 
 
 @router.get(
