@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import {computed, onMounted, ref, watchEffect} from 'vue'
+import {computed} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
+import {useQuery} from '@pinia/colada'
 
 import {
   getMemory,
   getMemoryRecords,
   getDownloadMemoryLink,
 } from '../client/services/TmsService'
-import {TranslationMemoryWithRecordsCount} from '../client/schemas/TranslationMemoryWithRecordsCount'
-import {TranslationMemoryRecord} from '../client/schemas/TranslationMemoryRecord'
 
 import Paginator, {PageState} from 'primevue/paginator'
 
@@ -21,15 +20,27 @@ import Link from '../components/NavLink.vue'
 // the server side somehow.
 
 const route = useRoute()
-const router = useRouter()
-const document = ref<TranslationMemoryWithRecordsCount>()
-const records = ref<TranslationMemoryRecord[]>()
-const downloadLink = ref<string>()
+
+const documentId = computed(() => Number(route.params.id))
+
+const {data: document} = useQuery({
+  key: () => ['tm', documentId.value],
+  query: () => getMemory(documentId.value),
+  placeholderData: <T>(prevData: T) => prevData,
+})
 
 const page = computed(() => {
   return Number(route.query.page ?? '0')
 })
 
+const {data: records} = useQuery({
+  key: () => ['tm-records', documentId.value, page.value],
+  query: () => getMemoryRecords(documentId.value, page.value),
+  enabled: () => document.value !== undefined,
+  placeholderData: <T>(prevData: T) => prevData,
+})
+
+const router = useRouter()
 const updatePage = async (event: PageState) => {
   await router.push({
     query: {
@@ -38,19 +49,9 @@ const updatePage = async (event: PageState) => {
   })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-watchEffect(async () => {
-  if (!document.value) {
-    return
-  }
-  records.value = await getMemoryRecords(document.value.id, page.value)
-  downloadLink.value = getDownloadMemoryLink(document.value.id)
-})
-
-onMounted(async () => {
-  const route = useRoute()
-  document.value = await getMemory(Number(route.params.id))
-})
+const downloadLink = computed(() =>
+  document.value?.id ? getDownloadMemoryLink(document.value?.id) : undefined
+)
 </script>
 
 <template>
