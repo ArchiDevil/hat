@@ -41,10 +41,16 @@ class TranslationMemoryQuery:
         page: int,
         page_records: int,
         query: str | None,
-    ) -> list[schema.TranslationMemoryRecord]:
+    ) -> tuple[list[schema.TranslationMemoryRecord], int]:
         filters = [TranslationMemoryRecord.document_id == memory_id]
         if query:
             filters.append(TranslationMemoryRecord.source.ilike(f"%{query}%"))
+
+        count = self.__db.execute(
+            select(
+                func.count(TranslationMemoryRecord.id),
+            ).filter(*filters)
+        ).scalar_one()
 
         return [
             schema.TranslationMemoryRecord(
@@ -57,7 +63,7 @@ class TranslationMemoryQuery:
                 .offset(page_records * page)
                 .limit(page_records)
             ).scalars()
-        ]
+        ], count
 
     def get_memory_records_paged_similar(
         self,

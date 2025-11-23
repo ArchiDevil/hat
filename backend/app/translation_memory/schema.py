@@ -30,8 +30,20 @@ class TranslationMemoryRecord(Identified):
     target: str
 
 
+class TranslationMemoryListResponse(BaseModel):
+    records: list[TranslationMemoryRecord]
+    page: int
+    total_records: int
+
+
 class TranslationMemoryRecordWithSimilarity(TranslationMemoryRecord):
-    similarity: float | None = None
+    similarity: float
+
+
+class TranslationMemoryListSimilarResponse(BaseModel):
+    records: list[TranslationMemoryRecordWithSimilarity]
+    page: int
+    total_records: int
 
 
 class TranslationMemoryCreationSettings(BaseModel):

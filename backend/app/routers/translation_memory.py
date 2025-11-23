@@ -53,15 +53,20 @@ def get_memory_records(
     tm_id: int,
     db: Annotated[Session, Depends(get_db)],
     page: Annotated[int | None, Query(ge=0)] = None,
-    query: Annotated[str | None, Query(min_length=1)] = None,
-) -> list[schema.TranslationMemoryRecord]:
+    query: Annotated[str | None, Query()] = None,
+) -> schema.TranslationMemoryListResponse:
     page_records: Final = 100
     if not page:
         page = 0
 
     get_memory_by_id(db, tm_id)
-    return TranslationMemoryQuery(db).get_memory_records_paged(
+    records, count = TranslationMemoryQuery(db).get_memory_records_paged(
         tm_id, page, page_records, query
+    )
+    return schema.TranslationMemoryListResponse(
+        records=records,
+        page=page,
+        total_records=count,
     )
 
 
@@ -69,13 +74,19 @@ def get_memory_records(
 def get_memory_records_similar(
     tm_id: int,
     db: Annotated[Session, Depends(get_db)],
-    query: Annotated[str, Query(min_length=1)],
-) -> list[schema.TranslationMemoryRecordWithSimilarity]:
+    query: Annotated[str, Query()],
+) -> schema.TranslationMemoryListSimilarResponse:
     page_records: Final = 20
 
     get_memory_by_id(db, tm_id)
-    return TranslationMemoryQuery(db).get_memory_records_paged_similar(
+    records = TranslationMemoryQuery(db).get_memory_records_paged_similar(
         tm_id, page_records, query
+    )
+    return schema.TranslationMemoryListSimilarResponse(
+        records=records,
+        page=0,
+        # this is incorrect in general case, but for 20 records is fine
+        total_records=len(records),
     )
 
 
