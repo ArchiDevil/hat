@@ -6,8 +6,8 @@ import {TranslationMemory} from '../schemas/TranslationMemory'
 import {TranslationMemoryCreationSettings} from '../schemas/TranslationMemoryCreationSettings'
 import {TranslationMemoryWithRecordsCount} from '../schemas/TranslationMemoryWithRecordsCount'
 import {StatusMessage} from '../schemas/StatusMessage'
-import {TranslationMemoryRecord} from '../schemas/TranslationMemoryRecord'
-import {TranslationMemoryRecordWithSimilarity} from '../schemas/TranslationMemoryRecordWithSimilarity'
+import {TranslationMemoryListResponse} from '../schemas/TranslationMemoryListResponse'
+import {TranslationMemoryListSimilarResponse} from '../schemas/TranslationMemoryListSimilarResponse'
 import {Body_create_memory_from_file_translation_memory_upload_post} from '../schemas/Body_create_memory_from_file_translation_memory_upload_post'
 
 export const getMemories = async (): Promise<TranslationMemory[]> => {
@@ -22,11 +22,11 @@ export const getMemory = async (tm_id: number): Promise<TranslationMemoryWithRec
 export const deleteMemory = async (tm_id: number): Promise<StatusMessage> => {
   return await api.delete<StatusMessage>(`/translation_memory/${tm_id}`)
 }
-export const getMemoryRecords = async (tm_id: number, page?: number | null, query?: string | null): Promise<TranslationMemoryRecord[]> => {
-  return await api.get<TranslationMemoryRecord[]>(`/translation_memory/${tm_id}/records`, {query: {page, query}})
+export const getMemoryRecords = async (tm_id: number, page?: number | null, query?: string | null): Promise<TranslationMemoryListResponse> => {
+  return await api.get<TranslationMemoryListResponse>(`/translation_memory/${tm_id}/records`, {query: {page, query}})
 }
-export const getMemoryRecordsSimilar = async (tm_id: number, query: string): Promise<TranslationMemoryRecordWithSimilarity[]> => {
-  return await api.get<TranslationMemoryRecordWithSimilarity[]>(`/translation_memory/${tm_id}/records/similar`, {query: {query}})
+export const getMemoryRecordsSimilar = async (tm_id: number, query: string): Promise<TranslationMemoryListSimilarResponse> => {
+  return await api.get<TranslationMemoryListSimilarResponse>(`/translation_memory/${tm_id}/records/similar`, {query: {query}})
 }
 export const createMemoryFromFile = async (data: Body_create_memory_from_file_translation_memory_upload_post): Promise<TranslationMemory> => {
   const formData = new FormData()

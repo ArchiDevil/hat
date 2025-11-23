@@ -4,5 +4,5 @@ export interface TranslationMemoryRecordWithSimilarity {
   id: number
   source: string
   target: string
-  similarity?: number | null
+  similarity: number
 }
