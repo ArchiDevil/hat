@@ -63,10 +63,14 @@ def test_can_get_tm_records(user_logged_client: TestClient, session: Session):
 
     response = user_logged_client.get("/translation_memory/1/records")
     assert response.status_code == 200
-    assert response.json() == [
-        {"id": 1, "source": "Regional Effects", "target": "Translation"},
-        {"id": 2, "source": "User Interface", "target": "UI"},
-    ]
+    assert response.json() == {
+        "records": [
+            {"id": 1, "source": "Regional Effects", "target": "Translation"},
+            {"id": 2, "source": "User Interface", "target": "UI"},
+        ],
+        "page": 0,
+        "total_records": 2,
+    }
 
 
 def test_can_get_tm_records_with_page(user_logged_client: TestClient, session: Session):
@@ -86,8 +90,9 @@ def test_can_get_tm_records_with_page(user_logged_client: TestClient, session: S
         "/translation_memory/1/records", params={"page": "1"}
     )
     assert response.status_code == 200
-    assert len(response.json()) == 50
-    assert response.json()[0] == {"id": 101, "source": "line100", "target": "line100"}
+    json = response.json()
+    assert len(json["records"]) == 50
+    assert json["records"][0] == {"id": 101, "source": "line100", "target": "line100"}
 
 
 def test_tm_records_are_empty_for_too_large_page(
@@ -109,7 +114,63 @@ def test_tm_records_are_empty_for_too_large_page(
         "/translation_memory/1/records", params={"page": "20"}
     )
     assert response.status_code == 200
-    assert response.json() == []
+    assert response.json()["records"] == []
+
+
+def test_tm_records_exact_match(user_logged_client: TestClient, session: Session):
+    tm_records = [
+        TranslationMemoryRecord(source="Hello world", target="Hola mundo"),
+        TranslationMemoryRecord(source="Goodbye world", target="Adiós mundo"),
+        TranslationMemoryRecord(source="Welcome home", target="Bienvenido a casa"),
+    ]
+    with session as s:
+        s.add(TranslationMemory(name="test_doc.tmx", records=tm_records, created_by=1))
+        s.commit()
+
+    # Test exact search for "world"
+    response = user_logged_client.get(
+        "/translation_memory/1/records",
+        params={"query": "world", "query_mode": "exact"},
+    )
+    assert response.status_code == 200
+
+    json = response.json()
+    assert len(json["records"]) == 2
+    assert json["total_records"] == 2
+    # Should return records containing "world" in source
+    sources = [result["source"] for result in json["records"]]
+    assert "Hello world" in sources
+    assert "Goodbye world" in sources
+    # Similarity should be None for exact search
+    assert all("similarity" not in result for result in json["records"])
+
+
+def test_tm_records_exact_match_in_nonexistent_tm(user_logged_client: TestClient):
+    response = user_logged_client.get(
+        "/translation_memory/999/records",
+        params={"query": "test", "query_mode": "exact"},
+    )
+    assert response.status_code == 404
+    assert "Memory not found" in response.json()["detail"]
+
+
+def test_search_no_results(user_logged_client: TestClient, session: Session):
+    tm_records = [
+        TranslationMemoryRecord(source="Hello world", target="Hola mundo"),
+    ]
+    with session as s:
+        s.add(TranslationMemory(name="test_doc.tmx", records=tm_records, created_by=1))
+        s.commit()
+
+    # Search for something that doesn't exist
+    response = user_logged_client.get(
+        "/translation_memory/1/records",
+        params={"query": "nonexistent", "query_mode": "exact"},
+    )
+    assert response.status_code == 200
+
+    results = response.json()["records"]
+    assert len(results) == 0
 
 
 def test_tm_records_returns_404_for_nonexistent_document(

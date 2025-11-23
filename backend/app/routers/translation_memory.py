@@ -20,7 +20,7 @@ def get_memory_by_id(db: Session, memory_id: int):
     doc = TranslationMemoryQuery(db).get_memory(memory_id)
     if not doc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found"
         )
     return doc
 
@@ -53,20 +53,41 @@ def get_memory_records(
     tm_id: int,
     db: Annotated[Session, Depends(get_db)],
     page: Annotated[int | None, Query(ge=0)] = None,
-) -> list[schema.TranslationMemoryRecord]:
+    query: Annotated[str | None, Query()] = None,
+) -> schema.TranslationMemoryListResponse:
     page_records: Final = 100
     if not page:
         page = 0
 
     get_memory_by_id(db, tm_id)
-    return [
-        schema.TranslationMemoryRecord(
-            id=record.id, source=record.source, target=record.target
-        )
-        for record in TranslationMemoryQuery(db).get_memory_records_paged(
-            tm_id, page, page_records
-        )
-    ]
+    records, count = TranslationMemoryQuery(db).get_memory_records_paged(
+        tm_id, page, page_records, query
+    )
+    return schema.TranslationMemoryListResponse(
+        records=records,
+        page=page,
+        total_records=count,
+    )
+
+
+@router.get("/{tm_id}/records/similar")
+def get_memory_records_similar(
+    tm_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    query: Annotated[str, Query()],
+) -> schema.TranslationMemoryListSimilarResponse:
+    page_records: Final = 20
+
+    get_memory_by_id(db, tm_id)
+    records = TranslationMemoryQuery(db).get_memory_records_paged_similar(
+        tm_id, page_records, query
+    )
+    return schema.TranslationMemoryListSimilarResponse(
+        records=records,
+        page=0,
+        # this is incorrect in general case, but for 20 records is fine
+        total_records=len(records),
+    )
 
 
 @router.post("/upload")

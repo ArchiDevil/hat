@@ -4,8 +4,9 @@ from typing import Iterable
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from app.translation_memory import schema
+
 from .models import TranslationMemory, TranslationMemoryRecord
-from .schema import MemorySubstitution
 
 
 class TranslationMemoryQuery:
@@ -35,15 +36,72 @@ class TranslationMemoryQuery:
         ).scalar_one()
 
     def get_memory_records_paged(
-        self, memory_id: int, page: int, page_records: int
-    ) -> Iterable[TranslationMemoryRecord]:
-        return self.__db.execute(
-            select(TranslationMemoryRecord)
-            .filter(TranslationMemoryRecord.document_id == memory_id)
-            .order_by(TranslationMemoryRecord.id)
-            .offset(page_records * page)
-            .limit(page_records)
-        ).scalars()
+        self,
+        memory_id: int,
+        page: int,
+        page_records: int,
+        query: str | None,
+    ) -> tuple[list[schema.TranslationMemoryRecord], int]:
+        filters = [TranslationMemoryRecord.document_id == memory_id]
+        if query:
+            filters.append(TranslationMemoryRecord.source.ilike(f"%{query}%"))
+
+        count = self.__db.execute(
+            select(
+                func.count(TranslationMemoryRecord.id),
+            ).filter(*filters)
+        ).scalar_one()
+
+        return [
+            schema.TranslationMemoryRecord(
+                id=scalar.id, source=scalar.source, target=scalar.target
+            )
+            for scalar in self.__db.execute(
+                select(TranslationMemoryRecord)
+                .filter(*filters)
+                .order_by(TranslationMemoryRecord.id)
+                .offset(page_records * page)
+                .limit(page_records)
+            ).scalars()
+        ], count
+
+    def get_memory_records_paged_similar(
+        self,
+        memory_id: int,
+        page_records: int,
+        query: str,
+    ) -> list[schema.TranslationMemoryRecordWithSimilarity]:
+        # Use the same approach as get_substitutions but with different parameters
+        similarity_func = func.similarity(TranslationMemoryRecord.source, query)
+
+        # Set similarity threshold to 0.25 (25%) as required
+        self.__db.execute(
+            text("SET pg_trgm.similarity_threshold TO :threshold"),
+            {"threshold": 0.25},
+        )
+
+        return [
+            schema.TranslationMemoryRecordWithSimilarity(
+                id=scalar.id,
+                source=scalar.source,
+                target=scalar.target,
+                similarity=scalar.similarity,
+            )
+            for scalar in self.__db.execute(
+                select(
+                    TranslationMemoryRecord.id,
+                    TranslationMemoryRecord.source,
+                    TranslationMemoryRecord.target,
+                    similarity_func,
+                )
+                .filter(
+                    TranslationMemoryRecord.document_id == memory_id,
+                    TranslationMemoryRecord.source.op("%")(query),
+                )
+                .order_by(similarity_func.desc())
+                .limit(page_records)
+            ).all()
+        ]
 
     def get_substitutions(
         self,
@@ -51,7 +109,7 @@ class TranslationMemoryQuery:
         tm_ids: list[int],
         threshold: float = 0.75,
         count: int = 10,
-    ) -> list[MemorySubstitution]:
+    ) -> list[schema.MemorySubstitution]:
         similarity_func = func.similarity(TranslationMemoryRecord.source, source)
         self.__db.execute(
             text("SET pg_trgm.similarity_threshold TO :threshold"),
@@ -72,7 +130,7 @@ class TranslationMemoryQuery:
         ).all()
 
         return [
-            MemorySubstitution(
+            schema.MemorySubstitution(
                 source=record.source, target=record.target, similarity=record.similarity
             )
             for record in records
