@@ -37,12 +37,17 @@ class TranslationMemoryQuery:
 
     def get_memory_records_paged(
         self,
-        memory_id: int,
+        memory_ids: int | list[int],
         page: int,
         page_records: int,
         query: str | None,
     ) -> tuple[list[schema.TranslationMemoryRecord], int]:
-        filters = [TranslationMemoryRecord.document_id == memory_id]
+        # Handle both single int and list of ints
+        if isinstance(memory_ids, int):
+            filters = [TranslationMemoryRecord.document_id == memory_ids]
+        else:
+            filters = [TranslationMemoryRecord.document_id.in_(memory_ids)]
+
         if query:
             filters.append(TranslationMemoryRecord.source.ilike(f"%{query}%"))
 
@@ -67,7 +72,7 @@ class TranslationMemoryQuery:
 
     def get_memory_records_paged_similar(
         self,
-        memory_id: int,
+        memory_ids: int | list[int],
         page_records: int,
         query: str,
     ) -> list[schema.TranslationMemoryRecordWithSimilarity]:
@@ -79,6 +84,12 @@ class TranslationMemoryQuery:
             text("SET pg_trgm.similarity_threshold TO :threshold"),
             {"threshold": 0.25},
         )
+
+        # Handle both single int and list of ints for filtering
+        if isinstance(memory_ids, int):
+            filter_condition = TranslationMemoryRecord.document_id == memory_ids
+        else:
+            filter_condition = TranslationMemoryRecord.document_id.in_(memory_ids)
 
         return [
             schema.TranslationMemoryRecordWithSimilarity(
@@ -95,7 +106,7 @@ class TranslationMemoryQuery:
                     similarity_func,
                 )
                 .filter(
-                    TranslationMemoryRecord.document_id == memory_id,
+                    filter_condition,
                     TranslationMemoryRecord.source.op("%")(query),
                 )
                 .order_by(similarity_func.desc())
