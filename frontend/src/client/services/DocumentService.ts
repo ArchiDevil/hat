@@ -13,6 +13,8 @@ import {DocumentRecordUpdateResponse} from '../schemas/DocumentRecordUpdateRespo
 import {DocumentRecordUpdate} from '../schemas/DocumentRecordUpdate'
 import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
 import {DocTranslationMemoryUpdate} from '../schemas/DocTranslationMemoryUpdate'
+import {TranslationMemoryListResponse} from '../schemas/TranslationMemoryListResponse'
+import {TranslationMemoryListSimilarResponse} from '../schemas/TranslationMemoryListSimilarResponse'
 import {DocGlossary} from '../schemas/DocGlossary'
 import {DocGlossaryUpdate} from '../schemas/DocGlossaryUpdate'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
@@ -48,6 +50,12 @@ export const getTranslationMemories = async (doc_id: number): Promise<DocTransla
 }
 export const setTranslationMemories = async (doc_id: number, content: DocTranslationMemoryUpdate): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/document/${doc_id}/memories`, content)
+}
+export const searchTmExact = async (doc_id: number, source: string): Promise<TranslationMemoryListResponse> => {
+  return await api.get<TranslationMemoryListResponse>(`/document/${doc_id}/tm/exact`, {query: {source}})
+}
+export const searchTmSimilar = async (doc_id: number, source: string): Promise<TranslationMemoryListSimilarResponse> => {
+  return await api.get<TranslationMemoryListSimilarResponse>(`/document/${doc_id}/tm/similar`, {query: {source}})
 }
 export const getGlossaries = async (doc_id: number): Promise<DocGlossary[]> => {
   return await api.get<DocGlossary[]>(`/document/${doc_id}/glossaries`)

@@ -23,6 +23,8 @@ from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import (
     MemorySubstitution,
     TranslationMemory,
+    TranslationMemoryListResponse,
+    TranslationMemoryListSimilarResponse,
 )
 from app.user.depends import get_current_user_id, has_user_role
 
@@ -242,6 +244,57 @@ def set_translation_memories(
     ]
     GenericDocsQuery(db).set_document_memories(doc, mem_to_mode)
     return models.StatusMessage(message="Memory list updated")
+
+
+@router.get("/{doc_id}/tm/exact")
+def search_tm_exact(
+    doc_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    source: Annotated[str, Query(description="Source text to search for")],
+) -> TranslationMemoryListResponse:
+    doc = get_doc_by_id(db, doc_id)
+    tm_ids = [tm.id for tm in doc.memories]
+
+    if not tm_ids:
+        return TranslationMemoryListResponse(records=[], page=0, total_records=0)
+
+    records, count = TranslationMemoryQuery(db).get_memory_records_paged(
+        memory_ids=tm_ids,
+        page=0,
+        page_records=20,
+        query=source,
+    )
+
+    return TranslationMemoryListResponse(
+        records=records,
+        page=0,
+        total_records=count,
+    )
+
+
+@router.get("/{doc_id}/tm/similar")
+def search_tm_similar(
+    doc_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    source: Annotated[str, Query(description="Source text to search for")],
+) -> TranslationMemoryListSimilarResponse:
+    doc = get_doc_by_id(db, doc_id)
+    tm_ids = [tm.id for tm in doc.memories]
+
+    if not tm_ids:
+        return TranslationMemoryListSimilarResponse(records=[], page=0, total_records=0)
+
+    records = TranslationMemoryQuery(db).get_memory_records_paged_similar(
+        memory_ids=tm_ids,
+        page_records=20,
+        query=source,
+    )
+
+    return TranslationMemoryListSimilarResponse(
+        records=records,
+        page=0,
+        total_records=len(records),
+    )
 
 
 @router.get("/{doc_id}/glossaries")

@@ -13,6 +13,7 @@ import ProcessingErrorMessage from '../components/document/ProcessingErrorMessag
 import RoutingLink from '../components/RoutingLink.vue'
 import DocumentSkeleton from '../components/document/DocumentSkeleton.vue'
 import FilterPanel from '../components/document/FilterPanel.vue'
+import TmSearchModal from '../components/TmSearchModal.vue'
 import {
   getDoc,
   getDocRecords,
@@ -189,6 +190,8 @@ const currentSegmentId = computed(() => {
     return undefined
   return recordsData.value.records[focusedSegmentIdx.value].id
 })
+
+const showTmSearchModal = ref(false)
 </script>
 
 <template>
@@ -232,6 +235,7 @@ const currentSegmentId = computed(() => {
       <FilterPanel
         @source-filter-update="(val) => (sourceFilter = val)"
         @target-filter-update="(val) => (targetFilter = val)"
+        @open-tm-search="showTmSearchModal = true"
       />
 
       <div
@@ -291,4 +295,9 @@ const currentSegmentId = computed(() => {
     </div>
   </div>
   <DocumentSkeleton v-else />
+
+  <TmSearchModal
+    v-model="showTmSearchModal"
+    :document-id="documentId"
+  />
 </template>
