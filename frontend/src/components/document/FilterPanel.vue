@@ -7,6 +7,7 @@ import {debounce} from '../../utilities/utils'
 const emit = defineEmits<{
   sourceFilterUpdate: [string]
   targetFilterUpdate: [string]
+  openTmSearch: []
 }>()
 
 const sourceFilter = ref('')
@@ -26,9 +27,6 @@ watch(targetFilter, (newVal) => updateTargetFilter(newVal))
 
 <template>
   <div class="mx-4 mt-4 p-4 bg-surface-50 rounded-lg border">
-    <h3 class="font-semibold mb-3 text-surface-700">
-      Filter Segments
-    </h3>
     <div class="flex flex-row gap-4 items-center">
       <InputText
         v-model="sourceFilter"
@@ -41,6 +39,7 @@ watch(targetFilter, (newVal) => updateTargetFilter(newVal))
         class="w-72"
       />
       <Button
+        icon="pi pi-eraser"
         label="Clear Filters"
         severity="secondary"
         @click="
@@ -52,6 +51,12 @@ watch(targetFilter, (newVal) => updateTargetFilter(newVal))
             emit('targetFilterUpdate', targetFilter)
           }
         "
+      />
+      <Button
+        icon="pi pi-search"
+        label="Search in TM"
+        severity="secondary"
+        @click="emit('openTmSearch')"
       />
     </div>
   </div>
