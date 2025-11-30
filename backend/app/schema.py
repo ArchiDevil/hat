@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base
 
 if TYPE_CHECKING:
+    from app.comments.models import Comment
     from app.documents.models import Document
     from app.glossary.models import Glossary
     from app.translation_memory.models import TranslationMemory
@@ -40,4 +41,7 @@ class User(Base):
         back_populates="created_by_user",
         cascade="all, delete-orphan",
         order_by="Glossary.id",
+    )
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="author", cascade="all, delete-orphan", order_by="Comment.id"
     )

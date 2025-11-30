@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base
 
 if TYPE_CHECKING:
+    from app.comments.models import Comment
     from app.glossary.models import Glossary
     from app.models import User
     from app.translation_memory.models import TranslationMemory
@@ -106,6 +107,11 @@ class DocumentRecord(Base):
     approved: Mapped[bool] = mapped_column(default=False)
 
     document: Mapped["Document"] = relationship(back_populates="records")
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="document_record",
+        cascade="all, delete-orphan",
+        order_by="Comment.id",
+    )
 
 
 class TxtDocument(Base):

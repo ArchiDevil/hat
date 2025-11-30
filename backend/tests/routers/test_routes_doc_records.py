@@ -694,5 +694,7 @@ def test_update_repetitions_only_when_approved(
         assert record1.target == "Final Hello"
         assert record1.approved is True
 
-        assert record2.target == "Final Hello"  # updated - repetition update since approved
+        assert (
+            record2.target == "Final Hello"
+        )  # updated - repetition update since approved
         assert record2.approved is True

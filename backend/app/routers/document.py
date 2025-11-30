@@ -6,6 +6,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import models, schema
+from app.comments.query import CommentsQuery
+from app.comments.schema import CommentCreate, CommentResponse
 from app.db import get_db
 from app.documents import schema as doc_schema
 from app.documents.models import (
@@ -38,6 +40,16 @@ def get_doc_by_id(db: Session, document_id: int) -> Document:
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
+
+
+def get_doc_record_by_id(db: Session, record_id: int):
+    """Helper function to get document record by ID"""
+    record = GenericDocsQuery(db).get_record(record_id)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document record not found"
+        )
+    return record
 
 
 @router.get("/")
@@ -122,6 +134,49 @@ def get_doc_records(
         records=record_list,
         page=page,
         total_records=total_records,
+    )
+
+
+@router.get("/{record_id}/comments")
+def get_comments(
+    record_id: int,
+    db: Annotated[Session, Depends(get_db)],
+) -> list[CommentResponse]:
+    """Get all comments for a document record"""
+    # Verify document record exists
+    get_doc_record_by_id(db, record_id)
+
+    comments = CommentsQuery(db).get_comments_by_document_record(record_id)
+    return [
+        CommentResponse(
+            id=comment.id,
+            text=comment.text,
+            updated_at=comment.updated_at,
+            author_id=comment.author_id,
+            document_record_id=comment.document_record_id,
+        )
+        for comment in comments
+    ]
+
+
+@router.post("/{record_id}/comments")
+def create_comment(
+    record_id: int,
+    comment_data: CommentCreate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[int, Depends(get_current_user_id)],
+) -> CommentResponse:
+    """Create a new comment for a document record"""
+    # Verify document record exists
+    get_doc_record_by_id(db, record_id)
+
+    comment = CommentsQuery(db).create_comment(comment_data, current_user, record_id)
+    return CommentResponse(
+        id=comment.id,
+        text=comment.text,
+        updated_at=comment.updated_at,
+        author_id=comment.author_id,
+        document_record_id=comment.document_record_id,
     )
 
 

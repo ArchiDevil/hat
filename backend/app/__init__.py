@@ -1,3 +1,4 @@
+from app.comments.models import Comment
 from app.db import Base
 from app.documents.models import (
     Document,
@@ -17,6 +18,7 @@ from app.translation_memory.models import TranslationMemory, TranslationMemoryRe
 
 __all__ = [
     "Base",
+    "Comment",
     "DocumentTask",
     "TranslationMemory",
     "TranslationMemoryRecord",
