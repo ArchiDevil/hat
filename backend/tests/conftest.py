@@ -77,3 +77,34 @@ def user_logged_client(fastapi_client: TestClient, session: Session):
     )
 
     yield fastapi_client
+
+
+@pytest.fixture()
+def admin_logged_client(fastapi_client: TestClient, session: Session):
+    with session as s:
+        s.add(
+            schema.User(
+                username="test",
+                password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
+                email="test@test.com",
+                role=models.UserRole.USER.value,
+                disabled=False,
+            )
+        )
+        s.add(
+            schema.User(
+                username="test-admin",
+                password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
+                email="admin@test.com",
+                role=models.UserRole.ADMIN.value,
+                disabled=False,
+            )
+        )
+        s.commit()
+
+    fastapi_client.post(
+        "/auth/login",
+        json={"email": "admin@test.com", "password": "1234", "remember": False},
+    )
+
+    yield fastapi_client

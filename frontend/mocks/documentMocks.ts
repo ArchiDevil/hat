@@ -1,8 +1,9 @@
 import {http, HttpResponse} from 'msw'
-import {faker} from '@faker-js/faker'
+import {faker, fakerRU} from '@faker-js/faker'
 
 import {AwaitedReturnType} from './utils'
 import {
+  getComments,
   getDoc,
   getDocRecords,
   getDocs,
@@ -12,14 +13,180 @@ import {
 } from '../src/client/services/DocumentService'
 import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
 import {DocumentRecordUpdate} from '../src/client/schemas/DocumentRecordUpdate'
+import {CommentResponse} from '../src/client/schemas/CommentResponse'
+import {DocumentRecord} from '../src/client/schemas/DocumentRecord'
 
-const segments = [
+const segmentComments: CommentResponse[] = [
+  {
+    id: 1,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10001,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 2,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 3,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 4,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 5,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 6,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 7,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 8,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 9,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 10,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 11,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 12,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 13,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 14,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 15,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+  {
+    id: 16,
+    created_by_user: {
+      id: 42,
+      username: faker.internet.email(),
+    },
+    record_id: 10002,
+    text: fakerRU.commerce.productDescription(),
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+  },
+]
+
+const segments: DocumentRecord[] = [
   {
     id: 10000,
     approved: false,
     source: 'Adventure Hooks',
     target: 'Зацепки приключения',
     repetitions_count: 2,
+    has_comments: false,
   },
   {
     id: 10001,
@@ -29,6 +196,7 @@ const segments = [
     target:
       'В тот момент, когда кинидийцы извлекли рог из монолита, их город был обречен.',
     repetitions_count: 1,
+    has_comments: true,
   },
   {
     id: 10002,
@@ -36,6 +204,7 @@ const segments = [
     source: 'Adventure Hooks',
     target: 'Зацепки приключения',
     repetitions_count: 2,
+    has_comments: true,
   },
 ]
 
@@ -162,6 +331,19 @@ export const documentMocks = [
       } else {
         return new HttpResponse(null, {status: 404})
       }
+    }
+  ),
+
+  http.get<{segmentId: string}>(
+    'http://localhost:8000/document/records/:segmentId/comments',
+    ({params}) => {
+      const output: AwaitedReturnType<typeof getComments> = []
+      for (const comm of segmentComments) {
+        if (comm.record_id == Number(params.segmentId)) {
+          output.push(comm)
+        }
+      }
+      return HttpResponse.json(output)
     }
   ),
 ]

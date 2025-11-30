@@ -14,6 +14,7 @@ import RoutingLink from '../components/RoutingLink.vue'
 import DocumentSkeleton from '../components/document/DocumentSkeleton.vue'
 import FilterPanel from '../components/document/FilterPanel.vue'
 import TmSearchModal from '../components/TmSearchModal.vue'
+import RecordCommentModal from '../components/document/RecordCommentModal.vue'
 import {
   getDoc,
   getDocRecords,
@@ -192,6 +193,13 @@ const currentSegmentId = computed(() => {
 })
 
 const showTmSearchModal = ref(false)
+
+const showCommentsModal = ref(false)
+const commentsRecordId = ref<number>()
+const onAddComment = (recordId: number) => {
+  commentsRecordId.value = recordId
+  showCommentsModal.value = true
+}
 </script>
 
 <template>
@@ -270,6 +278,7 @@ const showTmSearchModal = ref(false)
               :focused="currentSegmentId == record.id"
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
+              :has-comments="record.has_comments"
               @commit="
                 (text, updateRepeats) =>
                   onSegmentCommit(record.id, text, updateRepeats, idx)
@@ -280,6 +289,7 @@ const showTmSearchModal = ref(false)
               "
               @focus="focusedSegmentIdx = idx"
               @start-edit="() => onSegmentStartEdit(record.id)"
+              @add-comment="() => onAddComment(record.id)"
             />
           </div>
           <SubstitutionsList
@@ -299,5 +309,11 @@ const showTmSearchModal = ref(false)
   <TmSearchModal
     v-model="showTmSearchModal"
     :document-id="documentId"
+  />
+
+  <RecordCommentModal
+    v-model="showCommentsModal"
+    :record-id="commentsRecordId ?? -1"
+    @add-comment="refetchRecords"
   />
 </template>

@@ -6,6 +6,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import models, schema
+from app.comments.query import CommentsQuery
+from app.comments.schema import CommentCreate, CommentResponse
 from app.db import get_db
 from app.documents import schema as doc_schema
 from app.documents.models import (
@@ -38,6 +40,16 @@ def get_doc_by_id(db: Session, document_id: int) -> Document:
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
+
+
+def get_doc_record_by_id(db: Session, record_id: int):
+    """Helper function to get document record by ID"""
+    record = GenericDocsQuery(db).get_record(record_id)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document record not found"
+        )
+    return record
 
 
 @router.get("/")
@@ -114,8 +126,9 @@ def get_doc_records(
             target=record.target,
             approved=record.approved,
             repetitions_count=repetitions_count,
+            has_comments=has_comments,
         )
-        for record, repetitions_count in records
+        for record, repetitions_count, has_comments in records
     ]
 
     return doc_schema.DocumentRecordListResponse(
@@ -125,18 +138,45 @@ def get_doc_records(
     )
 
 
-@router.get("/{doc_id}/records/{record_id}/substitutions")
+@router.get("/records/{record_id}/comments")
+def get_comments(
+    record_id: int,
+    db: Annotated[Session, Depends(get_db)],
+) -> list[CommentResponse]:
+    """Get all comments for a document record"""
+    # Verify document record exists
+    get_doc_record_by_id(db, record_id)
+
+    comments = CommentsQuery(db).get_comments_by_document_record(record_id)
+    return [CommentResponse.model_validate(comment) for comment in comments]
+
+
+@router.post("/records/{record_id}/comments")
+def create_comment(
+    record_id: int,
+    comment_data: CommentCreate,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[int, Depends(get_current_user_id)],
+) -> CommentResponse:
+    """Create a new comment for a document record"""
+    # Verify document record exists
+    get_doc_record_by_id(db, record_id)
+
+    comment = CommentsQuery(db).create_comment(comment_data, current_user, record_id)
+    return CommentResponse.model_validate(comment)
+
+
+@router.get("/records/{record_id}/substitutions")
 def get_record_substitutions(
-    doc_id: int, record_id: int, db: Annotated[Session, Depends(get_db)]
+    record_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> list[MemorySubstitution]:
-    doc = get_doc_by_id(db, doc_id)
     original_segment = GenericDocsQuery(db).get_record(record_id)
     if not original_segment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
         )
 
-    tm_ids = [tm.id for tm in doc.memories]
+    tm_ids = [tm.id for tm in original_segment.document.memories]
     return (
         TranslationMemoryQuery(db).get_substitutions(original_segment.source, tm_ids)
         if tm_ids
@@ -144,18 +184,17 @@ def get_record_substitutions(
     )
 
 
-@router.get("/{doc_id}/records/{record_id}/glossary_records")
+@router.get("/records/{record_id}/glossary_records")
 def get_record_glossary_records(
-    doc_id: int, record_id: int, db: Annotated[Session, Depends(get_db)]
+    record_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> list[GlossaryRecordSchema]:
-    doc = get_doc_by_id(db, doc_id)
     original_segment = GenericDocsQuery(db).get_record(record_id)
     if not original_segment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
         )
 
-    glossary_ids = [gl.id for gl in doc.glossaries]
+    glossary_ids = [gl.id for gl in original_segment.document.glossaries]
     return (
         [
             GlossaryRecordSchema.model_validate(record)
@@ -168,7 +207,7 @@ def get_record_glossary_records(
     )
 
 
-@router.put("/record/{record_id}")
+@router.put("/records/{record_id}")
 def update_doc_record(
     record_id: int,
     record: doc_schema.DocumentRecordUpdate,

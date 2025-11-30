@@ -6,4 +6,5 @@ export interface DocumentRecord {
   target: string
   approved: boolean
   repetitions_count: number
+  has_comments: boolean
 }
