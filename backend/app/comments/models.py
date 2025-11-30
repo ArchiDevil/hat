@@ -17,8 +17,8 @@ class Comment(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column()
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
-    author_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     record_id: Mapped[int] = mapped_column(ForeignKey("document_record.id"))
 
-    author: Mapped["User"] = relationship("User", back_populates="comments")
+    created_by_user: Mapped["User"] = relationship("User", back_populates="comments")
     document_record: Mapped["DocumentRecord"] = relationship(back_populates="comments")

@@ -148,16 +148,7 @@ def get_comments(
     get_doc_record_by_id(db, record_id)
 
     comments = CommentsQuery(db).get_comments_by_document_record(record_id)
-    return [
-        CommentResponse(
-            id=comment.id,
-            text=comment.text,
-            updated_at=comment.updated_at,
-            author_id=comment.author_id,
-            record_id=comment.record_id,
-        )
-        for comment in comments
-    ]
+    return [CommentResponse.model_validate(comment) for comment in comments]
 
 
 @router.post("/records/{record_id}/comments")
@@ -172,13 +163,7 @@ def create_comment(
     get_doc_record_by_id(db, record_id)
 
     comment = CommentsQuery(db).create_comment(comment_data, current_user, record_id)
-    return CommentResponse(
-        id=comment.id,
-        text=comment.text,
-        updated_at=comment.updated_at,
-        author_id=comment.author_id,
-        record_id=comment.record_id,
-    )
+    return CommentResponse.model_validate(comment)
 
 
 @router.get("/records/{record_id}/substitutions")

@@ -31,13 +31,13 @@ def test_can_get_comments_for_record(user_logged_client: TestClient, session: Se
         comments = [
             Comment(
                 text="First comment",
-                author_id=1,
+                created_by=1,
                 record_id=1,
                 updated_at=datetime.datetime.now(datetime.UTC),
             ),
             Comment(
                 text="Second comment",
-                author_id=1,
+                created_by=1,
                 record_id=1,
                 updated_at=datetime.datetime.now(datetime.UTC),
             ),
@@ -51,7 +51,7 @@ def test_can_get_comments_for_record(user_logged_client: TestClient, session: Se
     response_data = response.json()
     assert len(response_data) == 2
     assert response_data[0]["text"] == "First comment"
-    assert response_data[0]["author_id"] == 1
+    assert response_data[0]["created_by_user"]["id"] == 1
     assert response_data[0]["record_id"] == 1
     assert response_data[1]["text"] == "Second comment"
 
@@ -110,7 +110,7 @@ def test_can_create_comment(user_logged_client: TestClient, session: Session):
     assert response.status_code == 200
     response_data = response.json()
     assert response_data["text"] == "This is a test comment"
-    assert response_data["author_id"] == 1
+    assert response_data["created_by_user"]["id"] == 1
     assert response_data["record_id"] == 1
     assert "id" in response_data
     assert "updated_at" in response_data
@@ -208,7 +208,7 @@ def test_can_update_own_comment(user_logged_client: TestClient, session: Session
 
         comment = Comment(
             text="Original text",
-            author_id=1,  # Same user as logged in
+            created_by=1,  # Same user as logged in
             record_id=1,
             updated_at=datetime.datetime.now(datetime.UTC),
         )
@@ -246,7 +246,7 @@ def test_cannot_update_others_comment(user_logged_client: TestClient, session: S
         )
         comment = Comment(
             text="Original text",
-            author_id=other_user.id,  # Different user
+            created_by=other_user.id,  # Different user
             record_id=1,
             updated_at=datetime.datetime.now(datetime.UTC),
         )
@@ -276,7 +276,7 @@ def test_can_delete_own_comment(user_logged_client: TestClient, session: Session
 
         comment = Comment(
             text="Original text",
-            author_id=1,  # Same user as logged in
+            created_by=1,  # Same user as logged in
             record_id=1,
             updated_at=datetime.datetime.now(datetime.UTC),
         )
@@ -317,7 +317,7 @@ def test_cannot_delete_others_comment(user_logged_client: TestClient, session: S
         )
         comment = Comment(
             text="Original text",
-            author_id=other_user.id,  # Different user
+            created_by=other_user.id,  # Different user
             record_id=1,
             updated_at=datetime.datetime.now(datetime.UTC),
         )
@@ -397,7 +397,7 @@ def test_admin_can_update_any_comment(
         # Create comment by regular user (id=1)
         comment = Comment(
             text="Original text",
-            author_id=1,  # Regular user
+            created_by=1,  # Regular user
             record_id=1,
             updated_at=datetime.datetime.now(datetime.UTC),
         )
@@ -431,7 +431,7 @@ def test_admin_can_delete_any_comment(
         # Create comment by regular user (id=1)
         comment = Comment(
             text="Original text",
-            author_id=1,  # Regular user
+            created_by=1,  # Regular user
             record_id=1,
             updated_at=datetime.datetime.now(datetime.UTC),
         )

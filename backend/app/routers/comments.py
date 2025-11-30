@@ -27,7 +27,7 @@ def get_comment_by_id(db: Session, comment_id: int):
 
 def check_comment_authorship(comment, current_user_id: int, is_admin: bool = False):
     """Check if user can modify/delete comment"""
-    if not is_admin and comment.author_id != current_user_id:
+    if not is_admin and comment.created_by != current_user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only modify your own comments",
@@ -50,13 +50,7 @@ def update_comment(
     check_comment_authorship(comment, current_user, is_admin)
 
     updated_comment = CommentsQuery(db).update_comment(comment_id, comment_data)
-    return CommentResponse(
-        id=updated_comment.id,
-        text=updated_comment.text,
-        updated_at=updated_comment.updated_at,
-        author_id=updated_comment.author_id,
-        record_id=updated_comment.record_id,
-    )
+    return CommentResponse.model_validate(updated_comment)
 
 
 @router.delete("/{comment_id}")

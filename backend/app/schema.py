@@ -43,5 +43,7 @@ class User(Base):
         order_by="Glossary.id",
     )
     comments: Mapped[list["Comment"]] = relationship(
-        back_populates="author", cascade="all, delete-orphan", order_by="Comment.id"
+        back_populates="created_by_user",
+        cascade="all, delete-orphan",
+        order_by="Comment.id",
     )

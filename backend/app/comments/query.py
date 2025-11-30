@@ -20,12 +20,12 @@ class CommentsQuery:
         self.__db = db
 
     def create_comment(
-        self, comment_data: CommentCreate, author_id: int, record_id: int
+        self, comment_data: CommentCreate, created_by: int, record_id: int
     ) -> Comment:
         """Create a new comment"""
         comment = Comment(
             text=comment_data.text,
-            author_id=author_id,
+            created_by=created_by,
             record_id=record_id,
             updated_at=datetime.now(UTC),
         )
@@ -46,7 +46,7 @@ class CommentsQuery:
             self.__db.execute(
                 select(Comment)
                 .filter(Comment.record_id == record_id)
-                .order_by(Comment.updated_at)
+                .order_by(Comment.updated_at.desc())
             )
             .scalars()
             .all()

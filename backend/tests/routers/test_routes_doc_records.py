@@ -727,12 +727,12 @@ def test_has_comments_field(user_logged_client: TestClient, session: Session):
         # Add comments to first and third records
         comment1 = Comment(
             text="First comment",
-            author_id=1,
+            created_by=1,
             record_id=records[0].id,  # First record
         )
         comment2 = Comment(
             text="Second comment",
-            author_id=1,
+            created_by=1,
             record_id=records[2].id,  # Third record
         )
         s.add_all([comment1, comment2])
@@ -784,9 +784,9 @@ def test_has_comments_with_multiple_comments(
 
         # Add multiple comments to the same record
         comments = [
-            Comment(text="Comment 1", author_id=1, record_id=record.id),
-            Comment(text="Comment 2", author_id=1, record_id=record.id),
-            Comment(text="Comment 3", author_id=1, record_id=record.id),
+            Comment(text="Comment 1", created_by=1, record_id=record.id),
+            Comment(text="Comment 2", created_by=1, record_id=record.id),
+            Comment(text="Comment 3", created_by=1, record_id=record.id),
         ]
         s.add_all(comments)
         s.commit()

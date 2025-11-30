@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.base.schema import Identified
+from app.models import ShortUser
 
 
 class CommentCreate(BaseModel):
@@ -16,5 +17,7 @@ class CommentUpdate(BaseModel):
 class CommentResponse(Identified):
     text: str
     updated_at: datetime
-    author_id: int
     record_id: int
+    created_by_user: ShortUser
+
+    model_config = ConfigDict(from_attributes=True)
