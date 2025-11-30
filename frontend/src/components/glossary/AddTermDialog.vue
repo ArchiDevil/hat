@@ -23,6 +23,7 @@ const submit = async () => {
     target: target.value,
     comment: comment.value,
   })
+  window.umami.track('glossary-add')
   model.value = false
   emit('close')
 }

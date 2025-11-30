@@ -52,6 +52,9 @@ const updatePage = async (page: number) => {
 
 const debouncedSearch = ref('')
 const updateDebouncedSearch = debounce((newVal: string) => {
+  window.umami.track('tm-view-search', {
+    mode: toggleSimilar.value ? 'similar' : 'exact',
+  })
   debouncedSearch.value = newVal
   void updatePage(0)
 }, 1000)

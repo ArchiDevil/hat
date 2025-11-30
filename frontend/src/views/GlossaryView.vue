@@ -64,6 +64,8 @@ watch(page, async () => {
 
 const search = ref('')
 const searchRecords = debounce(() => {
+  window.umami.track('glossary-search')
+
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   store.loadRecords(page.value, search.value)
 

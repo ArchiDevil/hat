@@ -39,6 +39,7 @@ const submitRecord = async () => {
     target: target.value,
     comment: comment.value,
   })
+  window.umami.track('glossary-edit')
   model.value = false
   emit('close')
 }

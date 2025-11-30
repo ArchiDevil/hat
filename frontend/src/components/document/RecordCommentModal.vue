@@ -42,6 +42,7 @@ const addComment = async () => {
   await createComment(props.recordId, {
     text: newCommentText.value,
   })
+  window.umami.track('comment-add')
   newCommentText.value = ''
   mode.value = 'observe'
   await queryCache.invalidateQueries({key: commentsKey.value})

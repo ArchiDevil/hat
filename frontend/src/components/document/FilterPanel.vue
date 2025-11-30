@@ -14,15 +14,22 @@ const sourceFilter = ref('')
 const targetFilter = ref('')
 
 const updateSourceFilter = debounce((value: string) => {
+  window.umami.track('source-filter-update')
   emit('sourceFilterUpdate', value)
 }, 1000)
 
 const updateTargetFilter = debounce((value: string) => {
+  window.umami.track('target-filter-update')
   emit('targetFilterUpdate', value)
 }, 1000)
 
 watch(sourceFilter, (newVal) => updateSourceFilter(newVal))
 watch(targetFilter, (newVal) => updateTargetFilter(newVal))
+
+const openTmSearch = () => {
+  window.umami.track('tm-search-open')
+  emit('openTmSearch')
+}
 </script>
 
 <template>
@@ -56,7 +63,7 @@ watch(targetFilter, (newVal) => updateTargetFilter(newVal))
         icon="pi pi-search"
         label="Search in TM"
         severity="secondary"
-        @click="emit('openTmSearch')"
+        @click="openTmSearch"
       />
     </div>
   </div>

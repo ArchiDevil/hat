@@ -30,6 +30,9 @@ const toggleSimilar = ref(false)
 
 const updateDebouncedSearch = debounce((newVal: string) => {
   debouncedSearch.value = newVal
+  window.umami.track('tm-modal-search', {
+    mode: toggleSimilar.value ? 'similar' : 'exact'
+  })
 }, 1000)
 
 watch(searchQuery, (newVal) => {
