@@ -55,7 +55,7 @@ def update_comment(
         text=updated_comment.text,
         updated_at=updated_comment.updated_at,
         author_id=updated_comment.author_id,
-        document_record_id=updated_comment.document_record_id,
+        record_id=updated_comment.record_id,
     )
 
 

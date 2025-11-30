@@ -20,13 +20,13 @@ class CommentsQuery:
         self.__db = db
 
     def create_comment(
-        self, comment_data: CommentCreate, author_id: int, document_record_id: int
+        self, comment_data: CommentCreate, author_id: int, record_id: int
     ) -> Comment:
         """Create a new comment"""
         comment = Comment(
             text=comment_data.text,
             author_id=author_id,
-            document_record_id=document_record_id,
+            record_id=record_id,
             updated_at=datetime.now(UTC),
         )
         self.__db.add(comment)
@@ -40,14 +40,12 @@ class CommentsQuery:
             select(Comment).filter(Comment.id == comment_id)
         ).scalar_one_or_none()
 
-    def get_comments_by_document_record(
-        self, document_record_id: int
-    ) -> Sequence[Comment]:
+    def get_comments_by_document_record(self, record_id: int) -> Sequence[Comment]:
         """Get all comments for a document record"""
         return (
             self.__db.execute(
                 select(Comment)
-                .filter(Comment.document_record_id == document_record_id)
+                .filter(Comment.record_id == record_id)
                 .order_by(Comment.updated_at)
             )
             .scalars()

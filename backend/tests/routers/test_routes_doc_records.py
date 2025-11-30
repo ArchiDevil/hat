@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.comments.models import Comment
 from app.documents.models import (
     DocMemoryAssociation,
     Document,
@@ -11,7 +12,6 @@ from app.documents.models import (
     DocumentType,
 )
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
-from app.comments.models import Comment
 
 # pylint: disable=C0116
 
@@ -728,12 +728,12 @@ def test_has_comments_field(user_logged_client: TestClient, session: Session):
         comment1 = Comment(
             text="First comment",
             author_id=1,
-            document_record_id=records[0].id,  # First record
+            record_id=records[0].id,  # First record
         )
         comment2 = Comment(
             text="Second comment",
             author_id=1,
-            document_record_id=records[2].id,  # Third record
+            record_id=records[2].id,  # Third record
         )
         s.add_all([comment1, comment2])
         s.commit()
@@ -764,7 +764,9 @@ def test_has_comments_field(user_logged_client: TestClient, session: Session):
     assert records_response[2]["has_comments"]
 
 
-def test_has_comments_with_multiple_comments(user_logged_client: TestClient, session: Session):
+def test_has_comments_with_multiple_comments(
+    user_logged_client: TestClient, session: Session
+):
     """Test that has_comments is True when record has multiple comments"""
     with session as s:
         # Create document record
@@ -782,9 +784,9 @@ def test_has_comments_with_multiple_comments(user_logged_client: TestClient, ses
 
         # Add multiple comments to the same record
         comments = [
-            Comment(text="Comment 1", author_id=1, document_record_id=record.id),
-            Comment(text="Comment 2", author_id=1, document_record_id=record.id),
-            Comment(text="Comment 3", author_id=1, document_record_id=record.id),
+            Comment(text="Comment 1", author_id=1, record_id=record.id),
+            Comment(text="Comment 2", author_id=1, record_id=record.id),
+            Comment(text="Comment 3", author_id=1, record_id=record.id),
         ]
         s.add_all(comments)
         s.commit()

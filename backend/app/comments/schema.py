@@ -17,4 +17,4 @@ class CommentResponse(Identified):
     text: str
     updated_at: datetime
     author_id: int
-    document_record_id: int
+    record_id: int

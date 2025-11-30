@@ -154,7 +154,7 @@ def get_comments(
             text=comment.text,
             updated_at=comment.updated_at,
             author_id=comment.author_id,
-            document_record_id=comment.document_record_id,
+            record_id=comment.record_id,
         )
         for comment in comments
     ]
@@ -177,7 +177,7 @@ def create_comment(
         text=comment.text,
         updated_at=comment.updated_at,
         author_id=comment.author_id,
-        document_record_id=comment.document_record_id,
+        record_id=comment.record_id,
     )
 
 

@@ -27,9 +27,9 @@ def upgrade() -> None:
         sa.Column("text", sa.String(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("author_id", sa.Integer(), nullable=False),
-        sa.Column("document_record_id", sa.Integer(), nullable=False),
+        sa.Column("record_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(["author_id"], ["user.id"], ),
-        sa.ForeignKeyConstraint(["document_record_id"], ["document_record.id"], ),
+        sa.ForeignKeyConstraint(["record_id"], ["document_record.id"], ),
         sa.PrimaryKeyConstraint("id")
     )
 

@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Iterable
 
 from sqlalchemy import Row, and_, case, func, select
-from app.comments.models import Comment
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
+from app.comments.models import Comment
 from app.documents.schema import DocumentRecordFilter, DocumentRecordUpdate
 from app.glossary.models import Glossary
 from app.models import DocumentStatus
@@ -133,10 +133,10 @@ class GenericDocsQuery:
         # Subquery to count comments for each document record
         comments_subquery = (
             select(
-                Comment.document_record_id,
+                Comment.record_id,
                 func.count(Comment.id).label("comments_count"),
             )
-            .group_by(Comment.document_record_id)
+            .group_by(Comment.record_id)
             .subquery()
         )
 
@@ -159,7 +159,7 @@ class GenericDocsQuery:
             )
             .outerjoin(
                 comments_subquery,
-                DocumentRecord.id == comments_subquery.c.document_record_id,
+                DocumentRecord.id == comments_subquery.c.record_id,
             )
         )
 
