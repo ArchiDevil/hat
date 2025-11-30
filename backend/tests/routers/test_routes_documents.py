@@ -754,7 +754,7 @@ def test_can_get_glossaries_substitutions(
     )
     dq.set_document_glossaries(dq.get_document(1), [g])
 
-    response = user_logged_client.get("/document/1/records/1/glossary_records")
+    response = user_logged_client.get("/document/records/1/glossary_records")
     assert response.status_code == 200
     response_json = response.json()
     assert len(response_json) == 1
@@ -763,13 +763,6 @@ def test_can_get_glossaries_substitutions(
     assert response_json[0]["glossary_id"] == 1
     assert response_json[0]["comment"] is None
     assert response_json[0]["created_by_user"]["id"] == 1
-
-
-def test_glossary_substitution_returns_404_for_non_existent_document(
-    user_logged_client: TestClient,
-):
-    response = user_logged_client.get("/document/999/records/1/glossary_records")
-    assert response.status_code == 404
 
 
 def test_glossary_substitution_returns_404_for_non_existent_record(
@@ -797,7 +790,7 @@ def test_glossary_substitution_returns_404_for_non_existent_record(
         )
         s.commit()
 
-    response = user_logged_client.get("/document/1/records/999/glossary_records")
+    response = user_logged_client.get("/document/records/999/glossary_records")
     assert response.status_code == 404
 
 

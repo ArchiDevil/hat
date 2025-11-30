@@ -1,12 +1,10 @@
 import datetime
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.comments.models import Comment
 from app.documents.models import Document, DocumentRecord, DocumentType
-from app.models import UserRole
 
 # pylint: disable=C0116
 
@@ -48,7 +46,7 @@ def test_can_get_comments_for_record(user_logged_client: TestClient, session: Se
             s.add(comment)
         s.commit()
 
-    response = user_logged_client.get("/document/1/comments")
+    response = user_logged_client.get("/document/records/1/comments")
     assert response.status_code == 200
     response_data = response.json()
     assert len(response_data) == 2
@@ -75,7 +73,7 @@ def test_get_comments_returns_empty_for_no_comments(
         )
         s.commit()
 
-    response = user_logged_client.get("/document/1/comments")
+    response = user_logged_client.get("/document/records/1/comments")
     assert response.status_code == 200
     response_data = response.json()
     assert response_data == []
@@ -85,7 +83,7 @@ def test_get_comments_returns_404_for_nonexistent_record(
     user_logged_client: TestClient,
 ):
     """Test getting comments for nonexistent record"""
-    response = user_logged_client.get("/document/999/comments")
+    response = user_logged_client.get("/document/records/999/comments")
     assert response.status_code == 404
     assert response.json()["detail"] == "Document record not found"
 
@@ -106,7 +104,9 @@ def test_can_create_comment(user_logged_client: TestClient, session: Session):
         s.commit()
 
     comment_data = {"text": "This is a test comment"}
-    response = user_logged_client.post("/document/1/comments", json=comment_data)
+    response = user_logged_client.post(
+        "/document/records/1/comments", json=comment_data
+    )
     assert response.status_code == 200
     response_data = response.json()
     assert response_data["text"] == "This is a test comment"
@@ -121,7 +121,9 @@ def test_create_comment_returns_404_for_nonexistent_record(
 ):
     """Test creating comment for nonexistent record"""
     comment_data = {"text": "This is a test comment"}
-    response = user_logged_client.post("/document/999/comments", json=comment_data)
+    response = user_logged_client.post(
+        "/document/records/999/comments", json=comment_data
+    )
     assert response.status_code == 404
     assert response.json()["detail"] == "Document record not found"
 
@@ -141,7 +143,7 @@ def test_create_comment_requires_text(user_logged_client: TestClient, session: S
         )
         s.commit()
 
-    response = user_logged_client.post("/document/1/comments", json={})
+    response = user_logged_client.post("/document/records/1/comments", json={})
     assert response.status_code == 422  # Validation error
 
 
@@ -162,7 +164,9 @@ def test_create_comment_requires_min_length_text(
         )
         s.commit()
 
-    response = user_logged_client.post("/document/1/comments", json={"text": ""})
+    response = user_logged_client.post(
+        "/document/records/1/comments", json={"text": ""}
+    )
     assert response.status_code == 422  # Validation error
 
 
@@ -184,7 +188,7 @@ def test_create_comment_requires_authentication(
         s.commit()
 
     comment_data = {"text": "This is a test comment"}
-    response = fastapi_client.post("/document/1/comments", json=comment_data)
+    response = fastapi_client.post("/document/records/1/comments", json=comment_data)
     assert response.status_code == 401  # Unauthorized
 
 
@@ -356,11 +360,13 @@ def test_comment_endpoints_require_authentication(fastapi_client: TestClient):
     fastapi_client.cookies.clear()
 
     # Test GET comments
-    response = fastapi_client.get("/document/1/comments")
+    response = fastapi_client.get("/document/records/1/comments")
     assert response.status_code == 401
 
     # Test POST comment
-    response = fastapi_client.post("/document/1/comments", json={"text": "test"})
+    response = fastapi_client.post(
+        "/document/records/1/comments", json={"text": "test"}
+    )
     assert response.status_code == 401
 
     # Test PUT comment
@@ -442,37 +448,3 @@ def test_admin_can_delete_any_comment(
     with session as s:
         deleted_comment = s.query(Comment).filter(Comment.id == comment_id).first()
         assert deleted_comment is None
-
-
-@pytest.fixture()
-def admin_logged_client(fastapi_client: TestClient, session: Session):
-    """Create a client logged in as admin user"""
-    from app import schema
-
-    with session as s:
-        s.add(
-            schema.User(
-                username="test",
-                password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
-                email="test@test.com",
-                role=UserRole.USER.value,
-                disabled=False,
-            )
-        )
-        s.add(
-            schema.User(
-                username="test-admin",
-                password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
-                email="admin@test.com",
-                role=UserRole.ADMIN.value,
-                disabled=False,
-            )
-        )
-        s.commit()
-
-    fastapi_client.post(
-        "/auth/login",
-        json={"email": "admin@test.com", "password": "1234", "remember": False},
-    )
-
-    yield fastapi_client

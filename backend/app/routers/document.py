@@ -137,7 +137,7 @@ def get_doc_records(
     )
 
 
-@router.get("/{record_id}/comments")
+@router.get("/records/{record_id}/comments")
 def get_comments(
     record_id: int,
     db: Annotated[Session, Depends(get_db)],
@@ -159,7 +159,7 @@ def get_comments(
     ]
 
 
-@router.post("/{record_id}/comments")
+@router.post("/records/{record_id}/comments")
 def create_comment(
     record_id: int,
     comment_data: CommentCreate,
@@ -180,18 +180,17 @@ def create_comment(
     )
 
 
-@router.get("/{doc_id}/records/{record_id}/substitutions")
+@router.get("/records/{record_id}/substitutions")
 def get_record_substitutions(
-    doc_id: int, record_id: int, db: Annotated[Session, Depends(get_db)]
+    record_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> list[MemorySubstitution]:
-    doc = get_doc_by_id(db, doc_id)
     original_segment = GenericDocsQuery(db).get_record(record_id)
     if not original_segment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
         )
 
-    tm_ids = [tm.id for tm in doc.memories]
+    tm_ids = [tm.id for tm in original_segment.document.memories]
     return (
         TranslationMemoryQuery(db).get_substitutions(original_segment.source, tm_ids)
         if tm_ids
@@ -199,18 +198,17 @@ def get_record_substitutions(
     )
 
 
-@router.get("/{doc_id}/records/{record_id}/glossary_records")
+@router.get("/records/{record_id}/glossary_records")
 def get_record_glossary_records(
-    doc_id: int, record_id: int, db: Annotated[Session, Depends(get_db)]
+    record_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> list[GlossaryRecordSchema]:
-    doc = get_doc_by_id(db, doc_id)
     original_segment = GenericDocsQuery(db).get_record(record_id)
     if not original_segment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Segment not found"
         )
 
-    glossary_ids = [gl.id for gl in doc.glossaries]
+    glossary_ids = [gl.id for gl in original_segment.document.glossaries]
     return (
         [
             GlossaryRecordSchema.model_validate(record)
@@ -223,7 +221,7 @@ def get_record_glossary_records(
     )
 
 
-@router.put("/record/{record_id}")
+@router.put("/records/{record_id}")
 def update_doc_record(
     record_id: int,
     record: doc_schema.DocumentRecordUpdate,
