@@ -14,6 +14,7 @@ const props = defineProps<{
   disabled?: boolean
   approved?: boolean
   repetitionsCount?: number
+  hasComments?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   updateRecord: [string, boolean]
   focus: []
   startEdit: []
+  addComment: []
 }>()
 
 const targetInput = useTemplateRef('targetInput')
@@ -64,6 +66,14 @@ const repetitionTitle = computed(() => {
     ` updating of the same segments. Repeated ${props.repetitionsCount} times.`
   )
 })
+
+const icon = computed(
+  () => 'pi' + (props.hasComments ? ' pi-comments' : ' pi-comment')
+)
+
+const showCommentsDialog = () => {
+  emit('addComment')
+}
 </script>
 
 <template>
@@ -108,8 +118,17 @@ const repetitionTitle = computed(() => {
   </div>
   <div
     v-if="editable"
-    class="text-center w-16 self-start"
+    class="flex flex-row text-center w-20 self-start gap-2"
   >
+    <Button
+      :icon="icon"
+      rounded
+      outlined
+      variant="text"
+      :severity="hasComments ? 'help' : 'secondary'"
+      size="small"
+      @click="showCommentsDialog"
+    />
     <Button
       icon="pi pi-check"
       rounded
