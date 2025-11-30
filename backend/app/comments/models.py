@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class Comment(Base):
-    __tablename__ = "comment"
+    __tablename__ = "record_comment"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column()

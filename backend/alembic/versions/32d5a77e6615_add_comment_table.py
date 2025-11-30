@@ -1,4 +1,4 @@
-"""Add comment table
+"""Add record comment table
 
 Revision ID: 32d5a77e6615
 Revises: 9bb8ccd3ee99
@@ -22,7 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.create_table(
-        "comment",
+        "record_comment",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("text", sa.String(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
@@ -35,4 +35,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("comment")
+    op.drop_table("record_comment")
