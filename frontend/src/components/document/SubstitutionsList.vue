@@ -28,7 +28,7 @@ const {data: substitutions} = useQuery({
   key: () => ['substitutions', documentId, currentSegmentId ?? -1],
   query: async () => {
     const memorySubs = (
-      await getRecordSubstitutions(documentId, currentSegmentId!)
+      await getRecordSubstitutions(currentSegmentId!)
     )
       .map((sub): MemorySubstitution => {
         return {type: 'memory', ...sub}
@@ -36,7 +36,7 @@ const {data: substitutions} = useQuery({
       .sort((a, b) => b.similarity - a.similarity)
 
     const glossarySubs = (
-      await getRecordGlossaryRecords(documentId, currentSegmentId!)
+      await getRecordGlossaryRecords(currentSegmentId!)
     )
       .map((sub): GlossarySubstitution => {
         return {
