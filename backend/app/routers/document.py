@@ -126,8 +126,9 @@ def get_doc_records(
             target=record.target,
             approved=record.approved,
             repetitions_count=repetitions_count,
+            has_comments=has_comments,
         )
-        for record, repetitions_count in records
+        for record, repetitions_count, has_comments in records
     ]
 
     return doc_schema.DocumentRecordListResponse(

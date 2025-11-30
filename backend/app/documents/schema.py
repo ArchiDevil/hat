@@ -30,6 +30,7 @@ class DocumentRecord(Identified):
     target: str
     approved: bool
     repetitions_count: int
+    has_comments: bool
 
 
 class DocumentRecordListResponse(BaseModel):

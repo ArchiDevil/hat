@@ -11,6 +11,7 @@ from app.documents.models import (
     DocumentType,
 )
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
+from app.comments.models import Comment
 
 # pylint: disable=C0116
 
@@ -44,6 +45,7 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "target": "Translation",
             "approved": False,
             "repetitions_count": 1,
+            "has_comments": False,
         },
         {
             "id": 2,
@@ -51,6 +53,7 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "target": "UI",
             "approved": True,
             "repetitions_count": 1,
+            "has_comments": False,
         },
     ]
 
@@ -90,6 +93,7 @@ def test_doc_records_returns_second_page(
         "target": "line100",
         "approved": False,
         "repetitions_count": 1,
+        "has_comments": False,
     }
 
 
@@ -698,3 +702,99 @@ def test_update_repetitions_only_when_approved(
             record2.target == "Final Hello"
         )  # updated - repetition update since approved
         assert record2.approved is True
+
+
+def test_has_comments_field(user_logged_client: TestClient, session: Session):
+    """Test that has_comments field correctly shows if document record has comments"""
+    with session as s:
+        # Create document records
+        records = [
+            DocumentRecord(source="Hello World", target="Привет мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+            DocumentRecord(source="Thank you", target="Спасибо"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+        # Add comments to first and third records
+        comment1 = Comment(
+            text="First comment",
+            author_id=1,
+            document_record_id=records[0].id,  # First record
+        )
+        comment2 = Comment(
+            text="Second comment",
+            author_id=1,
+            document_record_id=records[2].id,  # Third record
+        )
+        s.add_all([comment1, comment2])
+        s.commit()
+
+    response = user_logged_client.get("/document/1/records")
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 3
+
+    records_response = response_data["records"]
+    assert len(records_response) == 3
+
+    # Check has_comments values
+    # Record 1 should have comments (has 1 comment)
+    assert records_response[0]["id"] == 1
+    assert records_response[0]["source"] == "Hello World"
+    assert records_response[0]["has_comments"]
+
+    # Record 2 should not have comments
+    assert records_response[1]["id"] == 2
+    assert records_response[1]["source"] == "Goodbye"
+    assert not records_response[1]["has_comments"]
+
+    # Record 3 should have comments (has 1 comment)
+    assert records_response[2]["id"] == 3
+    assert records_response[2]["source"] == "Thank you"
+    assert records_response[2]["has_comments"]
+
+
+def test_has_comments_with_multiple_comments(user_logged_client: TestClient, session: Session):
+    """Test that has_comments is True when record has multiple comments"""
+    with session as s:
+        # Create document record
+        record = DocumentRecord(source="Test", target="Тест")
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=[record],
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+        # Add multiple comments to the same record
+        comments = [
+            Comment(text="Comment 1", author_id=1, document_record_id=record.id),
+            Comment(text="Comment 2", author_id=1, document_record_id=record.id),
+            Comment(text="Comment 3", author_id=1, document_record_id=record.id),
+        ]
+        s.add_all(comments)
+        s.commit()
+
+    response = user_logged_client.get("/document/1/records")
+    assert response.status_code == 200
+    response_data = response.json()
+
+    records_response = response_data["records"]
+    assert len(records_response) == 1
+
+    # Should still be True even with multiple comments
+    assert records_response[0]["has_comments"]

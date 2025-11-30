@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Iterable
 
 from sqlalchemy import Row, and_, case, func, select
+from app.comments.models import Comment
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
@@ -117,7 +118,7 @@ class GenericDocsQuery:
         page: int,
         page_records=100,
         filters: DocumentRecordFilter | None = None,
-    ) -> Iterable[Row[tuple[DocumentRecord, int]]]:
+    ) -> Iterable[Row[tuple[DocumentRecord, int, bool]]]:
         # Subquery to count repetitions for each source text within the document
         repetitions_subquery = (
             select(
@@ -129,6 +130,16 @@ class GenericDocsQuery:
             .subquery()
         )
 
+        # Subquery to count comments for each document record
+        comments_subquery = (
+            select(
+                Comment.document_record_id,
+                func.count(Comment.id).label("comments_count"),
+            )
+            .group_by(Comment.document_record_id)
+            .subquery()
+        )
+
         # Build the base query
         query = (
             select(
@@ -136,11 +147,19 @@ class GenericDocsQuery:
                 func.coalesce(repetitions_subquery.c.repetitions_count, 0).label(
                     "repetitions_count"
                 ),
+                case(
+                    (func.coalesce(comments_subquery.c.comments_count, 0) > 0, True),
+                    else_=False,
+                ).label("has_comments"),
             )
             .filter(DocumentRecord.document_id == doc.id)
             .outerjoin(
                 repetitions_subquery,
                 DocumentRecord.source == repetitions_subquery.c.source,
+            )
+            .outerjoin(
+                comments_subquery,
+                DocumentRecord.id == comments_subquery.c.document_record_id,
             )
         )
 
