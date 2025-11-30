@@ -33,7 +33,9 @@ def test_can_get_comments_for_record(user_logged_client: TestClient, session: Se
                 text="First comment",
                 created_by=1,
                 record_id=1,
-                updated_at=datetime.datetime.now(datetime.UTC),
+                # this is more recent, so should be the first
+                updated_at=datetime.datetime.now(datetime.UTC)
+                + datetime.timedelta(days=1),
             ),
             Comment(
                 text="Second comment",
