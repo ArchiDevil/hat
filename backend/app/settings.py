@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     llm_base_api: str | None = None
     llm_model: str | None = None
     llm_base64_prompt: str | None = None
+    proxy_server: str | None = None
 
     @property
     def llm_prompt(self):

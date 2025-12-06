@@ -229,7 +229,7 @@ def test_translate_lines_success(mock_openai):
     assert not has_error
     assert result == ["translation1", "translation2"]
     mock_openai.assert_called_once_with(
-        api_key="test_api_key", base_url="https://api.test.com/v4"
+        api_key="test_api_key", base_url="https://api.test.com/v4", http_client=None
     )
     assert mock_client.chat.completions.create.call_count == 1
 

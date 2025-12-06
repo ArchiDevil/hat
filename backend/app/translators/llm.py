@@ -6,6 +6,7 @@
 import logging
 import re
 
+import httpx
 from openai import OpenAI
 
 from app.settings import settings
@@ -101,7 +102,13 @@ def translate_lines(
         )
         return [], True
 
-    client = OpenAI(api_key=api_key, base_url=settings.llm_base_api)
+    client = OpenAI(
+        api_key=api_key,
+        base_url=settings.llm_base_api,
+        http_client=httpx.Client(proxy=settings.proxy_server)
+        if settings.proxy_server
+        else None,
+    )
 
     output: list[str] = []
 
