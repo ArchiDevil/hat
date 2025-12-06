@@ -93,8 +93,8 @@ const {data: recordsData, refetch: refetchRecords} = useQuery({
     const data = await getDocRecords(
       documentId.value,
       page.value,
-      sourceFilter.value,
-      targetFilter.value
+      sourceFilter.value.trim(),
+      targetFilter.value.trim()
     )
     return {
       page: data.page,

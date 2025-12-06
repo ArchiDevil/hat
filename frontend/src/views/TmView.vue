@@ -55,7 +55,7 @@ const updateDebouncedSearch = debounce((newVal: string) => {
   window.umami.track('tm-view-search', {
     mode: toggleSimilar.value ? 'similar' : 'exact',
   })
-  debouncedSearch.value = newVal
+  debouncedSearch.value = newVal.trim()
   void updatePage(0)
 }, 1000)
 

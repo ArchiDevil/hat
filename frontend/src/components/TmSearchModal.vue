@@ -29,9 +29,9 @@ const debouncedSearch = ref('')
 const toggleSimilar = ref(false)
 
 const updateDebouncedSearch = debounce((newVal: string) => {
-  debouncedSearch.value = newVal
+  debouncedSearch.value = newVal.trim()
   window.umami.track('tm-modal-search', {
-    mode: toggleSimilar.value ? 'similar' : 'exact'
+    mode: toggleSimilar.value ? 'similar' : 'exact',
   })
 }, 1000)
 
@@ -54,14 +54,15 @@ const {data: searchResults, isLoading} = useQuery({
   query: async (): Promise<
     TranslationMemoryListSimilarResponse | TranslationMemoryListResponse
   > => {
-    if (!debouncedSearch.value.trim()) {
+    const search = debouncedSearch.value.trim()
+    if (!search) {
       return {records: [], page: 0, total_records: 0}
     }
 
     if (toggleSimilar.value) {
-      return await searchTmSimilar(props.documentId, debouncedSearch.value)
+      return await searchTmSimilar(props.documentId, search)
     } else {
-      return await searchTmExact(props.documentId, debouncedSearch.value)
+      return await searchTmExact(props.documentId, search)
     }
   },
   enabled: () =>

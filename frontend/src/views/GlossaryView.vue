@@ -28,7 +28,7 @@ const glossaryId = computed(() => Number(route.params.id))
 
 const loadGlossary = async () => {
   await store.loadGlossary(glossaryId.value)
-  await store.loadRecords(page.value, search.value)
+  await store.loadRecords(page.value, search.value.trim())
 }
 
 watch(glossaryId, async () => {
@@ -59,7 +59,7 @@ watch(page, async () => {
   if (!glossary.value) {
     return
   }
-  await store.loadRecords(page.value, search.value)
+  await store.loadRecords(page.value, search.value.trim())
 })
 
 const search = ref('')
@@ -67,7 +67,7 @@ const searchRecords = debounce(() => {
   window.umami.track('glossary-search')
 
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  store.loadRecords(page.value, search.value)
+  store.loadRecords(page.value, search.value.trim())
 
   // eslint-disable-next-line @typescript-eslint/no-floating-promises
   updatePage(0)
