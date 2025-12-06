@@ -1,4 +1,4 @@
-# This is a worker that takes tasks from the database every 10 seconds and
+# This is a worker that takes tasks from the database every N seconds and
 # processes files in it.
 # Tasks are stored in document_task table and encoded in JSON.
 
@@ -14,6 +14,7 @@ from app.documents.models import (
     Document,
     DocumentRecord,
     DocumentType,
+    RecordSource,
     TxtRecord,
     XliffRecord,
 )
@@ -28,7 +29,6 @@ from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
 from app.translation_memory.query import TranslationMemoryQuery
-from app.translation_memory.schema import TranslationMemoryUsage
 from app.translators import llm, yandex
 from app.translators.common import LineWithGlossaries
 
@@ -43,14 +43,13 @@ def get_segment_translation(
     source: str,
     threshold: float,
     tm_ids: list[int],
-    tm_usage: TranslationMemoryUsage,
     substitute_numbers: bool,
     glossary_ids: list[int],
     session: Session,
-) -> str | None:
+) -> tuple[str, RecordSource | None] | None:
     # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
     if substitute_numbers and source.isdigit():
-        return source
+        return source, None
 
     glossary_record = (
         session.query(GlossaryRecord)
@@ -61,31 +60,23 @@ def get_segment_translation(
         .first()
     )
     if glossary_record:
-        return glossary_record.target
+        return glossary_record.target, RecordSource.glossary
 
     if threshold < 1.0:
         substitutions = TranslationMemoryQuery(session).get_substitutions(
             source, tm_ids, threshold, 1
         )
         if substitutions:
-            return substitutions[0].target
+            return substitutions[0].target, RecordSource.translation_memory
     else:
         selector = (
             select(TranslationMemoryRecord.source, TranslationMemoryRecord.target)
             .where(TranslationMemoryRecord.source == source)
             .where(TranslationMemoryRecord.document_id.in_(tm_ids))
+            .order_by(TranslationMemoryRecord.change_date.desc())
         )
-        match tm_usage:
-            case TranslationMemoryUsage.NEWEST:
-                selector = selector.order_by(TranslationMemoryRecord.change_date.desc())
-            case TranslationMemoryUsage.OLDEST:
-                selector = selector.order_by(TranslationMemoryRecord.change_date.asc())
-            case _:
-                logging.error("Unknown translation memory usage option")
-                return None
-
         tm_data = session.execute(selector.limit(1)).first()
-        return tm_data.target if tm_data else None
+        return (tm_data.target, RecordSource.translation_memory) if tm_data else None
 
     return None
 
@@ -183,7 +174,6 @@ def substitute_segments(
             segment.original,
             settings.similarity_threshold,
             tm_ids,
-            settings.memory_usage,
             settings.substitute_numbers,
             glossary_ids,
             session,
@@ -192,7 +182,9 @@ def substitute_segments(
             to_translate.append(idx)
             continue
 
-        segment.translation = translation or ""
+        # TODO: use target source
+        target_translation, _ = translation
+        segment.translation = target_translation or ""
     return to_translate
 
 

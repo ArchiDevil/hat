@@ -27,7 +27,6 @@ from app.models import (
 )
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
-from app.translation_memory.schema import TranslationMemoryUsage
 from worker import process_task
 
 # pylint: disable=C0116
@@ -54,7 +53,6 @@ def create_xliff_doc(data: str):
 def create_task(
     *,
     type_: Literal["xliff", "txt"] = "xliff",
-    usage: TranslationMemoryUsage = TranslationMemoryUsage.NEWEST,
     substitute_numbers: bool = False,
     mt_settings: YandexTranslatorSettings | None = None,
 ):
@@ -65,7 +63,6 @@ def create_task(
             settings=DocumentProcessingSettings(
                 substitute_numbers=substitute_numbers,
                 machine_translation_settings=mt_settings,
-                memory_usage=usage,
             ),
         ).model_dump_json(),
         status="pending",
@@ -289,53 +286,6 @@ def test_process_task_uses_correct_tm_ids(session: Session):
         assert doc.records[0].target == "Another translation"
 
 
-@pytest.mark.parametrize(
-    ["mode", "trans_result"],
-    [("newest", "Another translation"), ("oldest", "Translation")],
-)
-def test_process_task_uses_tm_mode(mode: str, trans_result: str, session: Session):
-    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
-        file_data = fp.read()
-
-    with session as s:
-        tm_records_1 = [
-            TranslationMemoryRecord(
-                source="Regional Effects",
-                target="Translation",
-                creation_date=datetime(2020, 1, 1, 0, 0, 0),
-                change_date=datetime(2020, 1, 1, 0, 0, 0),
-            )
-        ]
-        tm_records_2 = [
-            TranslationMemoryRecord(
-                source="Regional Effects",
-                target="Another translation",
-                creation_date=datetime(2021, 1, 1, 0, 0, 0),
-                change_date=datetime(2021, 1, 1, 0, 0, 0),
-            )
-        ]
-        s.add_all(
-            [
-                TranslationMemory(name="test1", records=tm_records_1, created_by=1),
-                TranslationMemory(name="test2", records=tm_records_2, created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.xliff),
-                create_xliff_doc(file_data),
-                create_task(usage=TranslationMemoryUsage(mode)),
-                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
-                DocMemoryAssociation(doc_id=1, tm_id=2, mode="read"),
-            ]
-        )
-        s.commit()
-
-        result = process_task(s, s.query(DocumentTask).one())
-        assert result
-
-        doc = s.query(Document).filter_by(id=1).one()
-        assert doc.processing_status == "done"
-        assert len(doc.records) > 1
-        assert doc.records[0].target == trans_result
-
-
 def test_process_task_substitutes_numbers(session: Session):
     with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
         file_data = fp.read()
@@ -370,7 +320,6 @@ def test_process_task_substitutes_numbers(session: Session):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
             },
         },
         {
@@ -379,7 +328,6 @@ def test_process_task_substitutes_numbers(session: Session):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
             },
         },
         {
@@ -393,7 +341,6 @@ def test_process_task_substitutes_numbers(session: Session):
                 "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
             },
         },
     ],

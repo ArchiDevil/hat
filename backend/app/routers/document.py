@@ -118,7 +118,6 @@ def get_doc_records(
     query = GenericDocsQuery(db)
     total_records = query.get_document_records_count_filtered(doc, filters)
     records = query.get_document_records_paged(doc, page, filters=filters)
-
     record_list = [
         doc_schema.DocumentRecord(
             id=record.id,
@@ -127,6 +126,9 @@ def get_doc_records(
             approved=record.approved,
             repetitions_count=repetitions_count,
             has_comments=has_comments,
+            translation_src=record.target_source.value
+            if record.target_source
+            else None,
         )
         for record, repetitions_count, has_comments in records
     ]

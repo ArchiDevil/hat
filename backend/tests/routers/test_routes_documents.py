@@ -25,7 +25,6 @@ from app.glossary.schema import (
 from app.models import DocumentStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory
-from app.translation_memory.schema import TranslationMemoryUsage
 
 # pylint: disable=C0116
 
@@ -298,7 +297,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
@@ -320,7 +318,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
@@ -342,7 +339,6 @@ def test_process_creates_task_for_xliff(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
@@ -358,7 +354,6 @@ def test_process_creates_task_for_xliff(
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
                 "similarity_threshold": 1.0,
             },
         }
@@ -373,7 +368,6 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
 
@@ -389,7 +383,6 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
             "settings": {
                 "substitute_numbers": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
                 "similarity_threshold": 1.0,
             },
         }
@@ -403,7 +396,6 @@ def test_returns_404_when_processing_nonexistent_doc(
         json={
             "substitute_numbers": False,
             "machine_translation_settings": None,
-            "memory_usage": TranslationMemoryUsage.NEWEST.value,
         },
     )
     assert response.status_code == 404
