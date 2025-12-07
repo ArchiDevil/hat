@@ -53,7 +53,6 @@ def create_xliff_doc(data: str):
 def create_task(
     *,
     type_: Literal["xliff", "txt"] = "xliff",
-    substitute_numbers: bool = False,
     mt_settings: YandexTranslatorSettings | None = None,
 ):
     return DocumentTask(
@@ -61,7 +60,6 @@ def create_task(
             type=type_,
             document_id=1,
             settings=DocumentProcessingSettings(
-                substitute_numbers=substitute_numbers,
                 machine_translation_settings=mt_settings,
             ),
         ).model_dump_json(),
@@ -139,16 +137,16 @@ def test_process_task_sets_xliff_records(session: Session):
         assert xliff_record.segment_id == 675608
         assert xliff_record.state == "translated"
 
-        # It does not substitute numbers
+        # It does substitute numbers
         record = doc.records[3]
         assert record.source == "123456789"
-        assert record.target == ""
+        assert record.target == "123456789"
         assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675609
-        assert xliff_record.state == "needs-translation"
+        assert xliff_record.state == "translated"
 
 
 def test_process_task_sets_txt_records(session: Session):
@@ -286,38 +284,12 @@ def test_process_task_uses_correct_tm_ids(session: Session):
         assert doc.records[0].target == "Another translation"
 
 
-def test_process_task_substitutes_numbers(session: Session):
-    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
-        file_data = fp.read()
-
-    with session as s:
-        s.add_all(
-            [
-                TranslationMemory(name="test", records=[], created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.xliff),
-                create_xliff_doc(file_data),
-                create_task(substitute_numbers=True),
-            ]
-        )
-        s.commit()
-
-        result = process_task(s, s.query(DocumentTask).one())
-        assert result
-
-        doc = s.query(Document).filter_by(id=1).one()
-        assert doc.processing_status == "done"
-        assert len(doc.records) == 4
-        assert doc.records[3].source == "123456789"
-        assert doc.records[3].target == "123456789"
-
-
 @pytest.mark.parametrize(
     "task_data",
     [
         {
             "document_id": 1,
             "settings": {
-                "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
             },
@@ -325,7 +297,6 @@ def test_process_task_substitutes_numbers(session: Session):
         {
             "type": "xliff",
             "settings": {
-                "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
             },
@@ -338,7 +309,6 @@ def test_process_task_substitutes_numbers(session: Session):
             "type": "broken",
             "document_id": 1,
             "settings": {
-                "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
             },

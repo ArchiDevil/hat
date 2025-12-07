@@ -295,7 +295,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
     response = user_logged_client.post(
         "/document/1/process",
         json={
-            "substitute_numbers": False,
             "machine_translation_settings": None,
         },
     )
@@ -316,7 +315,6 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
     response = user_logged_client.post(
         "/document/1/process",
         json={
-            "substitute_numbers": False,
             "machine_translation_settings": None,
         },
     )
@@ -337,7 +335,6 @@ def test_process_creates_task_for_xliff(
     response = user_logged_client.post(
         "/document/1/process",
         json={
-            "substitute_numbers": False,
             "machine_translation_settings": None,
         },
     )
@@ -352,7 +349,6 @@ def test_process_creates_task_for_xliff(
             "type": "xliff",
             "document_id": 1,
             "settings": {
-                "substitute_numbers": False,
                 "machine_translation_settings": None,
                 "similarity_threshold": 1.0,
             },
@@ -366,7 +362,6 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
     response = user_logged_client.post(
         "/document/1/process",
         json={
-            "substitute_numbers": False,
             "machine_translation_settings": None,
         },
     )
@@ -381,7 +376,6 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
             "type": "txt",
             "document_id": 1,
             "settings": {
-                "substitute_numbers": False,
                 "machine_translation_settings": None,
                 "similarity_threshold": 1.0,
             },
@@ -394,7 +388,6 @@ def test_returns_404_when_processing_nonexistent_doc(
     response = user_logged_client.post(
         "/document/1/process",
         json={
-            "substitute_numbers": False,
             "machine_translation_settings": None,
         },
     )

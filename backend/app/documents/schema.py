@@ -53,7 +53,6 @@ class DocumentRecordUpdate(BaseModel):
 
 
 class DocumentProcessingSettings(BaseModel):
-    substitute_numbers: bool
     machine_translation_settings: Optional[MachineTranslationSettings]
     similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
 

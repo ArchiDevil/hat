@@ -43,12 +43,11 @@ def get_segment_translation(
     source: str,
     threshold: float,
     tm_ids: list[int],
-    substitute_numbers: bool,
     glossary_ids: list[int],
     session: Session,
 ) -> tuple[str, RecordSource | None] | None:
     # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
-    if substitute_numbers and source.isdigit():
+    if source.isdigit():
         return source, None
 
     glossary_record = (
@@ -174,7 +173,6 @@ def substitute_segments(
             segment.original,
             settings.similarity_threshold,
             tm_ids,
-            settings.substitute_numbers,
             glossary_ids,
             session,
         )
