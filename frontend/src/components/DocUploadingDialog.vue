@@ -9,7 +9,6 @@ import {
   setTranslationMemories,
 } from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
-import {TranslationMemoryUsage} from '../client/schemas/TranslationMemoryUsage'
 
 import {useTmStore} from '../stores/tm'
 import {useGlossaryStore} from '../stores/glossary'
@@ -18,7 +17,6 @@ import MachineTranslationOptions, {
   MtType,
 } from './MachineTranslationOptions.vue'
 
-import Checkbox from 'primevue/checkbox'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import FileUpload, {FileUploadSelectEvent} from 'primevue/fileupload'
@@ -36,7 +34,6 @@ const uploadedFile = ref(null) as Ref<Document | null>
 const uploading = ref(false)
 const status = ref('')
 
-const substituteNumbers = ref(true)
 const mtOptions = ref({
   enabled: false,
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -56,8 +53,6 @@ const similarityThreshold = ref<number>(1.0)
 const processingAvailable = computed(() => uploadedFile.value != null)
 const tmStore = useTmStore()
 const glossaryStore = useGlossaryStore()
-
-const memoryMode = ref<TranslationMemoryUsage>('newest')
 
 const createFile = async (event: FileUploadSelectEvent) => {
   status.value = ''
@@ -102,13 +97,11 @@ const startProcessing = async () => {
     })
     const mtSettings = mtOptions.value
     await processDoc(uploadedFile.value!.id, {
-      substitute_numbers: substituteNumbers.value,
       machine_translation_settings: mtSettings.enabled
         ? mtSettings.type === 'yandex'
           ? mtSettings.yandexSettings
           : mtSettings.llmSettings
         : null,
-      memory_usage: memoryMode.value,
       similarity_threshold: similarityThreshold.value,
     })
     uploading.value = false
@@ -160,18 +153,6 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
             />
           </div>
           <div class="flex flex-col gap-2 mb-4 max-w-96">
-            <label>When segment is found in multiple TMXs:</label>
-            <Select
-              v-model="memoryMode"
-              :options="[
-                {name: 'Use newest TM', value: 'newest'},
-                {name: 'Use oldest TM', value: 'oldest'},
-              ]"
-              option-label="name"
-              option-value="value"
-            />
-          </div>
-          <div class="flex flex-col gap-2 mb-4 max-w-96">
             <label>Substitution similary threshold:</label>
             <Select
               v-model="similarityThreshold"
@@ -186,20 +167,6 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
               option-label="name"
               option-value="value"
             />
-          </div>
-          <div class="flex items-center mb-4">
-            <Checkbox
-              id="sn"
-              v-model="substituteNumbers"
-              :binary="true"
-            />
-            <label
-              for="sn"
-              class="ml-2"
-              @click="substituteNumbers = !substituteNumbers"
-            >
-              Substitute segments containing only digits
-            </label>
           </div>
           <div class="flex flex-col gap-2 mb-4 max-w-96">
             <label>Glossaries to use:</label>
