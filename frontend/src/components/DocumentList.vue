@@ -2,7 +2,7 @@
 import {deleteDoc} from '../client/services/DocumentService'
 import {DocumentWithRecordsCount} from '../client/schemas/DocumentWithRecordsCount'
 
-import DocumentRecord from './DocumentRecord.vue'
+import DocumentListItem from './DocumentListItem.vue'
 
 const emit = defineEmits<{
   delete: []
@@ -16,7 +16,7 @@ defineProps<{
 
 <template>
   <div>
-    <DocumentRecord
+    <DocumentListItem
       v-for="doc in documents"
       :key="doc.id"
       :document="doc"
