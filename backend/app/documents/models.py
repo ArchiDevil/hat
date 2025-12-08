@@ -101,7 +101,6 @@ class RecordSource(Enum):
     glossary = "glossary"
     machine_translation = "mt"
     translation_memory = "tm"
-    user_input = "user"
     full_match = "fm"  # for digits
 
 

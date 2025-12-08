@@ -24,7 +24,6 @@ segmentsource = sa.Enum(
     "glossary",
     "machine_translation",
     "translation_memory",
-    "user_input",
     "full_match",
     name="recordsource",
 )
