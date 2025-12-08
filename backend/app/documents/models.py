@@ -97,6 +97,13 @@ class Document(Base):
     )
 
 
+class RecordSource(Enum):
+    glossary = "glossary"
+    machine_translation = "mt"
+    translation_memory = "tm"
+    full_match = "fm"  # for digits
+
+
 class DocumentRecord(Base):
     __tablename__ = "document_record"
 
@@ -105,6 +112,7 @@ class DocumentRecord(Base):
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()
     approved: Mapped[bool] = mapped_column(default=False)
+    target_source: Mapped[RecordSource] = mapped_column(nullable=True)
 
     document: Mapped["Document"] = relationship(back_populates="records")
     comments: Mapped[list["Comment"]] = relationship(

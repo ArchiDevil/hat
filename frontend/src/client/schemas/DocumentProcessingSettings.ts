@@ -2,11 +2,8 @@
 
 import {LlmTranslatorSettings} from './LlmTranslatorSettings'
 import {YandexTranslatorSettings} from './YandexTranslatorSettings'
-import {TranslationMemoryUsage} from './TranslationMemoryUsage'
 
 export interface DocumentProcessingSettings {
-  substitute_numbers: boolean
   machine_translation_settings: LlmTranslatorSettings | YandexTranslatorSettings | null
-  memory_usage: TranslationMemoryUsage
   similarity_threshold?: number
 }

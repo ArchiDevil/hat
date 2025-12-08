@@ -23,6 +23,10 @@
                 <source xml:space="preserve">123456789</source>
                 <target state="needs-translation" xml:space="preserve"></target>
             </trans-unit>
+            <trans-unit id="675610" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:23.968Z" sc:last-modified-user="Person 5">
+                <source xml:space="preserve">Something else</source>
+                <target state="needs-translation" xml:space="preserve"></target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

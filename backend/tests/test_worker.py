@@ -11,6 +11,7 @@ from app.documents.models import (
     DocMemoryAssociation,
     Document,
     DocumentType,
+    RecordSource,
     TxtDocument,
     TxtRecord,
     XliffDocument,
@@ -27,7 +28,6 @@ from app.models import (
 )
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
-from app.translation_memory.schema import TranslationMemoryUsage
 from worker import process_task
 
 # pylint: disable=C0116
@@ -54,8 +54,6 @@ def create_xliff_doc(data: str):
 def create_task(
     *,
     type_: Literal["xliff", "txt"] = "xliff",
-    usage: TranslationMemoryUsage = TranslationMemoryUsage.NEWEST,
-    substitute_numbers: bool = False,
     mt_settings: YandexTranslatorSettings | None = None,
 ):
     return DocumentTask(
@@ -63,9 +61,7 @@ def create_task(
             type=type_,
             document_id=1,
             settings=DocumentProcessingSettings(
-                substitute_numbers=substitute_numbers,
                 machine_translation_settings=mt_settings,
-                memory_usage=usage,
             ),
         ).model_dump_json(),
         status="pending",
@@ -79,6 +75,18 @@ def test_process_task_sets_xliff_records(session: Session):
     with session as s:
         s.add_all(
             [
+                Glossary(
+                    name="test_glossary",
+                    created_by=1,
+                    records=[
+                        GlossaryRecord(
+                            source="Something else",
+                            target="Глоссарный перевод",
+                            created_by=1,
+                            stemmed_source="something else",
+                        )
+                    ],
+                ),
                 TranslationMemory(
                     name="test",
                     records=[
@@ -92,6 +100,7 @@ def test_process_task_sets_xliff_records(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
+                DocGlossaryAssociation(document_id=1, glossary_id=1),
             ]
         )
 
@@ -104,7 +113,7 @@ def test_process_task_sets_xliff_records(session: Session):
 
         doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
-        assert len(doc.records) == 4
+        assert len(doc.records) == 5
 
         assert all(record.document_id == 1 for record in doc.records)
         assert all(record.id == idx + 1 for idx, record in enumerate(doc.records))
@@ -113,6 +122,7 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[0]
         assert record.source == "Regional Effects"
         assert record.target == "Translation"
+        assert record.target_source == RecordSource.translation_memory
         assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
@@ -124,6 +134,7 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[1]
         assert record.source == "Other Effects"
         assert record.target == ""
+        assert record.target_source is None
         assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
@@ -135,6 +146,7 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[2]
         assert record.source == "Regional Effects"
         assert record.target == "Региональные эффекты"
+        assert record.target_source is None
         assert record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
@@ -142,16 +154,29 @@ def test_process_task_sets_xliff_records(session: Session):
         assert xliff_record.segment_id == 675608
         assert xliff_record.state == "translated"
 
-        # It does not substitute numbers
+        # It does substitute numbers
         record = doc.records[3]
         assert record.source == "123456789"
-        assert record.target == ""
-        assert not record.approved
+        assert record.target == "123456789"
+        assert record.target_source == RecordSource.full_match
+        assert record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675609
-        assert xliff_record.state == "needs-translation"
+        assert xliff_record.state == "translated"
+
+        # It does substitute glossary records
+        record = doc.records[4]
+        assert record.source == "Something else"
+        assert record.target == "Глоссарный перевод"
+        assert record.target_source == RecordSource.glossary
+        assert record.approved
+        xliff_record = (
+            s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
+        )
+        assert xliff_record.segment_id == 675610
+        assert xliff_record.state == "translated"
 
 
 def test_process_task_sets_txt_records(session: Session):
@@ -236,6 +261,7 @@ def test_process_task_sets_txt_records(session: Session):
         record = doc.records[4]
         assert record.source == "The sloth is named Razak."
         assert record.target == "Translation"
+        assert record.target_source == RecordSource.translation_memory
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 310
             if crlf
@@ -290,96 +316,20 @@ def test_process_task_uses_correct_tm_ids(session: Session):
 
 
 @pytest.mark.parametrize(
-    ["mode", "trans_result"],
-    [("newest", "Another translation"), ("oldest", "Translation")],
-)
-def test_process_task_uses_tm_mode(mode: str, trans_result: str, session: Session):
-    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
-        file_data = fp.read()
-
-    with session as s:
-        tm_records_1 = [
-            TranslationMemoryRecord(
-                source="Regional Effects",
-                target="Translation",
-                creation_date=datetime(2020, 1, 1, 0, 0, 0),
-                change_date=datetime(2020, 1, 1, 0, 0, 0),
-            )
-        ]
-        tm_records_2 = [
-            TranslationMemoryRecord(
-                source="Regional Effects",
-                target="Another translation",
-                creation_date=datetime(2021, 1, 1, 0, 0, 0),
-                change_date=datetime(2021, 1, 1, 0, 0, 0),
-            )
-        ]
-        s.add_all(
-            [
-                TranslationMemory(name="test1", records=tm_records_1, created_by=1),
-                TranslationMemory(name="test2", records=tm_records_2, created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.xliff),
-                create_xliff_doc(file_data),
-                create_task(usage=TranslationMemoryUsage(mode)),
-                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
-                DocMemoryAssociation(doc_id=1, tm_id=2, mode="read"),
-            ]
-        )
-        s.commit()
-
-        result = process_task(s, s.query(DocumentTask).one())
-        assert result
-
-        doc = s.query(Document).filter_by(id=1).one()
-        assert doc.processing_status == "done"
-        assert len(doc.records) > 1
-        assert doc.records[0].target == trans_result
-
-
-def test_process_task_substitutes_numbers(session: Session):
-    with open("tests/fixtures/small.xliff", "r", encoding="utf-8") as fp:
-        file_data = fp.read()
-
-    with session as s:
-        s.add_all(
-            [
-                TranslationMemory(name="test", records=[], created_by=1),
-                create_doc(name="small.xliff", type_=DocumentType.xliff),
-                create_xliff_doc(file_data),
-                create_task(substitute_numbers=True),
-            ]
-        )
-        s.commit()
-
-        result = process_task(s, s.query(DocumentTask).one())
-        assert result
-
-        doc = s.query(Document).filter_by(id=1).one()
-        assert doc.processing_status == "done"
-        assert len(doc.records) == 4
-        assert doc.records[3].source == "123456789"
-        assert doc.records[3].target == "123456789"
-
-
-@pytest.mark.parametrize(
     "task_data",
     [
         {
             "document_id": 1,
             "settings": {
-                "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
             },
         },
         {
             "type": "xliff",
             "settings": {
-                "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
             },
         },
         {
@@ -390,10 +340,8 @@ def test_process_task_substitutes_numbers(session: Session):
             "type": "broken",
             "document_id": 1,
             "settings": {
-                "substitute_numbers": False,
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
-                "memory_usage": "newest",
             },
         },
     ],

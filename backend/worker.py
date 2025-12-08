@@ -1,10 +1,10 @@
-# This is a worker that takes tasks from the database every 10 seconds and
+# This is a worker that takes tasks from the database every N seconds and
 # processes files in it.
 # Tasks are stored in document_task table and encoded in JSON.
 
 import logging
 import time
-from typing import Iterable, Sequence
+from typing import Iterable, Literal, Sequence, overload
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,12 +14,12 @@ from app.documents.models import (
     Document,
     DocumentRecord,
     DocumentType,
+    RecordSource,
     TxtRecord,
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
 from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescription
-from app.formats.base import BaseSegment
 from app.formats.txt import TxtSegment, extract_txt_content
 from app.formats.xliff import XliffSegment, extract_xliff_content
 from app.glossary.models import GlossaryRecord
@@ -28,29 +28,76 @@ from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
 from app.translation_memory.query import TranslationMemoryQuery
-from app.translation_memory.schema import TranslationMemoryUsage
 from app.translators import llm, yandex
 from app.translators.common import LineWithGlossaries
 
+type FormatSegment = XliffSegment | TxtSegment
 
-def segment_needs_processing(segment: BaseSegment) -> bool:
-    if isinstance(segment, XliffSegment):
-        return not segment.approved
-    return True
+
+class WorkerSegment:
+    @overload
+    def __init__(
+        self, *, type_: Literal["xliff"], original_segment: XliffSegment
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self, *, type_: Literal["txt"], original_segment: TxtSegment
+    ) -> None: ...
+
+    def __init__(
+        self,
+        *,
+        type_: Literal["xliff", "txt"],
+        original_segment: FormatSegment,
+    ) -> None:
+        self._segment_src = None
+        self._type = type_
+        self._approved = False
+        self.original_segment = original_segment
+        assert (type_ == "xliff" and isinstance(original_segment, XliffSegment)) or (
+            type_ == "txt" and isinstance(original_segment, TxtSegment)
+        )
+        if isinstance(original_segment, XliffSegment):
+            self._approved = original_segment.approved
+
+    @property
+    def segment_source(self) -> RecordSource | None:
+        return self._segment_src
+
+    @segment_source.setter
+    def segment_source(self, value: RecordSource | None):
+        self._segment_src = value
+
+    @property
+    def approved(self):
+        return self._approved
+
+    @approved.setter
+    def approved(self, value: bool):
+        self._approved = value
+
+    @property
+    def type_(self):
+        return self._type
+
+    @property
+    def needs_processing(self) -> bool:
+        if isinstance(self.original_segment, XliffSegment):
+            return not self.original_segment.approved
+        return True
 
 
 def get_segment_translation(
     source: str,
     threshold: float,
     tm_ids: list[int],
-    tm_usage: TranslationMemoryUsage,
-    substitute_numbers: bool,
     glossary_ids: list[int],
     session: Session,
-) -> str | None:
+) -> tuple[str, RecordSource | None] | None:
     # TODO: this would be nice to have batching for all segments to reduce amounts of requests to DB
-    if substitute_numbers and source.isdigit():
-        return source
+    if source.isdigit():
+        return source, RecordSource.full_match
 
     glossary_record = (
         session.query(GlossaryRecord)
@@ -61,31 +108,23 @@ def get_segment_translation(
         .first()
     )
     if glossary_record:
-        return glossary_record.target
+        return glossary_record.target, RecordSource.glossary
 
     if threshold < 1.0:
         substitutions = TranslationMemoryQuery(session).get_substitutions(
             source, tm_ids, threshold, 1
         )
         if substitutions:
-            return substitutions[0].target
+            return substitutions[0].target, RecordSource.translation_memory
     else:
         selector = (
             select(TranslationMemoryRecord.source, TranslationMemoryRecord.target)
             .where(TranslationMemoryRecord.source == source)
             .where(TranslationMemoryRecord.document_id.in_(tm_ids))
+            .order_by(TranslationMemoryRecord.change_date.desc())
         )
-        match tm_usage:
-            case TranslationMemoryUsage.NEWEST:
-                selector = selector.order_by(TranslationMemoryRecord.change_date.desc())
-            case TranslationMemoryUsage.OLDEST:
-                selector = selector.order_by(TranslationMemoryRecord.change_date.asc())
-            case _:
-                logging.error("Unknown translation memory usage option")
-                return None
-
         tm_data = session.execute(selector.limit(1)).first()
-        return tm_data.target if tm_data else None
+        return (tm_data.target, RecordSource.translation_memory) if tm_data else None
 
     return None
 
@@ -149,15 +188,21 @@ def process_document(
     return mt_result
 
 
-def extract_segments(doc: Document) -> Sequence[BaseSegment]:
+def extract_segments(doc: Document) -> Sequence[WorkerSegment]:
     if doc.type == DocumentType.xliff:
         xliff_document = doc.xliff
         xliff_data = extract_xliff_content(xliff_document.original_document.encode())
-        return xliff_data.segments
+        return [
+            WorkerSegment(type_="xliff", original_segment=segment)
+            for segment in xliff_data.segments
+        ]
     if doc.type == DocumentType.txt:
         txt_document = doc.txt
         txt_data = extract_txt_content(txt_document.original_document)
-        return txt_data.segments
+        return [
+            WorkerSegment(type_="txt", original_segment=segment)
+            for segment in txt_data.segments
+        ]
 
     logging.error("Unknown document type")
     return []
@@ -166,7 +211,7 @@ def extract_segments(doc: Document) -> Sequence[BaseSegment]:
 def substitute_segments(
     settings: DocumentProcessingSettings,
     session: Session,
-    segments: Iterable[BaseSegment],
+    segments: Iterable[WorkerSegment],
     tm_ids: list[int],
     glossary_ids: list[int],
 ) -> list[int]:
@@ -176,15 +221,13 @@ def substitute_segments(
     """
     to_translate: list[int] = []
     for idx, segment in enumerate(segments):
-        if not segment_needs_processing(segment):
+        if not segment.needs_processing:
             continue
 
         translation = get_segment_translation(
-            segment.original,
+            segment.original_segment.original,
             settings.similarity_threshold,
             tm_ids,
-            settings.memory_usage,
-            settings.substitute_numbers,
             glossary_ids,
             session,
         )
@@ -192,12 +235,16 @@ def substitute_segments(
             to_translate.append(idx)
             continue
 
-        segment.translation = translation or ""
+        target_translation, segment_src = translation
+        segment.original_segment.translation = target_translation or ""
+        segment.segment_source = segment_src
+        if segment_src in (RecordSource.full_match, RecordSource.glossary):
+            segment.approved = True
     return to_translate
 
 
 def translate_segments(
-    segments: Sequence[BaseSegment],
+    segments: Sequence[WorkerSegment],
     translate_indices: Sequence[int],
     glossary_ids: list[int],
     mt_settings: MachineTranslationSettings,
@@ -210,7 +257,9 @@ def translate_segments(
     try:
         # TODO: this might be harmful with LLM translation as it is loses
         # the connectivity of the context
-        segments_to_translate = [segments[idx].original for idx in translate_indices]
+        segments_to_translate = [
+            segments[idx].original_segment.original for idx in translate_indices
+        ]
         data_to_translate: list[LineWithGlossaries] = []
         for segment in segments_to_translate:
             glossary_records = GlossaryQuery(session).get_glossary_records_for_segment(
@@ -233,7 +282,9 @@ def translate_segments(
             logging.fatal("Unknown translation API")
             raise RuntimeError("Unknown translation API")
         for idx, translated_line in enumerate(translated):
-            segments[translate_indices[idx]].translation = translated_line
+            segments[
+                translate_indices[idx]
+            ].original_segment.translation = translated_line
     # TODO: handle specific exceptions instead of a generic one
     except Exception as e:
         logging.error("Machine translation error %s", e)
@@ -245,13 +296,15 @@ def translate_segments(
 def create_doc_segments(
     doc: Document,
     session: Session,
-    segments: Iterable[BaseSegment],
+    segments: Iterable[WorkerSegment],
 ) -> None:
     doc_records = [
         DocumentRecord(
             document_id=doc.id,
-            source=segment.original,
-            target=segment.translation or "",
+            source=segment.original_segment.original,
+            target=segment.original_segment.translation or "",
+            approved=segment.approved,
+            target_source=segment.segment_source,
         )
         for segment in segments
     ]
@@ -263,27 +316,30 @@ def create_doc_segments(
     if doc.type == DocumentType.xliff:
         xliff_records: Sequence[XliffRecord] = []
         for idx, segment in enumerate(segments):
-            assert isinstance(segment, XliffSegment)
+            original = segment.original_segment
+            assert isinstance(original, XliffSegment)
+            if segment.approved:
+                original.approved = True
             xliff_records.append(
                 XliffRecord(
                     parent_id=doc_records[idx].id,
                     document_id=doc.xliff.id,
-                    segment_id=segment.id_,
-                    state=segment.state.value,
+                    segment_id=original.id_,
+                    state=original.state.value,
                 )
             )
-            doc_records[idx].approved = segment.approved
         session.add_all(xliff_records)
         session.commit()
     elif doc.type == DocumentType.txt:
         txt_records: Sequence[TxtRecord] = []
         for idx, segment in enumerate(segments):
-            assert isinstance(segment, TxtSegment)
+            original = segment.original_segment
+            assert isinstance(original, TxtSegment)
             txt_records.append(
                 TxtRecord(
                     parent_id=doc_records[idx].id,
                     document_id=doc.txt.id,
-                    offset=segment.offset,
+                    offset=original.offset,
                 )
             )
         session.add_all(txt_records)

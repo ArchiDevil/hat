@@ -2,10 +2,10 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from app.documents.models import TmMode
+from app.documents.models import RecordSource, TmMode
 from app.glossary.schema import GlossaryResponse
 from app.models import DocumentStatus, Identified, MachineTranslationSettings
-from app.translation_memory.schema import TranslationMemory, TranslationMemoryUsage
+from app.translation_memory.schema import TranslationMemory
 
 
 class DocumentRecordFilter(BaseModel):
@@ -31,6 +31,7 @@ class DocumentRecord(Identified):
     approved: bool
     repetitions_count: int
     has_comments: bool
+    translation_src: RecordSource | None
 
 
 class DocumentRecordListResponse(BaseModel):
@@ -52,9 +53,7 @@ class DocumentRecordUpdate(BaseModel):
 
 
 class DocumentProcessingSettings(BaseModel):
-    substitute_numbers: bool
     machine_translation_settings: Optional[MachineTranslationSettings]
-    memory_usage: TranslationMemoryUsage
     similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
