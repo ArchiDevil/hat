@@ -52,10 +52,10 @@ class GlossaryQuery:
             return record
         raise NotFoundGlossaryRecordExc()
 
-    def get_glossary_records_for_segment(
-        self, segment: str, glossary_ids: list[int]
+    def get_glossary_records_for_phrase(
+        self, phrase: str, glossary_ids: list[int]
     ) -> list[GlossaryRecord]:
-        words = postprocess_stemmed_segment(stem_sentence(segment))
+        words = postprocess_stemmed_segment(stem_sentence(phrase))
         or_clauses = [GlossaryRecord.source.ilike(f"%{word}%") for word in words]
         records = self.db.execute(
             select(GlossaryRecord).where(

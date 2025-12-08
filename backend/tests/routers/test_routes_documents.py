@@ -934,3 +934,125 @@ def test_get_doc_records_with_repetitions(
     assert record_counts["Hello World"] == 3
     assert record_counts["Goodbye"] == 1
     assert record_counts["Test"] == 1
+
+
+def test_doc_glossary_search_with_matching_records(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        records = [
+            DocumentRecord(source="Regional Effects", target=""),
+            DocumentRecord(source="User Interface", target=""),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    gq = GlossaryQuery(session)
+    g = gq.create_glossary(1, GlossarySchema(name="test"), ProcessingStatuses.DONE)
+    gq.create_glossary_record(
+        1,
+        GlossaryRecordCreate(
+            comment=None, source="Regional Effects", target="Региональные эффекты"
+        ),
+        g.id,
+    )
+    gq.create_glossary_record(
+        1,
+        GlossaryRecordCreate(
+            comment=None, source="User Interface", target="Пользовательский интерфейс"
+        ),
+        g.id,
+    )
+
+    dq = GenericDocsQuery(session)
+    dq.set_document_glossaries(dq.get_document(1), [g])
+
+    response = user_logged_client.get(
+        "/document/1/glossary_search?query=Regional Effects"
+    )
+    assert response.status_code == 200
+    response_json = response.json()
+    assert len(response_json) == 1
+    assert response_json[0]["source"] == "Regional Effects"
+    assert response_json[0]["target"] == "Региональные эффекты"
+    assert response_json[0]["glossary_id"] == 1
+    assert response_json[0]["comment"] is None
+    assert response_json[0]["created_by_user"]["id"] == 1
+
+
+def test_doc_glossary_search_returns_empty_when_no_glossaries(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        records = [
+            DocumentRecord(source="Regional Effects", target=""),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get(
+        "/document/1/glossary_search?query=Regional Effects"
+    )
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_doc_glossary_search_returns_empty_when_no_matches(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        records = [
+            DocumentRecord(source="Regional Effects", target=""),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    gq = GlossaryQuery(session)
+    g = gq.create_glossary(1, GlossarySchema(name="test"), ProcessingStatuses.DONE)
+    gq.create_glossary_record(
+        1,
+        GlossaryRecordCreate(
+            comment=None, source="Regional Effects", target="Региональные эффекты"
+        ),
+        g.id,
+    )
+
+    dq = GenericDocsQuery(session)
+    dq.set_document_glossaries(dq.get_document(1), [g])
+
+    response = user_logged_client.get(
+        "/document/1/glossary_search?query=Nonexistent Term"
+    )
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_doc_glossary_search_returns_404_for_nonexistent_document(
+    user_logged_client: TestClient,
+):
+    response = user_logged_client.get("/document/99/glossary_search?query=test")
+    assert response.status_code == 404

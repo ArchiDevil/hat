@@ -262,7 +262,7 @@ def translate_segments(
         ]
         data_to_translate: list[LineWithGlossaries] = []
         for segment in segments_to_translate:
-            glossary_records = GlossaryQuery(session).get_glossary_records_for_segment(
+            glossary_records = GlossaryQuery(session).get_glossary_records_for_phrase(
                 segment, glossary_ids
             )
             data_to_translate.append(
