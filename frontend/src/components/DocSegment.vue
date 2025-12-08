@@ -85,6 +85,8 @@ const segSourceTitle = computed(() => {
       return 'Machine translation'
     case 'tm':
       return 'Translation memory'
+    case 'fm':
+      return 'Exact match'
     default:
       return undefined
   }
@@ -98,6 +100,8 @@ const segSourceIcon = computed(() => {
       return 'pi-language'
     case 'tm':
       return 'pi-database'
+    case 'fm':
+      return 'pi-equals'
     default:
       return undefined
   }
@@ -149,7 +153,7 @@ const segSourceIcon = computed(() => {
     class="flex flex-row text-center self-start gap-2 pr-2 h-full"
   >
     <div
-      v-if="recordSrc && recordSrc !== 'user'"
+      v-if="recordSrc"
       class="py-1 px-2"
       :title="segSourceTitle"
     >
