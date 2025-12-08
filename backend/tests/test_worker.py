@@ -11,6 +11,7 @@ from app.documents.models import (
     DocMemoryAssociation,
     Document,
     DocumentType,
+    RecordSource,
     TxtDocument,
     TxtRecord,
     XliffDocument,
@@ -74,6 +75,18 @@ def test_process_task_sets_xliff_records(session: Session):
     with session as s:
         s.add_all(
             [
+                Glossary(
+                    name="test_glossary",
+                    created_by=1,
+                    records=[
+                        GlossaryRecord(
+                            source="Something else",
+                            target="Глоссарный перевод",
+                            created_by=1,
+                            stemmed_source="something else",
+                        )
+                    ],
+                ),
                 TranslationMemory(
                     name="test",
                     records=[
@@ -87,6 +100,7 @@ def test_process_task_sets_xliff_records(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
+                DocGlossaryAssociation(document_id=1, glossary_id=1),
             ]
         )
 
@@ -99,7 +113,7 @@ def test_process_task_sets_xliff_records(session: Session):
 
         doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
-        assert len(doc.records) == 4
+        assert len(doc.records) == 5
 
         assert all(record.document_id == 1 for record in doc.records)
         assert all(record.id == idx + 1 for idx, record in enumerate(doc.records))
@@ -108,6 +122,7 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[0]
         assert record.source == "Regional Effects"
         assert record.target == "Translation"
+        assert record.target_source == RecordSource.translation_memory
         assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
@@ -119,6 +134,7 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[1]
         assert record.source == "Other Effects"
         assert record.target == ""
+        assert record.target_source is None
         assert not record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
@@ -130,6 +146,7 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[2]
         assert record.source == "Regional Effects"
         assert record.target == "Региональные эффекты"
+        assert record.target_source is None
         assert record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
@@ -141,11 +158,24 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[3]
         assert record.source == "123456789"
         assert record.target == "123456789"
-        assert not record.approved
+        assert record.target_source == RecordSource.full_match
+        assert record.approved
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675609
+        assert xliff_record.state == "translated"
+
+        # It does substitute glossary records
+        record = doc.records[4]
+        assert record.source == "Something else"
+        assert record.target == "Глоссарный перевод"
+        assert record.target_source == RecordSource.glossary
+        assert record.approved
+        xliff_record = (
+            s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
+        )
+        assert xliff_record.segment_id == 675610
         assert xliff_record.state == "translated"
 
 
@@ -231,6 +261,7 @@ def test_process_task_sets_txt_records(session: Session):
         record = doc.records[4]
         assert record.source == "The sloth is named Razak."
         assert record.target == "Translation"
+        assert record.target_source == RecordSource.translation_memory
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 310
             if crlf
