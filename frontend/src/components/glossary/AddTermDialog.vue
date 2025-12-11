@@ -32,6 +32,14 @@ watch(source, (newVal) => {
 const target = ref('')
 const comment = ref('')
 
+const clearData = () => {
+  model.value = false
+  source.value = ''
+  debouncedSearch.value = ''
+  target.value = ''
+  comment.value = ''
+}
+
 const submit = async () => {
   await createGlossaryRecord(glossaryId, {
     source: source.value,
@@ -39,7 +47,7 @@ const submit = async () => {
     comment: comment.value,
   })
   window.umami.track('glossary-add')
-  model.value = false
+  clearData()
   emit('close')
 }
 
@@ -58,6 +66,7 @@ const {data: foundTerms} = useQuery({
     modal
     header="Add Term"
     :style="{width: '40rem'}"
+    @hide="clearData"
   >
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-2">
