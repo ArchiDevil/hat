@@ -12,9 +12,11 @@ import SubstitutionsList from '../components/document/SubstitutionsList.vue'
 import ProcessingErrorMessage from '../components/document/ProcessingErrorMessage.vue'
 import RoutingLink from '../components/RoutingLink.vue'
 import DocumentSkeleton from '../components/document/DocumentSkeleton.vue'
-import FilterPanel from '../components/document/FilterPanel.vue'
+import ToolsPanel from '../components/document/ToolsPanel.vue'
 import TmSearchModal from '../components/TmSearchModal.vue'
 import RecordCommentModal from '../components/document/RecordCommentModal.vue'
+import AddTermModal from '../components/document/AddTermModal.vue'
+
 import {
   getDoc,
   getDocRecords,
@@ -200,6 +202,8 @@ const onAddComment = (recordId: number) => {
   commentsRecordId.value = recordId
   showCommentsModal.value = true
 }
+
+const showAddTermModal = ref(false)
 </script>
 
 <template>
@@ -240,10 +244,11 @@ const onAddComment = (recordId: number) => {
         />
       </template>
 
-      <FilterPanel
+      <ToolsPanel
         @source-filter-update="(val) => (sourceFilter = val)"
         @target-filter-update="(val) => (targetFilter = val)"
         @open-tm-search="showTmSearchModal = true"
+        @open-add-term="showAddTermModal = true"
       />
 
       <div
@@ -316,5 +321,10 @@ const onAddComment = (recordId: number) => {
     v-model="showCommentsModal"
     :record-id="commentsRecordId ?? -1"
     @add-comment="refetchRecords"
+  />
+
+  <AddTermModal
+    v-model="showAddTermModal"
+    :document-id="documentId"
   />
 </template>

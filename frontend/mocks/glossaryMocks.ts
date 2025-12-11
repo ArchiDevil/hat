@@ -34,7 +34,7 @@ const glossarySegments: GlossaryRecordSchema[] = new Array(125)
     }
   })
 
-const glossaries: GlossaryResponse[] = [
+export const glossaries: GlossaryResponse[] = [
   {
     id: 51,
     name: 'Some glossary',
