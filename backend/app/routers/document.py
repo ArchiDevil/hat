@@ -126,9 +126,9 @@ def get_doc_records(
             approved=record.approved,
             repetitions_count=repetitions_count,
             has_comments=has_comments,
-            translation_src=record.target_source.value
-            if record.target_source
-            else None,
+            translation_src=(
+                record.target_source.value if record.target_source else None
+            ),
         )
         for record, repetitions_count, has_comments in records
     ]
@@ -137,6 +137,26 @@ def get_doc_records(
         records=record_list,
         page=page,
         total_records=total_records,
+    )
+
+
+@router.get("/{doc_id}/glossary_search")
+def doc_glossary_search(
+    doc_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    query: Annotated[str, Query()],
+) -> list[GlossaryRecordSchema]:
+    doc = get_doc_by_id(db, doc_id)
+    glossary_ids = [gl.id for gl in doc.glossaries]
+    return (
+        [
+            GlossaryRecordSchema.model_validate(record)
+            for record in GlossaryQuery(db).get_glossary_records_for_phrase(
+                query, glossary_ids
+            )
+        ]
+        if glossary_ids
+        else []
     )
 
 
@@ -200,7 +220,7 @@ def get_record_glossary_records(
     return (
         [
             GlossaryRecordSchema.model_validate(record)
-            for record in GlossaryQuery(db).get_glossary_records_for_segment(
+            for record in GlossaryQuery(db).get_glossary_records_for_phrase(
                 original_segment.source, glossary_ids
             )
         ]

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import {ref, watch} from 'vue'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
+import {Button, InputText} from 'primevue'
 import {debounce} from '../../utilities/utils'
 
 const emit = defineEmits<{
   sourceFilterUpdate: [string]
   targetFilterUpdate: [string]
   openTmSearch: []
+  openAddTerm: []
 }>()
 
 const sourceFilter = ref('')
@@ -29,6 +29,10 @@ watch(targetFilter, (newVal) => updateTargetFilter(newVal))
 const openTmSearch = () => {
   window.umami.track('tm-search-open')
   emit('openTmSearch')
+}
+
+const openTermModal = () => {
+  emit('openAddTerm')
 }
 </script>
 
@@ -64,6 +68,12 @@ const openTmSearch = () => {
         label="Search in TM"
         severity="secondary"
         @click="openTmSearch"
+      />
+      <Button
+        icon="pi pi-globe"
+        label="Add Term"
+        severity="secondary"
+        @click="openTermModal"
       />
     </div>
   </div>

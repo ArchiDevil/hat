@@ -1,20 +1,26 @@
 <script setup lang="ts">
-import {Button, Column, DataTable, Dialog, Divider, InputText} from 'primevue'
-import {ref, watch} from 'vue'
+import {
+  Button,
+  Column,
+  DataTable,
+  Dialog,
+  Divider,
+  InputText,
+  Select,
+} from 'primevue'
+import {computed, ref, watch} from 'vue'
 import {useQuery} from '@pinia/colada'
 
 import {
   createGlossaryRecord,
   listRecords,
 } from '../../client/services/GlossaryService'
+import {getGlossaries} from '../../client/services/DocumentService'
+import {GlossaryResponse} from '../../client/schemas/GlossaryResponse'
 import {debounce} from '../../utilities/utils'
 
-const {glossaryId} = defineProps<{
-  glossaryId: number
-}>()
-
-const emit = defineEmits<{
-  close: []
+const {documentId} = defineProps<{
+  documentId: number
 }>()
 
 const model = defineModel<boolean>()
@@ -32,32 +38,57 @@ watch(source, (newVal) => {
 const target = ref('')
 const comment = ref('')
 
+const selectedGlossary = ref<GlossaryResponse>()
+const {data: glossaries, isLoading: isGlossariesLoading} = useQuery({
+  key: () => ['doc-glossaries', documentId],
+  query: async () => {
+    return (await getGlossaries(documentId)).map((r) => r.glossary)
+  },
+  enabled: () => model.value === true,
+  placeholderData: <T>(prevData: T) => prevData,
+})
+
 const clearData = () => {
-  model.value = false
   source.value = ''
   debouncedSearch.value = ''
   target.value = ''
   comment.value = ''
+  selectedGlossary.value = undefined
 }
 
 const submit = async () => {
-  await createGlossaryRecord(glossaryId, {
+  if (!selectedGlossary.value) {
+    console.error('No glossary selected')
+    return
+  }
+
+  await createGlossaryRecord(selectedGlossary.value.id, {
     source: source.value,
     target: target.value,
     comment: comment.value,
   })
-  window.umami.track('glossary-add')
+  window.umami.track('glossary-add-doc')
+  model.value = false
   clearData()
-  emit('close')
 }
 
 const {data: foundTerms} = useQuery({
-  key: () => ['glossary-records', glossaryId, debouncedSearch.value],
+  key: () => [
+    'glossary-records',
+    selectedGlossary.value?.id ?? -1,
+    debouncedSearch.value,
+  ],
   query: async () =>
-    (await listRecords(glossaryId, 0, debouncedSearch.value)).records,
-  enabled: () => debouncedSearch.value.length > 2,
+    (await listRecords(selectedGlossary.value!.id, 0, debouncedSearch.value))
+      .records,
+  enabled: () =>
+    debouncedSearch.value.length > 2 && selectedGlossary.value !== undefined,
   placeholderData: <T>(prevData: T) => prevData,
 })
+
+const creationDisabled = computed(
+  () => isGlossariesLoading.value || selectedGlossary.value === undefined
+)
 </script>
 
 <template>
@@ -71,6 +102,24 @@ const {data: foundTerms} = useQuery({
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-2">
         <label
+          for="glossary"
+          class="font-semibold w-24"
+        >
+          Glossary
+        </label>
+        <Select
+          v-model="selectedGlossary"
+          class="flex-auto"
+          :options="glossaries"
+          option-label="name"
+          :loading="isGlossariesLoading"
+          :placeholder="
+            isGlossariesLoading ? 'Loading...' : 'Select a glossary'
+          "
+        />
+      </div>
+      <div class="flex items-center gap-2">
+        <label
           for="username"
           class="font-semibold w-24"
         >
@@ -81,6 +130,7 @@ const {data: foundTerms} = useQuery({
           class="flex-auto"
           autocomplete="off"
           placeholder="Input source term"
+          :disabled="creationDisabled"
         />
       </div>
       <div class="flex items-center gap-2">
@@ -95,6 +145,7 @@ const {data: foundTerms} = useQuery({
           class="flex-auto"
           autocomplete="off"
           placeholder="Input target term"
+          :disabled="creationDisabled"
         />
       </div>
       <div class="flex items-center gap-2">
@@ -109,6 +160,7 @@ const {data: foundTerms} = useQuery({
           class="flex-auto"
           autocomplete="off"
           placeholder="(Optional) Input comment"
+          :disabled="creationDisabled"
         />
       </div>
 
@@ -122,6 +174,7 @@ const {data: foundTerms} = useQuery({
         <Button
           type="button"
           label="Save"
+          :disabled="creationDisabled"
           @click="submit"
         />
       </div>

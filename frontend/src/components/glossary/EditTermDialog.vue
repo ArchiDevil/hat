@@ -55,8 +55,8 @@ const deleteRecord = async () => {
   <Dialog
     v-model:visible="model"
     modal
-    header="Add Term"
-    :style="{width: '25rem'}"
+    header="Edit Term"
+    :style="{width: '40rem'}"
   >
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-2">
@@ -72,6 +72,7 @@ const deleteRecord = async () => {
           class="flex-auto"
           autocomplete="off"
           placeholder="Input source term"
+          disabled
         />
       </div>
       <div class="flex items-center gap-2">
@@ -101,7 +102,7 @@ const deleteRecord = async () => {
           v-model="comment"
           class="flex-auto"
           autocomplete="off"
-          placeholder="(Optional) Comment for a term"
+          placeholder="(Optional) Input comment"
         />
       </div>
 

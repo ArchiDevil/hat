@@ -7,10 +7,10 @@ import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentRecordListResponse} from '../schemas/DocumentRecordListResponse'
+import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
 import {CommentResponse} from '../schemas/CommentResponse'
 import {CommentCreate} from '../schemas/CommentCreate'
 import {MemorySubstitution} from '../schemas/MemorySubstitution'
-import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
 import {DocumentRecordUpdateResponse} from '../schemas/DocumentRecordUpdateResponse'
 import {DocumentRecordUpdate} from '../schemas/DocumentRecordUpdate'
 import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
@@ -37,6 +37,9 @@ export const deleteDoc = async (doc_id: number): Promise<StatusMessage> => {
 }
 export const getDocRecords = async (doc_id: number, page?: number | null, source?: string | null, target?: string | null): Promise<DocumentRecordListResponse> => {
   return await api.get<DocumentRecordListResponse>(`/document/${doc_id}/records`, {query: {page, source, target}})
+}
+export const docGlossarySearch = async (doc_id: number, query: string): Promise<GlossaryRecordSchema[]> => {
+  return await api.get<GlossaryRecordSchema[]>(`/document/${doc_id}/glossary_search`, {query: {query}})
 }
 export const getComments = async (record_id: number): Promise<CommentResponse[]> => {
   return await api.get<CommentResponse[]>(`/document/records/${record_id}/comments`)

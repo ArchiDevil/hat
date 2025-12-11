@@ -1,12 +1,14 @@
 import {http, HttpResponse} from 'msw'
 import {faker, fakerRU} from '@faker-js/faker'
 
+import {glossaries} from './glossaryMocks'
 import {AwaitedReturnType} from './utils'
 import {
   getComments,
   getDoc,
   getDocRecords,
   getDocs,
+  getGlossaries,
   getRecordGlossaryRecords,
   getRecordSubstitutions,
   updateDocRecord,
@@ -209,7 +211,7 @@ const segments: DocumentRecord[] = [
     has_comments: true,
     translation_src: 'mt',
   },
-    {
+  {
     id: 10003,
     approved: true,
     source: 'Adventure Hooks',
@@ -258,6 +260,22 @@ export const documentMocks = [
         return HttpResponse.json<AwaitedReturnType<typeof getDocRecords>>(
           recordsData
         )
+      } else {
+        return new HttpResponse(null, {status: 404})
+      }
+    }
+  ),
+  http.get<{id: string}>(
+    'http://localhost:8000/document/:id/glossaries',
+    ({params}) => {
+      const doc = docs.find((doc) => doc.id === Number(params.id))
+      if (doc !== undefined) {
+        return HttpResponse.json<AwaitedReturnType<typeof getGlossaries>>([
+          {
+            document_id: doc.id,
+            glossary: glossaries[0],
+          },
+        ])
       } else {
         return new HttpResponse(null, {status: 404})
       }
@@ -345,7 +363,6 @@ export const documentMocks = [
       }
     }
   ),
-
   http.get<{segmentId: string}>(
     'http://localhost:8000/document/records/:segmentId/comments',
     ({params}) => {
