@@ -61,6 +61,7 @@ def get_docs(
     output = []
     for doc in docs:
         records = query.get_document_records_count_with_approved(doc)
+        words = query.get_document_word_count_with_approved(doc)
         output.append(
             doc_schema.DocumentWithRecordsCount(
                 id=doc.id,
@@ -70,6 +71,8 @@ def get_docs(
                 type=doc.type.value,
                 approved_records_count=records[0],
                 records_count=records[1],
+                approved_word_count=words[0],
+                total_word_count=words[1],
             )
         )
     return output
@@ -82,6 +85,7 @@ def get_doc(
     doc = get_doc_by_id(db, doc_id)
     query = GenericDocsQuery(db)
     records = query.get_document_records_count_with_approved(doc)
+    words = query.get_document_word_count_with_approved(doc)
     return doc_schema.DocumentWithRecordsCount(
         id=doc.id,
         name=doc.name,
@@ -90,6 +94,8 @@ def get_doc(
         type=doc.type.value,
         approved_records_count=records[0],
         records_count=records[1],
+        approved_word_count=words[0],
+        total_word_count=words[1],
     )
 
 

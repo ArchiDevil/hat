@@ -24,6 +24,7 @@ from app.formats.txt import TxtSegment, extract_txt_content
 from app.formats.xliff import XliffSegment, extract_xliff_content
 from app.glossary.models import GlossaryRecord
 from app.glossary.query import GlossaryQuery
+from app.linguistic.word_count import count_words
 from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemoryRecord
@@ -305,6 +306,7 @@ def create_doc_segments(
             target=segment.original_segment.translation or "",
             approved=segment.approved,
             target_source=segment.segment_source,
+            word_count=count_words(segment.original_segment.original),
         )
         for segment in segments
     ]

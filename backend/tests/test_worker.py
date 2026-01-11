@@ -124,6 +124,7 @@ def test_process_task_sets_xliff_records(session: Session):
         assert record.target == "Translation"
         assert record.target_source == RecordSource.translation_memory
         assert not record.approved
+        assert record.word_count == 2
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
@@ -136,6 +137,7 @@ def test_process_task_sets_xliff_records(session: Session):
         assert record.target == ""
         assert record.target_source is None
         assert not record.approved
+        assert record.word_count == 2
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
@@ -148,6 +150,7 @@ def test_process_task_sets_xliff_records(session: Session):
         assert record.target == "Региональные эффекты"
         assert record.target_source is None
         assert record.approved
+        assert record.word_count == 2
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
@@ -160,6 +163,7 @@ def test_process_task_sets_xliff_records(session: Session):
         assert record.target == "123456789"
         assert record.target_source == RecordSource.full_match
         assert record.approved
+        assert record.word_count == 1
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
@@ -172,6 +176,7 @@ def test_process_task_sets_xliff_records(session: Session):
         assert record.target == "Глоссарный перевод"
         assert record.target_source == RecordSource.glossary
         assert record.approved
+        assert record.word_count == 2
         xliff_record = (
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
@@ -223,6 +228,7 @@ def test_process_task_sets_txt_records(session: Session):
             == "Soon after the characters enter Camp Greenbriar, read or paraphrase the following text:"
         )
         assert not record.target
+        assert record.word_count == 13
         assert s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 0
 
         record = doc.records[1]
@@ -231,6 +237,7 @@ def test_process_task_sets_txt_records(session: Session):
             == "“Hello, travelers!” calls an energetic giant sloth wearing a bracelet of claws and feathers."
         )
         assert not record.target
+        assert record.word_count == 14
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 91
             if crlf
@@ -243,6 +250,7 @@ def test_process_task_sets_txt_records(session: Session):
             == "The creature dangles from a nearby tree and waves a three-clawed paw."
         )
         assert not record.target
+        assert record.word_count == 12
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 184
             if crlf
@@ -252,6 +260,7 @@ def test_process_task_sets_txt_records(session: Session):
         record = doc.records[3]
         assert record.source == "“Fresh faces are always welcome in Camp Greenbriar!”"
         assert not record.target
+        assert record.word_count == 8
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 254
             if crlf
@@ -262,6 +271,7 @@ def test_process_task_sets_txt_records(session: Session):
         assert record.source == "The sloth is named Razak."
         assert record.target == "Translation"
         assert record.target_source == RecordSource.translation_memory
+        assert record.word_count == 5
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 310
             if crlf
@@ -274,6 +284,7 @@ def test_process_task_sets_txt_records(session: Session):
             == "He uses black bear stat block, with the following adjustments:"
         )
         assert not record.target
+        assert record.word_count == 10
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 336
             if crlf

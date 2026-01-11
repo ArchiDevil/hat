@@ -88,6 +88,22 @@ class GenericDocsQuery:
         result = self.__db.execute(stmt).one()
         return result[0], result[1]
 
+    def get_document_word_count_with_approved(self, doc: Document) -> tuple[int, int]:
+        """
+        Returns tuple of (approved_word_count, total_word_count) for a document.
+        """
+        stmt = select(
+            func.sum(
+                case(
+                    (DocumentRecord.approved.is_(True), DocumentRecord.word_count),
+                    else_=0,
+                )
+            ),
+            func.sum(DocumentRecord.word_count),
+        ).where(DocumentRecord.document_id == doc.id)
+        result = self.__db.execute(stmt).one()
+        return result[0] or 0, result[1] or 0
+
     def get_document_records_count_filtered(
         self, doc: Document, filters: DocumentRecordFilter | None = None
     ) -> int:
