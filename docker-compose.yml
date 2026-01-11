@@ -57,6 +57,8 @@ services:
         condition: service_healthy
         restart: true
     stop_signal: SIGINT
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   backend:
     build:
