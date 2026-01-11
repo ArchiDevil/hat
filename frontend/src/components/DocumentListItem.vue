@@ -27,7 +27,12 @@ const classes = computed(() => {
 })
 
 const progressBarTitle = computed(() => {
-  return `Segments: ${props.document.approved_records_count}/${props.document.records_count}`
+  return `Words: ${props.document.approved_word_count}/${props.document.total_word_count}`
+})
+
+const progressValue = computed(() => {
+  if (props.document.total_word_count === 0) return 0
+  return (props.document.approved_word_count / props.document.total_word_count) * 100
 })
 
 const busy = ref(false)
@@ -74,7 +79,7 @@ const deleteFile = async () => {
     </div>
     <ProgressBar
       class="w-24 h-2 self-center"
-      :value="(document.approved_records_count / document.records_count) * 100"
+      :value="progressValue"
       :show-value="false"
       :title="progressBarTitle"
     />

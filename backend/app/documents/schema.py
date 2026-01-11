@@ -23,6 +23,8 @@ class Document(Identified):
 class DocumentWithRecordsCount(Document):
     approved_records_count: int
     records_count: int
+    approved_word_count: int
+    total_word_count: int
 
 
 class DocumentRecord(Identified):

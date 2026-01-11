@@ -10,4 +10,6 @@ export interface DocumentWithRecordsCount {
   type: string
   approved_records_count: number
   records_count: number
+  approved_word_count: number
+  total_word_count: number
 }

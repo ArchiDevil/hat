@@ -38,7 +38,11 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
                     type=DocumentType.txt,
                     processing_status="pending",
                     records=[
-                        DocumentRecord(source="Regional Effects", target="Translation")
+                        DocumentRecord(
+                            source="Regional Effects",
+                            target="Translation",
+                            word_count=2,
+                        )
                     ],
                     created_by=1,
                 ),
@@ -63,6 +67,8 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
             "type": "txt",
             "approved_records_count": 0,
             "records_count": 1,
+            "approved_word_count": 0,
+            "total_word_count": 2,
         },
         {
             "id": 2,
@@ -72,6 +78,8 @@ def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
             "type": "xliff",
             "approved_records_count": 0,
             "records_count": 0,
+            "approved_word_count": 0,
+            "total_word_count": 0,
         },
     ]
 
@@ -82,10 +90,12 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
             DocumentRecord(
                 source="Regional Effects",
                 target="Translation",
+                word_count=2,
             ),
             DocumentRecord(
                 source="User Interface",
                 target="UI",
+                word_count=2,
             ),
         ]
         s.add(
@@ -109,6 +119,8 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         "approved_records_count": 0,
         "records_count": 2,
         "type": "txt",
+        "approved_word_count": 0,
+        "total_word_count": 4,
     }
 
 

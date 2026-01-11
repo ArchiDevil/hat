@@ -72,8 +72,8 @@ const documentDownloadLink = computed(() => {
 
 const translationProgress = computed(() => {
   const doc = document.value
-  if (!doc) return 0
-  return (doc.approved_records_count / doc.records_count) * 100
+  if (!doc || doc.total_word_count === 0) return 0
+  return (doc.approved_word_count / doc.total_word_count) * 100
 })
 
 const updatePage = async (event: PageState) => {
@@ -229,8 +229,8 @@ const showAddTermModal = ref(false)
           :value="translationProgress"
           :show-value="false"
         />
-        {{ document?.approved_records_count }} /
-        {{ document?.records_count }}
+        {{ document?.approved_word_count }} /
+        {{ document?.total_word_count }} words
         <Link
           :href="documentDownloadLink"
           class="inline-block"

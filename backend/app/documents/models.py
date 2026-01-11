@@ -113,6 +113,7 @@ class DocumentRecord(Base):
     target: Mapped[str] = mapped_column()
     approved: Mapped[bool] = mapped_column(default=False)
     target_source: Mapped[RecordSource] = mapped_column(nullable=True)
+    word_count: Mapped[int] = mapped_column(default=0)
 
     document: Mapped["Document"] = relationship(back_populates="records")
     comments: Mapped[list["Comment"]] = relationship(

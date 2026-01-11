@@ -17,6 +17,7 @@ import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
 import {DocumentRecordUpdate} from '../src/client/schemas/DocumentRecordUpdate'
 import {CommentResponse} from '../src/client/schemas/CommentResponse'
 import {DocumentRecord} from '../src/client/schemas/DocumentRecord'
+import {DocumentWithRecordsCount} from '../src/client/schemas/DocumentWithRecordsCount'
 
 const segmentComments: CommentResponse[] = [
   {
@@ -228,12 +229,14 @@ const recordsData = {
   records: segments,
 }
 
-const docs = [
+const docs: DocumentWithRecordsCount[] = [
   {
     id: 1,
     created_by: 12,
     records_count: segments.length,
     approved_records_count: segments.filter(({approved}) => approved).length,
+    total_word_count: 20,
+    approved_word_count: 4,
     name: 'Some document',
     status: 'done' as DocumentStatus,
     type: 'XLIFF',
