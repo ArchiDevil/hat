@@ -14,25 +14,30 @@ router = APIRouter(
 )
 
 
+def get_service(db: Annotated[Session, Depends(get_db)]):
+    return UserService(db)
+
+
 @router.get("/")
-def get_users(db: Annotated[Session, Depends(get_db)]) -> list[models.User]:
-    service = UserService(db)
+def get_users(
+    service: Annotated[UserService, Depends(get_service)],
+) -> list[models.User]:
     return service.get_users()
 
 
 @router.post("/")
 def create_user(
-    data: models.UserToCreate, db: Annotated[Session, Depends(get_db)]
+    data: models.UserToCreate, service: Annotated[UserService, Depends(get_service)]
 ) -> models.User:
-    service = UserService(db)
     return service.create_user(data)
 
 
 @router.post("/{user_id}")
 def update_user(
-    user_id: int, data: models.UserFields, db: Annotated[Session, Depends(get_db)]
+    user_id: int,
+    data: models.UserFields,
+    service: Annotated[UserService, Depends(get_service)],
 ) -> models.StatusMessage:
-    service = UserService(db)
     try:
         return service.update_user(user_id, data)
     except EntityNotFound as e:

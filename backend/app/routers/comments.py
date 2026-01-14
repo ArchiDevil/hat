@@ -16,15 +16,19 @@ router = APIRouter(
 )
 
 
+def get_service(db: Annotated[Session, Depends(get_db)]):
+    return CommentService(db)
+
+
 @router.put("/{comment_id}")
 def update_comment(
     comment_id: int,
     comment_data: CommentUpdate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[int, Depends(get_current_user_id)],
+    service: Annotated[CommentService, Depends(get_service)],
 ) -> CommentResponse:
     """Update an existing comment"""
-    service = CommentService(db)
     user = db.query(schema.User).filter_by(id=current_user).one()
     try:
         return service.update_comment(
@@ -41,9 +45,9 @@ def delete_comment(
     comment_id: int,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[int, Depends(get_current_user_id)],
+    service: Annotated[CommentService, Depends(get_service)],
 ) -> StatusMessage:
     """Delete a comment"""
-    service = CommentService(db)
     user = db.query(schema.User).filter_by(id=current_user).one()
     try:
         return service.delete_comment(

@@ -16,19 +16,21 @@ router = APIRouter(
 )
 
 
+def get_service(db: Annotated[Session, Depends(get_db)]):
+    return TranslationMemoryService(db)
+
+
 @router.get("/")
 def get_memories(
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[TranslationMemoryService, Depends(get_service)],
 ) -> list[schema.TranslationMemory]:
-    service = TranslationMemoryService(db)
     return service.get_memories()
 
 
 @router.get("/{tm_id}")
 def get_memory(
-    tm_id: int, db: Annotated[Session, Depends(get_db)]
+    tm_id: int, service: Annotated[TranslationMemoryService, Depends(get_service)]
 ) -> schema.TranslationMemoryWithRecordsCount:
-    service = TranslationMemoryService(db)
     try:
         return service.get_memory(tm_id)
     except EntityNotFound as e:
@@ -38,11 +40,10 @@ def get_memory(
 @router.get("/{tm_id}/records")
 def get_memory_records(
     tm_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[TranslationMemoryService, Depends(get_service)],
     page: Annotated[int | None, Query(ge=0)] = None,
     query: Annotated[str | None, Query()] = None,
 ) -> schema.TranslationMemoryListResponse:
-    service = TranslationMemoryService(db)
     if not page:
         page = 0
     try:
@@ -54,10 +55,9 @@ def get_memory_records(
 @router.get("/{tm_id}/records/similar")
 def get_memory_records_similar(
     tm_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[TranslationMemoryService, Depends(get_service)],
     query: Annotated[str, Query()],
 ) -> schema.TranslationMemoryListSimilarResponse:
-    service = TranslationMemoryService(db)
     try:
         return service.get_memory_records_similar(tm_id, query)
     except EntityNotFound as e:
@@ -67,10 +67,9 @@ def get_memory_records_similar(
 @router.post("/upload")
 async def create_memory_from_file(
     file: Annotated[UploadFile, File()],
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[TranslationMemoryService, Depends(get_service)],
     current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> schema.TranslationMemory:
-    service = TranslationMemoryService(db)
     return await service.create_memory_from_file(
         file.filename, await file.read(), current_user
     )
@@ -83,16 +82,16 @@ async def create_memory_from_file(
 )
 def create_translation_memory(
     settings: schema.TranslationMemoryCreationSettings,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[TranslationMemoryService, Depends(get_service)],
     current_user: Annotated[int, Depends(get_current_user_id)],
 ):
-    service = TranslationMemoryService(db)
     return service.create_memory(settings.name, current_user)
 
 
 @router.delete("/{tm_id}")
-def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
-    service = TranslationMemoryService(db)
+def delete_memory(
+    tm_id: int, service: Annotated[TranslationMemoryService, Depends(get_service)]
+) -> StatusMessage:
     try:
         return service.delete_memory(tm_id)
     except EntityNotFound as e:
@@ -109,8 +108,9 @@ def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> Status
         }
     },
 )
-def download_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]):
-    service = TranslationMemoryService(db)
+def download_memory(
+    tm_id: int, service: Annotated[TranslationMemoryService, Depends(get_service)]
+):
     try:
         data = service.download_memory(tm_id)
         return StreamingResponse(

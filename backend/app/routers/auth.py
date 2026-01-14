@@ -1,7 +1,9 @@
 from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from itsdangerous import URLSafeTimedSerializer
+from sqlalchemy.orm import Session
 
 from app import models
 from app.base.exceptions import BusinessLogicError, UnauthorizedAccess
@@ -13,13 +15,16 @@ from app.user.depends import has_user_role
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def get_service(db: Annotated[Session, Depends(get_db)]):
+    return AuthService(db)
+
+
 @router.post("/login")
 def login(
     data: models.AuthFields,
     response: Response,
-    db=Depends(get_db),
+    service: Annotated[AuthService, Depends(get_service)],
 ) -> models.StatusMessage:
-    service = AuthService(db)
     try:
         user = service.login(data)
         # Set session cookie in router (HTTP-specific concern)

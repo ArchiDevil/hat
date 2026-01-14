@@ -33,14 +33,17 @@ router = APIRouter(
 )
 
 
+def get_service(db: Annotated[Session, Depends(get_db)]):
+    return GlossaryService(db)
+
+
 @router.get(
     "/",
     description="Get a glossary list",
     response_model=list[GlossaryResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_glossary(db: Annotated[Session, Depends(get_db)]):
-    service = GlossaryService(db)
+def list_glossary(service: Annotated[GlossaryService, Depends(get_service)]):
     return service.list_glossaries()
 
 
@@ -60,8 +63,9 @@ def list_glossary(db: Annotated[Session, Depends(get_db)]):
         },
     },
 )
-def retrieve_glossary(glossary_id: int, db: Annotated[Session, Depends(get_db)]):
-    service = GlossaryService(db)
+def retrieve_glossary(
+    glossary_id: int, service: Annotated[GlossaryService, Depends(get_service)]
+):
     try:
         return service.get_glossary(glossary_id)
     except EntityNotFound as e:
@@ -80,9 +84,8 @@ def retrieve_glossary(glossary_id: int, db: Annotated[Session, Depends(get_db)])
 def create_glossary(
     glossary: GlossarySchema,
     user_id: Annotated[int, Depends(get_current_user_id)],
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[GlossaryService, Depends(get_service)],
 ):
-    service = GlossaryService(db)
     return service.create_glossary(
         data=glossary,
         processing_status=ProcessingStatuses.DONE,
@@ -107,9 +110,10 @@ def create_glossary(
     },
 )
 def update_glossary(
-    glossary_id: int, glossary: GlossarySchema, db: Annotated[Session, Depends(get_db)]
+    glossary_id: int,
+    glossary: GlossarySchema,
+    service: Annotated[GlossaryService, Depends(get_service)],
 ):
-    service = GlossaryService(db)
     try:
         return service.update_glossary(glossary_id, glossary)
     except EntityNotFound as e:
@@ -135,8 +139,9 @@ def update_glossary(
         },
     },
 )
-def delete_glossary(glossary_id: int, db: Annotated[Session, Depends(get_db)]):
-    service = GlossaryService(db)
+def delete_glossary(
+    glossary_id: int, service: Annotated[GlossaryService, Depends(get_service)]
+):
     try:
         return service.delete_glossary(glossary_id)
     except EntityNotFound as e:
@@ -154,7 +159,7 @@ def delete_glossary(glossary_id: int, db: Annotated[Session, Depends(get_db)]):
 )
 def list_records(
     glossary_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[GlossaryService, Depends(get_service)],
     page: Annotated[int | None, Query(ge=0)] = None,
     search: Annotated[str | None, Query()] = None,
 ):
@@ -162,7 +167,6 @@ def list_records(
     if not page:
         page = 0
 
-    service = GlossaryService(db)
     try:
         return service.list_glossary_records(glossary_id, page, page_records, search)
     except EntityNotFound as e:
@@ -182,9 +186,8 @@ def create_glossary_record(
     glossary_id: int,
     record: GlossaryRecordCreate,
     user_id: Annotated[int, Depends(get_current_user_id)],
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[GlossaryService, Depends(get_service)],
 ):
-    service = GlossaryService(db)
     try:
         return service.create_glossary_record(glossary_id, record, user_id)
     except EntityNotFound as e:
@@ -213,9 +216,8 @@ def create_glossary_record(
 def update_glossary_record(
     record_id: int,
     record: GlossaryRecordUpdate,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[GlossaryService, Depends(get_service)],
 ):
-    service = GlossaryService(db)
     try:
         return service.update_glossary_record(record_id, record)
     except EntityNotFound as e:
@@ -241,8 +243,9 @@ def update_glossary_record(
         },
     },
 )
-def delete_glossary_record(record_id: int, db: Annotated[Session, Depends(get_db)]):
-    service = GlossaryService(db)
+def delete_glossary_record(
+    record_id: int, service: Annotated[GlossaryService, Depends(get_service)]
+):
     try:
         return service.delete_glossary_record(record_id)
     except EntityNotFound as e:
@@ -264,8 +267,8 @@ def create_glossary_from_file(
     background_tasks: BackgroundTasks,
     file: UploadFile,
     db: Annotated[Session, Depends(get_db)],
+    service: Annotated[GlossaryService, Depends(get_service)],
 ):
-    service = GlossaryService(db)
     sheet, glossary = service.create_glossary_from_file(
         file=file, user_id=user_id, glossary_name=glossary_name
     )

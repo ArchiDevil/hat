@@ -23,19 +23,22 @@ router = APIRouter(
 )
 
 
+def get_service(db: Annotated[Session, Depends(get_db)]):
+    return DocumentService(db)
+
+
 @router.get("/")
 def get_docs(
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> list[doc_schema.DocumentWithRecordsCount]:
-    service = DocumentService(db)
     return service.get_documents()
 
 
 @router.get("/{doc_id}")
 def get_doc(
-    doc_id: int, db: Annotated[Session, Depends(get_db)]
+    doc_id: int,
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> doc_schema.DocumentWithRecordsCount:
-    service = DocumentService(db)
     try:
         return service.get_document(doc_id)
     except EntityNotFound as e:
@@ -45,7 +48,7 @@ def get_doc(
 @router.get("/{doc_id}/records")
 def get_doc_records(
     doc_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
     page: Annotated[int | None, Query(ge=0)] = None,
     source: Annotated[
         str | None, Query(description="Filter by source text (contains search)")
@@ -63,7 +66,6 @@ def get_doc_records(
             source_filter=source, target_filter=target
         )
 
-    service = DocumentService(db)
     try:
         return service.get_document_records(doc_id, page, filters)
     except EntityNotFound as e:
@@ -73,10 +75,9 @@ def get_doc_records(
 @router.get("/{doc_id}/glossary_search")
 def doc_glossary_search(
     doc_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
     query: Annotated[str, Query()],
 ) -> list[GlossaryRecordSchema]:
-    service = DocumentService(db)
     try:
         return service.doc_glossary_search(doc_id, query)
     except EntityNotFound as e:
@@ -86,10 +87,9 @@ def doc_glossary_search(
 @router.get("/records/{record_id}/comments")
 def get_comments(
     record_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> list[CommentResponse]:
     """Get all comments for a document record"""
-    service = DocumentService(db)
     try:
         return service.get_comments(record_id)
     except EntityNotFound as e:
@@ -100,11 +100,10 @@ def get_comments(
 def create_comment(
     record_id: int,
     comment_data: CommentCreate,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
     current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> CommentResponse:
     """Create a new comment for a document record"""
-    service = DocumentService(db)
     try:
         return service.create_comment(record_id, comment_data, current_user)
     except EntityNotFound as e:
@@ -113,9 +112,9 @@ def create_comment(
 
 @router.get("/records/{record_id}/substitutions")
 def get_record_substitutions(
-    record_id: int, db: Annotated[Session, Depends(get_db)]
+    record_id: int,
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> list[MemorySubstitution]:
-    service = DocumentService(db)
     try:
         return service.get_record_substitutions(record_id)
     except EntityNotFound as e:
@@ -124,9 +123,9 @@ def get_record_substitutions(
 
 @router.get("/records/{record_id}/glossary_records")
 def get_record_glossary_records(
-    record_id: int, db: Annotated[Session, Depends(get_db)]
+    record_id: int,
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> list[GlossaryRecordSchema]:
-    service = DocumentService(db)
     try:
         return service.get_record_glossary_records(record_id)
     except EntityNotFound as e:
@@ -137,9 +136,8 @@ def get_record_glossary_records(
 def update_doc_record(
     record_id: int,
     record: doc_schema.DocumentRecordUpdate,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> doc_schema.DocumentRecordUpdateResponse:
-    service = DocumentService(db)
     try:
         return service.update_record(record_id, record)
     except EntityNotFound as e:
@@ -148,9 +146,9 @@ def update_doc_record(
 
 @router.get("/{doc_id}/memories")
 def get_translation_memories(
-    doc_id: int, db: Annotated[Session, Depends(get_db)]
+    doc_id: int,
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> list[doc_schema.DocTranslationMemory]:
-    service = DocumentService(db)
     try:
         return service.get_translation_memories(doc_id)
     except EntityNotFound as e:
@@ -161,9 +159,8 @@ def get_translation_memories(
 def set_translation_memories(
     doc_id: int,
     settings: doc_schema.DocTranslationMemoryUpdate,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> models.StatusMessage:
-    service = DocumentService(db)
     try:
         return service.set_translation_memories(doc_id, settings)
     except EntityNotFound as e:
@@ -175,10 +172,9 @@ def set_translation_memories(
 @router.get("/{doc_id}/tm/exact")
 def search_tm_exact(
     doc_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
     source: Annotated[str, Query(description="Source text to search for")],
 ) -> TranslationMemoryListResponse:
-    service = DocumentService(db)
     try:
         return service.search_tm_exact(doc_id, source)
     except EntityNotFound as e:
@@ -188,10 +184,9 @@ def search_tm_exact(
 @router.get("/{doc_id}/tm/similar")
 def search_tm_similar(
     doc_id: int,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
     source: Annotated[str, Query(description="Source text to search for")],
 ) -> TranslationMemoryListSimilarResponse:
-    service = DocumentService(db)
     try:
         return service.search_tm_similar(doc_id, source)
     except EntityNotFound as e:
@@ -200,9 +195,9 @@ def search_tm_similar(
 
 @router.get("/{doc_id}/glossaries")
 def get_glossaries(
-    doc_id: int, db: Annotated[Session, Depends(get_db)]
+    doc_id: int,
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> list[doc_schema.DocGlossary]:
-    service = DocumentService(db)
     try:
         return service.get_glossaries(doc_id)
     except EntityNotFound as e:
@@ -213,9 +208,8 @@ def get_glossaries(
 def set_glossaries(
     doc_id: int,
     settings: doc_schema.DocGlossaryUpdate,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> models.StatusMessage:
-    service = DocumentService(db)
     try:
         return service.set_glossaries(doc_id, settings)
     except EntityNotFound as e:
@@ -224,9 +218,9 @@ def set_glossaries(
 
 @router.delete("/{doc_id}")
 def delete_doc(
-    doc_id: int, db: Annotated[Session, Depends(get_db)]
+    doc_id: int,
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> models.StatusMessage:
-    service = DocumentService(db)
     try:
         return service.delete_document(doc_id)
     except EntityNotFound as e:
@@ -236,10 +230,9 @@ def delete_doc(
 @router.post("/")
 async def create_doc(
     file: Annotated[UploadFile, File()],
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
     current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> doc_schema.Document:
-    service = DocumentService(db)
     try:
         return await service.create_document(file, current_user)
     except EntityNotFound as e:
@@ -252,9 +245,8 @@ async def create_doc(
 def process_doc(
     doc_id: int,
     settings: doc_schema.DocumentProcessingSettings,
-    db: Annotated[Session, Depends(get_db)],
+    service: Annotated[DocumentService, Depends(get_service)],
 ) -> models.StatusMessage:
-    service = DocumentService(db)
     try:
         return service.process_document(doc_id, settings)
     except EntityNotFound as e:
@@ -271,8 +263,9 @@ def process_doc(
         }
     },
 )
-def download_doc(doc_id: int, db: Annotated[Session, Depends(get_db)]):
-    service = DocumentService(db)
+def download_doc(
+    doc_id: int, service: Annotated[DocumentService, Depends(get_service)]
+):
     try:
         return service.download_document(doc_id)
     except EntityNotFound as e:
