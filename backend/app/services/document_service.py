@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from fastapi import UploadFile, status
+from fastapi import UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 

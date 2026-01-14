@@ -53,7 +53,9 @@ def list_glossary(db: Annotated[Session, Depends(get_db)]):
         404: {
             "description": "Glossary requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary with id 1 not found"}}
+                "application/json": {
+                    "example": {"detail": "Glossary with id 1 not found"}
+                }
             },
         },
     },
@@ -97,7 +99,9 @@ def create_glossary(
         404: {
             "description": "Glossary requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary with id 1 not found"}}
+                "application/json": {
+                    "example": {"detail": "Glossary with id 1 not found"}
+                }
             },
         },
     },
@@ -124,7 +128,9 @@ def update_glossary(
         404: {
             "description": "Glossary requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary with id 1 not found"}}
+                "application/json": {
+                    "example": {"detail": "Glossary with id 1 not found"}
+                }
             },
         },
     },
@@ -197,7 +203,9 @@ def create_glossary_record(
         404: {
             "description": "Glossary record requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary record with id 1 not found"}}
+                "application/json": {
+                    "example": {"detail": "Glossary record with id 1 not found"}
+                }
             },
         },
     },
@@ -226,7 +234,9 @@ def update_glossary_record(
         404: {
             "description": "Glossary record requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary record with id 1 not found"}}
+                "application/json": {
+                    "example": {"detail": "Glossary record with id 1 not found"}
+                }
             },
         },
     },

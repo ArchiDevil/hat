@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from app.base.exceptions import EntityNotFound
 from app.db import get_db
 from app.models import StatusMessage
-from app.translation_memory import schema
 from app.services import TranslationMemoryService
+from app.translation_memory import schema
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(

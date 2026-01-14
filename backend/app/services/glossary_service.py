@@ -1,12 +1,11 @@
 """Glossary service for glossary and glossary record operations."""
 
-from datetime import datetime
 import io
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional, Self
 
-
 import openpyxl
-from dataclasses import dataclass
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 

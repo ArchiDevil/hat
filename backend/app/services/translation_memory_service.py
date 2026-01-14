@@ -5,9 +5,9 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.base.exceptions import EntityNotFound
 from app.formats.tmx import TmxData, TmxSegment, extract_tmx_content
 from app.models import StatusMessage
-from app.base.exceptions import EntityNotFound
 from app.translation_memory import models, schema
 from app.translation_memory.query import TranslationMemoryQuery
 

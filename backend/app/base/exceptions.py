@@ -3,6 +3,7 @@
 
 class BaseQueryException(Exception):
     """Base exception for query layer errors."""
+
     pass
 
 
