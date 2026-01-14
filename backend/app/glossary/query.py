@@ -120,6 +120,10 @@ class GlossaryQuery:
         record: GlossaryRecordCreate,
         glossary_id: int,
     ) -> GlossaryRecord:
+        # Check if glossary exists first
+        if not self.db.query(Glossary).filter(Glossary.id == glossary_id).first():
+            raise NotFoundGlossaryExc()
+
         glossary_record = GlossaryRecord(
             glossary_id=glossary_id,
             created_by=user_id,

@@ -11,20 +11,9 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
+from app.base.exceptions import EntityNotFound
 from app.db import get_db
-from app.glossary.controllers import (
-    create_glossary_from_file_controller,
-    create_glossary_record_controller,
-    delete_glossary_controller,
-    delete_glossary_record_controller,
-    list_glossary_controller,
-    list_glossary_records_controller,
-    retrieve_glossary_controller,
-    update_glossary_controller,
-    update_glossary_record_controller,
-)
 from app.glossary.models import ProcessingStatuses
-from app.glossary.query import GlossaryQuery
 from app.glossary.schema import (
     GlossaryLoadFileResponse,
     GlossaryRecordCreate,
@@ -36,6 +25,7 @@ from app.glossary.schema import (
 )
 from app.glossary.tasks import create_glossary_from_file_tasks
 from app.models import StatusMessage
+from app.services import GlossaryService
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -45,12 +35,13 @@ router = APIRouter(
 
 @router.get(
     "/",
-    description="Get list glossary",
+    description="Get a glossary list",
     response_model=list[GlossaryResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_glossary(db: Session = Depends(get_db)):
-    return list_glossary_controller(db)
+def list_glossary(db: Annotated[Session, Depends(get_db)]):
+    service = GlossaryService(db)
+    return service.list_glossaries()
 
 
 @router.get(
@@ -62,18 +53,20 @@ def list_glossary(db: Session = Depends(get_db)):
         404: {
             "description": "Glossary requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary id: 1, not found"}}
+                "application/json": {"example": {"detail": "Glossary with id 1 not found"}}
             },
         },
     },
 )
-def retrieve_glossary(glossary_id: int, db: Session = Depends(get_db)):
-    if response := retrieve_glossary_controller(glossary_id, db):
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary id:{glossary_id}, not found",
-    )
+def retrieve_glossary(glossary_id: int, db: Annotated[Session, Depends(get_db)]):
+    service = GlossaryService(db)
+    try:
+        return service.get_glossary(glossary_id)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.post(
@@ -84,11 +77,12 @@ def retrieve_glossary(glossary_id: int, db: Session = Depends(get_db)):
 )
 def create_glossary(
     glossary: GlossarySchema,
-    user_id: int = Depends(get_current_user_id),
-    db: Session = Depends(get_db),
+    user_id: Annotated[int, Depends(get_current_user_id)],
+    db: Annotated[Session, Depends(get_db)],
 ):
-    return GlossaryQuery(db).create_glossary(
-        glossary=glossary,
+    service = GlossaryService(db)
+    return service.create_glossary(
+        data=glossary,
         processing_status=ProcessingStatuses.DONE,
         user_id=user_id,
     )
@@ -103,22 +97,22 @@ def create_glossary(
         404: {
             "description": "Glossary requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary id: 1, not found"}}
+                "application/json": {"example": {"detail": "Glossary with id 1 not found"}}
             },
         },
     },
 )
 def update_glossary(
-    glossary_id: int, glossary: GlossarySchema, db: Session = Depends(get_db)
+    glossary_id: int, glossary: GlossarySchema, db: Annotated[Session, Depends(get_db)]
 ):
-    if response := update_glossary_controller(
-        db=db, glossary_id=glossary_id, glossary=glossary
-    ):
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary id:{glossary_id}, not found",
-    )
+    service = GlossaryService(db)
+    try:
+        return service.update_glossary(glossary_id, glossary)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.delete(
@@ -130,18 +124,20 @@ def update_glossary(
         404: {
             "description": "Glossary requested by id",
             "content": {
-                "application/json": {"example": {"detail": "Glossary id: 1, not found"}}
+                "application/json": {"example": {"detail": "Glossary with id 1 not found"}}
             },
         },
     },
 )
-def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
-    if response := delete_glossary_controller(glossary_id, db):
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary id:{glossary_id}, not found",
-    )
+def delete_glossary(glossary_id: int, db: Annotated[Session, Depends(get_db)]):
+    service = GlossaryService(db)
+    try:
+        return service.delete_glossary(glossary_id)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.get(
@@ -152,7 +148,7 @@ def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
 )
 def list_records(
     glossary_id: int,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
     page: Annotated[int | None, Query(ge=0)] = None,
     search: Annotated[str | None, Query()] = None,
 ):
@@ -160,10 +156,14 @@ def list_records(
     if not page:
         page = 0
 
-    records, total_rows = list_glossary_records_controller(
-        db, glossary_id, page, page_records, search
-    )
-    return GlossaryRecordResponse(records=records, total_rows=total_rows)
+    service = GlossaryService(db)
+    try:
+        return service.list_glossary_records(glossary_id, page, page_records, search)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.post(
@@ -175,15 +175,17 @@ def list_records(
 def create_glossary_record(
     glossary_id: int,
     record: GlossaryRecordCreate,
-    user_id: int = Depends(get_current_user_id),
-    db: Session = Depends(get_db),
+    user_id: Annotated[int, Depends(get_current_user_id)],
+    db: Annotated[Session, Depends(get_db)],
 ):
-    if response := create_glossary_record_controller(user_id, glossary_id, record, db):
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary id:{glossary_id}, not found",
-    )
+    service = GlossaryService(db)
+    try:
+        return service.create_glossary_record(glossary_id, record, user_id)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.put(
@@ -195,22 +197,24 @@ def create_glossary_record(
         404: {
             "description": "Glossary record requested by id",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Glossary record id: 1, not found"}
-                }
+                "application/json": {"example": {"detail": "Glossary record with id 1 not found"}}
             },
         },
     },
 )
 def update_glossary_record(
-    record_id: int, record: GlossaryRecordUpdate, db: Session = Depends(get_db)
+    record_id: int,
+    record: GlossaryRecordUpdate,
+    db: Annotated[Session, Depends(get_db)],
 ):
-    if response := update_glossary_record_controller(record_id, record, db):
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary record id:{record_id}, not found",
-    )
+    service = GlossaryService(db)
+    try:
+        return service.update_glossary_record(record_id, record)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.delete(
@@ -222,20 +226,20 @@ def update_glossary_record(
         404: {
             "description": "Glossary record requested by id",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Glossary record id: 1, not found"}
-                }
+                "application/json": {"example": {"detail": "Glossary record with id 1 not found"}}
             },
         },
     },
 )
-def delete_glossary_record(record_id: int, db: Session = Depends(get_db)):
-    if response := delete_glossary_record_controller(record_id, db):
-        return response
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Glossary record id:{record_id}, not found",
-    )
+def delete_glossary_record(record_id: int, db: Annotated[Session, Depends(get_db)]):
+    service = GlossaryService(db)
+    try:
+        return service.delete_glossary_record(record_id)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.post(
@@ -249,10 +253,11 @@ def create_glossary_from_file(
     glossary_name: str,
     background_tasks: BackgroundTasks,
     file: UploadFile,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
-    sheet, glossary = create_glossary_from_file_controller(
-        db=db, file=file, user_id=user_id, glossary_name=glossary_name
+    service = GlossaryService(db)
+    sheet, glossary = service.create_glossary_from_file(
+        file=file, user_id=user_id, glossary_name=glossary_name
     )
     background_tasks.add_task(
         create_glossary_from_file_tasks,
