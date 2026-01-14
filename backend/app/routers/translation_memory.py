@@ -1,14 +1,14 @@
-from typing import Annotated, Final
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.base.exceptions import EntityNotFound
 from app.db import get_db
-from app.formats.tmx import TmxData, TmxSegment, extract_tmx_content
 from app.models import StatusMessage
-from app.translation_memory import models, schema
-from app.translation_memory.query import TranslationMemoryQuery
+from app.services import TranslationMemoryService
+from app.translation_memory import schema
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -16,36 +16,23 @@ router = APIRouter(
 )
 
 
-def get_memory_by_id(db: Session, memory_id: int):
-    doc = TranslationMemoryQuery(db).get_memory(memory_id)
-    if not doc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found"
-        )
-    return doc
-
-
 @router.get("/")
 def get_memories(
     db: Annotated[Session, Depends(get_db)],
 ) -> list[schema.TranslationMemory]:
-    return [
-        schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
-        for doc in TranslationMemoryQuery(db).get_memories()
-    ]
+    service = TranslationMemoryService(db)
+    return service.get_memories()
 
 
 @router.get("/{tm_id}")
 def get_memory(
     tm_id: int, db: Annotated[Session, Depends(get_db)]
 ) -> schema.TranslationMemoryWithRecordsCount:
-    doc = get_memory_by_id(db, tm_id)
-    return schema.TranslationMemoryWithRecordsCount(
-        id=doc.id,
-        name=doc.name,
-        created_by=doc.created_by,
-        records_count=TranslationMemoryQuery(db).get_memory_records_count(tm_id),
-    )
+    service = TranslationMemoryService(db)
+    try:
+        return service.get_memory(tm_id)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get("/{tm_id}/records")
@@ -55,19 +42,13 @@ def get_memory_records(
     page: Annotated[int | None, Query(ge=0)] = None,
     query: Annotated[str | None, Query()] = None,
 ) -> schema.TranslationMemoryListResponse:
-    page_records: Final = 100
+    service = TranslationMemoryService(db)
     if not page:
         page = 0
-
-    get_memory_by_id(db, tm_id)
-    records, count = TranslationMemoryQuery(db).get_memory_records_paged(
-        tm_id, page, page_records, query
-    )
-    return schema.TranslationMemoryListResponse(
-        records=records,
-        page=page,
-        total_records=count,
-    )
+    try:
+        return service.get_memory_records(tm_id, page, query)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get("/{tm_id}/records/similar")
@@ -76,18 +57,11 @@ def get_memory_records_similar(
     db: Annotated[Session, Depends(get_db)],
     query: Annotated[str, Query()],
 ) -> schema.TranslationMemoryListSimilarResponse:
-    page_records: Final = 20
-
-    get_memory_by_id(db, tm_id)
-    records = TranslationMemoryQuery(db).get_memory_records_paged_similar(
-        tm_id, page_records, query
-    )
-    return schema.TranslationMemoryListSimilarResponse(
-        records=records,
-        page=0,
-        # this is incorrect in general case, but for 20 records is fine
-        total_records=len(records),
-    )
+    service = TranslationMemoryService(db)
+    try:
+        return service.get_memory_records_similar(tm_id, query)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/upload")
@@ -96,25 +70,10 @@ async def create_memory_from_file(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> schema.TranslationMemory:
-    name = file.filename
-    tm_data = await file.read()
-    segments = extract_tmx_content(tm_data)
-
-    doc = TranslationMemoryQuery(db).add_memory(
-        name or "",
-        current_user,
-        [
-            models.TranslationMemoryRecord(
-                source=segment.original,
-                target=segment.translation,
-                creation_date=segment.creation_date,
-                change_date=segment.change_date,
-            )
-            for segment in segments
-        ],
+    service = TranslationMemoryService(db)
+    return await service.create_memory_from_file(
+        file.filename, await file.read(), current_user
     )
-
-    return schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
 
 
 @router.post(
@@ -127,14 +86,17 @@ def create_translation_memory(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[int, Depends(get_current_user_id)],
 ):
-    doc = TranslationMemoryQuery(db).add_memory(settings.name, current_user, [])
-    return schema.TranslationMemory(id=doc.id, name=doc.name, created_by=doc.created_by)
+    service = TranslationMemoryService(db)
+    return service.create_memory(settings.name, current_user)
 
 
 @router.delete("/{tm_id}")
 def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> StatusMessage:
-    TranslationMemoryQuery(db).delete_memory(get_memory_by_id(db, tm_id))
-    return StatusMessage(message="Deleted")
+    service = TranslationMemoryService(db)
+    try:
+        return service.delete_memory(tm_id)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.get(
@@ -148,20 +110,13 @@ def delete_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]) -> Status
     },
 )
 def download_memory(tm_id: int, db: Annotated[Session, Depends(get_db)]):
-    memory = get_memory_by_id(db, tm_id)
-    data = TmxData(
-        [
-            TmxSegment(
-                original=record.source,
-                translation=record.target,
-                creation_date=record.creation_date,
-                change_date=record.change_date,
-            )
-            for record in memory.records
-        ]
-    )
-    return StreamingResponse(
-        data.write(),
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{tm_id}.tmx"'},
-    )
+    service = TranslationMemoryService(db)
+    try:
+        data = service.download_memory(tm_id)
+        return StreamingResponse(
+            data.content,
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{data.filename}"'},
+        )
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

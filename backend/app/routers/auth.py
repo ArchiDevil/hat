@@ -2,11 +2,11 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from itsdangerous import URLSafeTimedSerializer
-from sqlalchemy.orm import Session
 
-from app import models, schema
+from app import models
+from app.base.exceptions import BusinessLogicError, UnauthorizedAccess
 from app.db import get_db
-from app.security import verify_password
+from app.services import AuthService
 from app.settings import settings
 from app.user.depends import has_user_role
 
@@ -17,32 +17,30 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def login(
     data: models.AuthFields,
     response: Response,
-    db: Session = Depends(get_db),
+    db=Depends(get_db),
 ) -> models.StatusMessage:
-    if not data.password:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    user = db.query(schema.User).filter_by(email=data.email).first()
-
-    if not user or not verify_password(data.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
-    if user.disabled:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-
-    serializer = URLSafeTimedSerializer(secret_key=settings.secret_key)
-    response.set_cookie(
-        "session",
-        serializer.dumps({"user_id": user.id}),
-        secure=bool(settings.domain_name),
-        domain=settings.domain_name,
-        httponly=True,
-        expires=datetime.now(UTC) + timedelta(days=21) if data.remember else None,
-    )
-    return models.StatusMessage(message="Logged in")
+    service = AuthService(db)
+    try:
+        user = service.login(data)
+        # Set session cookie in router (HTTP-specific concern)
+        serializer = URLSafeTimedSerializer(secret_key=settings.secret_key)
+        response.set_cookie(
+            "session",
+            serializer.dumps({"user_id": user.id}),
+            secure=bool(settings.domain_name),
+            domain=settings.domain_name,
+            httponly=True,
+            expires=datetime.now(UTC) + timedelta(days=21) if data.remember else None,
+        )
+        return models.StatusMessage(message="Logged in")
+    except UnauthorizedAccess as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except BusinessLogicError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 @router.post("/logout", dependencies=[Depends(has_user_role)])
 def logout(response: Response) -> models.StatusMessage:
+    # Logout doesn't need database access, just clear the cookie
     response.delete_cookie("session")
     return models.StatusMessage(message="Logged out")

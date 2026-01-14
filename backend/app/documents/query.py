@@ -237,6 +237,7 @@ class GenericDocsQuery:
                 repeated_record.target = data.target
                 repeated_record.approved = data.approved
 
+        # this should be better put on the service level, not here
         if data.approved is True:
             bound_tm = None
             for memory in record.document.memory_associations:

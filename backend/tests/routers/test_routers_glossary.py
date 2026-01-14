@@ -378,3 +378,62 @@ def test_create_glossary_record(user_logged_client: TestClient, session: Session
     assert response_json["glossary_id"] == glossary_id
 
     assert repo.get_glossary_record_by_id(response_json["id"]).stemmed_source == "test"
+
+
+def test_get_glossary_returns_404_for_nonexistent_glossary(user_logged_client: TestClient):
+    """GET /glossary/{glossary_id}/ - 404 for non-existent glossary"""
+    response = user_logged_client.get("/glossary/999")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary with id 999 not found"
+
+
+def test_update_glossary_returns_404_for_nonexistent_glossary(user_logged_client: TestClient):
+    """PUT /glossary/{glossary_id}/ - 404 for non-existent glossary"""
+    response = user_logged_client.put("/glossary/999", json={"name": "Updated name"})
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary with id 999 not found"
+
+
+def test_delete_glossary_returns_404_for_nonexistent_glossary(user_logged_client: TestClient):
+    """DELETE /glossary/{glossary_id}/ - 404 for non-existent glossary"""
+    response = user_logged_client.delete("/glossary/999")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary with id 999 not found"
+
+
+def test_list_glossary_records_returns_404_for_nonexistent_glossary(user_logged_client: TestClient):
+    """GET /glossary/{glossary_id}/records/ - 404 for non-existent glossary"""
+    response = user_logged_client.get("/glossary/999/records")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary with id 999 not found"
+
+
+def test_create_glossary_record_returns_404_for_nonexistent_glossary(user_logged_client: TestClient):
+    """POST /glossary/{glossary_id}/records - 404 for non-existent glossary"""
+    record_data = {
+        "comment": "Test comment",
+        "source": "Test source",
+        "target": "Test target",
+    }
+    response = user_logged_client.post("/glossary/999/records", json=record_data)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary not found"
+
+
+def test_update_glossary_record_returns_404_for_nonexistent_record(user_logged_client: TestClient):
+    """PUT /glossary/records/{record_id}/ - 404 for non-existent record"""
+    record_data = {
+        "comment": "Updated comment",
+        "source": "Updated source",
+        "target": "Updated target",
+    }
+    response = user_logged_client.put("/glossary/records/999", json=record_data)
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary record with id 999 not found"
+
+
+def test_delete_glossary_record_returns_404_for_nonexistent_record(user_logged_client: TestClient):
+    """DELETE /glossary/records/{record_id}/ - 404 for non-existent record"""
+    response = user_logged_client.delete("/glossary/records/999")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary record with id 999 not found"
