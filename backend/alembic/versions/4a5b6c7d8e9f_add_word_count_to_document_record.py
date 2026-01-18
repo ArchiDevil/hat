@@ -8,7 +8,7 @@ Create Date: 2026-01-11 15:42:00.000000
 
 from typing import Sequence, Union
 
-from alembic import op
+from alembic import op, context
 import sqlalchemy as sa
 
 from app.linguistic.word_count import count_words
@@ -35,17 +35,18 @@ def upgrade() -> None:
         ),
     )
 
-    # Populate existing records with calculated word counts
-    connection = op.get_bind()
-    result = connection.execute(sa.text("SELECT id, source FROM document_record"))
-    for record_id, source in result:
-        word_count = count_words(source)
-        connection.execute(
-            sa.text(
-                "UPDATE document_record SET word_count = :word_count WHERE id = :record_id"
-            ),
-            {"word_count": word_count, "record_id": record_id},
-        )
+    if not context.is_offline_mode():
+        # Populate existing records with calculated word counts
+        connection = op.get_bind()
+        result = connection.execute(sa.text("SELECT id, source FROM document_record"))
+        for record_id, source in result:
+            word_count = count_words(source)
+            connection.execute(
+                sa.text(
+                    "UPDATE document_record SET word_count = :word_count WHERE id = :record_id"
+                ),
+                {"word_count": word_count, "record_id": record_id},
+            )
 
 
 def downgrade() -> None:
