@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
 from app.comments.models import Comment
+from app.documents.models import SegmentHistory, SegmentHistoryChangeType
 from app.documents.schema import DocumentRecordFilter, DocumentRecordUpdate
 from app.glossary.models import Glossary
 from app.models import DocumentStatus
@@ -210,6 +211,7 @@ class GenericDocsQuery:
     def update_record(
         self, record_id: int, data: DocumentRecordUpdate
     ) -> DocumentRecord:
+        # TODO: a lot of logic from this function must be moved to the service layer
         record = self.get_record(record_id)
         if not record:
             raise NotFoundDocumentRecordExc()
@@ -269,3 +271,54 @@ class GenericDocsQuery:
         ]
         document.glossary_associations = associations
         self.__db.commit()
+
+
+class SegmentHistoryQuery:
+    """Query class for segment history operations."""
+
+    def __init__(self, db: Session) -> None:
+        self.__db = db
+
+    def get_history_by_record_id(self, record_id: int) -> Iterable[SegmentHistory]:
+        return (
+            self.__db.execute(
+                select(SegmentHistory)
+                .filter(SegmentHistory.record_id == record_id)
+                .order_by(SegmentHistory.timestamp.desc())
+            )
+            .scalars()
+            .all()
+        )
+
+    def get_last_history_by_record_id(self, record_id: int) -> SegmentHistory | None:
+        return self.__db.execute(
+            select(SegmentHistory)
+            .filter(SegmentHistory.record_id == record_id)
+            .order_by(SegmentHistory.timestamp.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+
+    def create_history_entry(
+        self,
+        record_id: int,
+        diff: str,
+        author_id: int | None,
+        change_type: SegmentHistoryChangeType,
+    ) -> SegmentHistory:
+        history = SegmentHistory(
+            record_id=record_id,
+            diff=diff,
+            author_id=author_id,
+            change_type=change_type,
+        )
+        self.__db.add(history)
+        self.__db.commit()
+        return history
+
+    def update_history_entry(
+        self, history: SegmentHistory, diff: str, timestamp: datetime
+    ) -> SegmentHistory:
+        history.diff = diff
+        history.timestamp = timestamp
+        self.__db.commit()
+        return history

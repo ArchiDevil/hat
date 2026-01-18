@@ -1,7 +1,7 @@
 """Document service for document and document record operations."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import UploadFile
 from fastapi.responses import StreamingResponse
@@ -12,8 +12,20 @@ from app.base.exceptions import BusinessLogicError, EntityNotFound
 from app.comments.query import CommentsQuery
 from app.comments.schema import CommentCreate, CommentResponse
 from app.documents import schema as doc_schema
-from app.documents.models import Document, DocumentType, TmMode, XliffRecord
-from app.documents.query import GenericDocsQuery, NotFoundDocumentRecordExc
+from app.documents.models import (
+    Document,
+    DocumentType,
+    SegmentHistory,
+    SegmentHistoryChangeType,
+    TmMode,
+    XliffRecord,
+)
+from app.documents.query import (
+    GenericDocsQuery,
+    NotFoundDocumentRecordExc,
+    SegmentHistoryQuery,
+)
+from app.documents.utils import compute_diff, reconstruct_from_diffs
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
 from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
@@ -44,6 +56,7 @@ class DocumentService:
         self.__comments_query = CommentsQuery(db)
         self.__glossary_query = GlossaryQuery(db)
         self.__tm_query = TranslationMemoryQuery(db)
+        self.__history_query = SegmentHistoryQuery(db)
 
     def get_documents(self) -> list[doc_schema.DocumentWithRecordsCount]:
         """
@@ -312,8 +325,24 @@ class DocumentService:
             total_records=total_records,
         )
 
+    @staticmethod
+    def _are_segments_mergeable(
+        old_history: SegmentHistory,
+        new_author: int | None,
+        new_type: SegmentHistoryChangeType,
+    ):
+        return (
+            new_author is not None
+            and old_history.author_id == new_author
+            and old_history.change_type == new_type
+        )
+
     def update_record(
-        self, record_id: int, data: doc_schema.DocumentRecordUpdate
+        self,
+        record_id: int,
+        data: doc_schema.DocumentRecordUpdate,
+        author_id: int,
+        change_type: SegmentHistoryChangeType | None = None,
     ) -> doc_schema.DocumentRecordUpdateResponse:
         """
         Update a document record.
@@ -329,15 +358,84 @@ class DocumentService:
             EntityNotFound: If record not found
         """
         try:
+            record = self._get_record_by_id(record_id)
+            old_target = record.target
             updated_record = self.__query.update_record(record_id, data)
-            return doc_schema.DocumentRecordUpdateResponse(
-                id=updated_record.id,
-                source=updated_record.source,
-                target=updated_record.target,
-                approved=updated_record.approved,
+            new_target = updated_record.target
+
+            if not change_type:
+                change_type = SegmentHistoryChangeType.manual_edit
+
+            # Track history if the target changed
+            if old_target != new_target:
+                last_history = self.__history_query.get_last_history_by_record_id(
+                    record.id
+                )
+
+                if last_history and DocumentService._are_segments_mergeable(
+                    last_history,
+                    author_id,
+                    change_type,
+                ):
+                    # we need to reconstruct original string before doing a merge
+                    all_history = list(
+                        self.__history_query.get_history_by_record_id(record.id)
+                    )
+
+                    diffs = [history.diff for history in all_history[1:]]
+                    original_text = reconstruct_from_diffs(reversed(diffs))
+                    merged_diff = compute_diff(original_text, new_target)
+
+                    self.__history_query.update_history_entry(
+                        last_history, merged_diff, datetime.now(UTC)
+                    )
+                else:
+                    # diffs are not mergeable, create a new one
+                    self.__history_query.create_history_entry(
+                        record.id,
+                        compute_diff(old_target, new_target),
+                        author_id,
+                        change_type,
+                    )
+
+            return doc_schema.DocumentRecordUpdateResponse.model_validate(
+                updated_record
             )
         except NotFoundDocumentRecordExc:
             raise EntityNotFound("Record not found")
+
+    def get_segment_history(
+        self, record_id: int
+    ) -> doc_schema.SegmentHistoryListResponse:
+        """
+        Get the history of changes for a document record.
+
+        Args:
+            record_id: Document record ID
+
+        Returns:
+            SegmentHistoryListResponse object
+
+        Raises:
+            EntityNotFound: If record not found
+        """
+        # Verify document record exists
+        self._get_record_by_id(record_id)
+        history_entries = self.__history_query.get_history_by_record_id(record_id)
+        history_list = [
+            doc_schema.SegmentHistory(
+                id=entry.id,
+                diff=entry.diff,
+                author=models.ShortUser.model_validate(entry.author)
+                if entry.author
+                else None,
+                timestamp=entry.timestamp,
+                change_type=entry.change_type,
+            )
+            for entry in history_entries
+        ]
+
+        return doc_schema.SegmentHistoryListResponse(history=history_list)
 
     def get_glossaries(self, doc_id: int) -> list[doc_schema.DocGlossary]:
         """

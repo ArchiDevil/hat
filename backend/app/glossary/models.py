@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
@@ -17,16 +17,20 @@ class ProcessingStatuses:
     DONE = "DONE"
 
 
+def utc_time():
+    return datetime.now(UTC)
+
+
 class Glossary(Base):
     __tablename__ = "glossary"
     id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=utc_time)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_time)
     name: Mapped[str] = mapped_column()
     processing_status: Mapped[str] = mapped_column(
         default=ProcessingStatuses.IN_PROCESS
     )
-    upload_time: Mapped[datetime] = mapped_column(default=datetime.now)
+    upload_time: Mapped[datetime] = mapped_column(default=utc_time)
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
     @property
@@ -54,8 +58,8 @@ class GlossaryRecord(Base):
     __tablename__ = "glossary_record"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=utc_time)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_time)
 
     comment: Mapped[str] = mapped_column(nullable=True)
     source: Mapped[str] = mapped_column()

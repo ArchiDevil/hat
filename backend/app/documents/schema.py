@@ -1,10 +1,11 @@
+from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.documents.models import RecordSource, TmMode
+from app.documents.models import RecordSource, SegmentHistoryChangeType, TmMode
 from app.glossary.schema import GlossaryResponse
-from app.models import DocumentStatus, Identified, MachineTranslationSettings
+from app.models import DocumentStatus, Identified, MachineTranslationSettings, ShortUser
 from app.translation_memory.schema import TranslationMemory
 
 
@@ -47,6 +48,8 @@ class DocumentRecordUpdateResponse(Identified):
     target: str
     approved: bool
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class DocumentRecordUpdate(BaseModel):
     target: str
@@ -86,3 +89,15 @@ class DocGlossary(BaseModel):
 
 class DocGlossaryUpdate(BaseModel):
     glossaries: list[Identified]
+
+
+class SegmentHistory(BaseModel):
+    id: int
+    diff: str
+    author: ShortUser | None
+    timestamp: datetime
+    change_type: SegmentHistoryChangeType
+
+
+class SegmentHistoryListResponse(BaseModel):
+    history: list[SegmentHistory]

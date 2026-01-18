@@ -3,7 +3,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, PrimaryKeyConstraint
+from sqlalchemy import ForeignKey, Index, PrimaryKeyConstraint
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,6 +14,19 @@ if TYPE_CHECKING:
     from app.glossary.models import Glossary
     from app.models import User
     from app.translation_memory.models import TranslationMemory
+
+
+def utc_time():
+    return datetime.now(UTC)
+
+
+class SegmentHistoryChangeType(Enum):
+    initial_import = "initial_import"
+    machine_translation = "machine_translation"
+    tm_substitution = "tm_substitution"
+    glossary_substitution = "glossary_substitution"
+    repetition = "repetition"
+    manual_edit = "manual_edit"
 
 
 class TmMode(Enum):
@@ -61,7 +74,7 @@ class Document(Base):
     type: Mapped[DocumentType] = mapped_column()
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     processing_status: Mapped[str] = mapped_column()
-    upload_time: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+    upload_time: Mapped[datetime] = mapped_column(default=utc_time)
 
     records: Mapped[list["DocumentRecord"]] = relationship(
         back_populates="document",
@@ -121,6 +134,11 @@ class DocumentRecord(Base):
         cascade="all, delete-orphan",
         order_by="Comment.id",
     )
+    history: Mapped[list["SegmentHistory"]] = relationship(
+        back_populates="record",
+        cascade="all, delete-orphan",
+        order_by="SegmentHistory.timestamp.desc()",
+    )
 
 
 class TxtDocument(Base):
@@ -178,3 +196,20 @@ class XliffRecord(Base):
 
     parent: Mapped["DocumentRecord"] = relationship()
     document: Mapped["XliffDocument"] = relationship(back_populates="records")
+
+
+class SegmentHistory(Base):
+    __tablename__ = "document_record_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    record_id: Mapped[int] = mapped_column(ForeignKey("document_record.id"))
+    diff: Mapped[str] = mapped_column()
+    author_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(default=utc_time)
+    change_type: Mapped[SegmentHistoryChangeType] = mapped_column()
+
+    record: Mapped["DocumentRecord"] = relationship(back_populates="history")
+    author: Mapped["User"] = relationship(foreign_keys=[author_id])
+
+
+Index("document_record_history_record_id_idx", SegmentHistory.record_id)
