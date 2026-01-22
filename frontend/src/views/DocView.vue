@@ -230,7 +230,13 @@ const showAddTermModal = ref(false)
           :show-value="false"
         />
         {{ document?.approved_word_count }} /
-        {{ document?.total_word_count }} words
+        {{ document?.total_word_count }} words <span class="text-gray-500">({{
+          document !== undefined
+            ? Number(
+              document.approved_word_count / document.total_word_count * 100
+            ).toFixed(2)
+            : 0.0
+        }}%)</span>
         <Link
           :href="documentDownloadLink"
           class="inline-block"
