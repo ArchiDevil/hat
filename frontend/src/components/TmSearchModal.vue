@@ -96,7 +96,7 @@ const header = computed(() => {
     v-model:visible="modalVisible"
     modal
     :header="header"
-    class="w-[90%]"
+    class="w-[90%] max-w-[1200px]"
   >
     <div class="flex flex-row gap-4 mb-4">
       <ToggleButton

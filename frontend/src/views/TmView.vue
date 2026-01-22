@@ -145,7 +145,7 @@ const docName = computed(
     >
       <DocSegment
         v-for="record in recordsData.records"
-        :id="!toggleSimilar ? record.id : (record as TranslationMemoryRecordWithSimilarity).similarity"
+        :id="!toggleSimilar ? record.id : Number((record as TranslationMemoryRecordWithSimilarity).similarity.toPrecision(2))"
         :key="record.id"
         :source="record.source"
         :target="record.target"
