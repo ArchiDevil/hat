@@ -2,6 +2,7 @@
 # processes files in it.
 # Tasks are stored in document_task table and encoded in JSON.
 
+import json
 import logging
 import time
 from typing import Iterable, Literal, Sequence, overload
@@ -15,6 +16,8 @@ from app.documents.models import (
     DocumentRecord,
     DocumentType,
     RecordSource,
+    SegmentHistory,
+    SegmentHistoryChangeType,
     TxtRecord,
     XliffRecord,
 )
@@ -311,6 +314,17 @@ def create_doc_segments(
         for segment in segments
     ]
     session.add_all(doc_records)
+    session.commit()
+
+    history_records = [
+        SegmentHistory(
+            record_id=record.id,
+            diff=json.dumps({"ops": [["insert", 0, 0, record.target]], "old_len": 0}),
+            change_type=SegmentHistoryChangeType.initial_import,
+        )
+        for record in doc_records
+    ]
+    session.add_all(history_records)
     session.commit()
 
     # create document specific segments

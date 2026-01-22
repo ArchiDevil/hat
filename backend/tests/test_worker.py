@@ -12,6 +12,7 @@ from app.documents.models import (
     Document,
     DocumentType,
     RecordSource,
+    SegmentHistoryChangeType,
     TxtDocument,
     TxtRecord,
     XliffDocument,
@@ -130,6 +131,8 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675606
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         # It does not provide text for missing TM record
         record = doc.records[1]
@@ -143,6 +146,8 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675607
         assert xliff_record.state == "needs-translation"
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         # It does not touch approved record
         record = doc.records[2]
@@ -156,6 +161,8 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675608
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         # It does substitute numbers
         record = doc.records[3]
@@ -169,6 +176,8 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675609
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         # It does substitute glossary records
         record = doc.records[4]
@@ -182,6 +191,8 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675610
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
 
 def test_process_task_sets_txt_records(session: Session):
@@ -230,6 +241,8 @@ def test_process_task_sets_txt_records(session: Session):
         assert not record.target
         assert record.word_count == 13
         assert s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 0
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         record = doc.records[1]
         assert (
@@ -243,6 +256,8 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 89
         )
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         record = doc.records[2]
         assert (
@@ -256,6 +271,8 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 182
         )
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         record = doc.records[3]
         assert record.source == "“Fresh faces are always welcome in Camp Greenbriar!”"
@@ -266,6 +283,8 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 252
         )
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         record = doc.records[4]
         assert record.source == "The sloth is named Razak."
@@ -277,6 +296,8 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 306
         )
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
         record = doc.records[5]
         assert (
@@ -290,6 +311,8 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 332
         )
+        assert len(record.history) == 1
+        assert record.history[0].change_type == SegmentHistoryChangeType.initial_import
 
 
 def test_process_task_uses_correct_tm_ids(session: Session):
