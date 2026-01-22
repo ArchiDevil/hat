@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from app.documents.utils import compute_diff, apply_diff
+from app.documents.utils import apply_diff, compute_diff
 
 
 class TestComputeDiff:

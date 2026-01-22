@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.documents.models import RecordSource, SegmentHistoryChangeType, TmMode
+from app.documents.models import DocumentRecordHistoryChangeType, RecordSource, TmMode
 from app.glossary.schema import GlossaryResponse
 from app.models import DocumentStatus, Identified, MachineTranslationSettings, ShortUser
 from app.translation_memory.schema import TranslationMemory
@@ -96,7 +96,7 @@ class SegmentHistory(BaseModel):
     diff: str
     author: ShortUser | None
     timestamp: datetime
-    change_type: SegmentHistoryChangeType
+    change_type: DocumentRecordHistoryChangeType
 
 
 class SegmentHistoryListResponse(BaseModel):

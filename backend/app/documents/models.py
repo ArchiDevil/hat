@@ -20,7 +20,7 @@ def utc_time():
     return datetime.now(UTC)
 
 
-class SegmentHistoryChangeType(Enum):
+class DocumentRecordHistoryChangeType(Enum):
     initial_import = "initial_import"
     machine_translation = "machine_translation"
     tm_substitution = "tm_substitution"
@@ -134,7 +134,7 @@ class DocumentRecord(Base):
         cascade="all, delete-orphan",
         order_by="Comment.id",
     )
-    history: Mapped[list["SegmentHistory"]] = relationship(
+    history: Mapped[list["DocumentRecordHistory"]] = relationship(
         back_populates="record",
         cascade="all, delete-orphan",
         order_by="SegmentHistory.timestamp.desc()",
@@ -198,7 +198,7 @@ class XliffRecord(Base):
     document: Mapped["XliffDocument"] = relationship(back_populates="records")
 
 
-class SegmentHistory(Base):
+class DocumentRecordHistory(Base):
     __tablename__ = "document_record_history"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -206,10 +206,10 @@ class SegmentHistory(Base):
     diff: Mapped[str] = mapped_column()
     author_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(default=utc_time)
-    change_type: Mapped[SegmentHistoryChangeType] = mapped_column()
+    change_type: Mapped[DocumentRecordHistoryChangeType] = mapped_column()
 
     record: Mapped["DocumentRecord"] = relationship(back_populates="history")
     author: Mapped["User"] = relationship(foreign_keys=[author_id])
 
 
-Index("document_record_history_record_id_idx", SegmentHistory.record_id)
+Index("document_record_history_record_id_idx", DocumentRecordHistory.record_id)

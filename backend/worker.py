@@ -14,10 +14,10 @@ from app.db import get_db
 from app.documents.models import (
     Document,
     DocumentRecord,
+    DocumentRecordHistory,
+    DocumentRecordHistoryChangeType,
     DocumentType,
     RecordSource,
-    SegmentHistory,
-    SegmentHistoryChangeType,
     TxtRecord,
     XliffRecord,
 )
@@ -317,10 +317,10 @@ def create_doc_segments(
     session.commit()
 
     history_records = [
-        SegmentHistory(
+        DocumentRecordHistory(
             record_id=record.id,
             diff=json.dumps({"ops": [["insert", 0, 0, record.target]], "old_len": 0}),
-            change_type=SegmentHistoryChangeType.initial_import,
+            change_type=DocumentRecordHistoryChangeType.initial_import,
         )
         for record in doc_records
     ]

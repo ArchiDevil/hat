@@ -14,9 +14,9 @@ from app.comments.schema import CommentCreate, CommentResponse
 from app.documents import schema as doc_schema
 from app.documents.models import (
     Document,
+    DocumentRecordHistory,
+    DocumentRecordHistoryChangeType,
     DocumentType,
-    SegmentHistory,
-    SegmentHistoryChangeType,
     TmMode,
     XliffRecord,
 )
@@ -327,9 +327,9 @@ class DocumentService:
 
     @staticmethod
     def _are_segments_mergeable(
-        old_history: SegmentHistory,
+        old_history: DocumentRecordHistory,
         new_author: int | None,
-        new_type: SegmentHistoryChangeType,
+        new_type: DocumentRecordHistoryChangeType,
     ):
         return (
             new_author is not None
@@ -342,7 +342,7 @@ class DocumentService:
         record_id: int,
         data: doc_schema.DocumentRecordUpdate,
         author_id: int,
-        change_type: SegmentHistoryChangeType | None = None,
+        change_type: DocumentRecordHistoryChangeType | None = None,
     ) -> doc_schema.DocumentRecordUpdateResponse:
         """
         Update a document record.
@@ -364,7 +364,7 @@ class DocumentService:
             new_target = updated_record.target
 
             if not change_type:
-                change_type = SegmentHistoryChangeType.manual_edit
+                change_type = DocumentRecordHistoryChangeType.manual_edit
 
             # Track history if the target changed
             if old_target != new_target:

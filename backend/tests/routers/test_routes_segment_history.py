@@ -10,9 +10,9 @@ from sqlalchemy.orm import Session
 from app.documents.models import (
     Document,
     DocumentRecord,
+    DocumentRecordHistory,
+    DocumentRecordHistoryChangeType,
     DocumentType,
-    SegmentHistory,
-    SegmentHistoryChangeType,
 )
 from app.documents.utils import apply_diff, compute_diff
 
@@ -60,17 +60,17 @@ def test_get_segment_history_with_entries(
         # Add history entries with JSON diff format
         diff1 = compute_diff("Test translation", "new")
         diff2 = compute_diff("Test translation", "old")
-        history1 = SegmentHistory(
+        history1 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff1,
             author_id=1,  # Use ID 1 which will be the test user
-            change_type=SegmentHistoryChangeType.manual_edit,
+            change_type=DocumentRecordHistoryChangeType.manual_edit,
         )
-        history2 = SegmentHistory(
+        history2 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff2,
             author_id=None,
-            change_type=SegmentHistoryChangeType.machine_translation,
+            change_type=DocumentRecordHistoryChangeType.machine_translation,
         )
         s.add_all([history1, history2])
         s.commit()
@@ -143,9 +143,13 @@ def test_update_record_creates_history(
 
     # Check that history was created
     with session as s:
-        history = s.query(SegmentHistory).filter(SegmentHistory.record_id == 1).all()
+        history = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .all()
+        )
         assert len(history) == 1
-        assert history[0].change_type == SegmentHistoryChangeType.manual_edit
+        assert history[0].change_type == DocumentRecordHistoryChangeType.manual_edit
         assert history[0].author_id == 1
 
 
@@ -171,11 +175,11 @@ def test_update_same_type_updates_in_place(
 
         # Create initial history entry with JSON diff format
         initial_diff = compute_diff("Test translation", "first")
-        initial_history = SegmentHistory(
+        initial_history = DocumentRecordHistory(
             record_id=records[0].id,
             diff=initial_diff,
             author_id=1,
-            change_type=SegmentHistoryChangeType.manual_edit,
+            change_type=DocumentRecordHistoryChangeType.manual_edit,
         )
         s.add(initial_history)
         s.commit()
@@ -195,7 +199,11 @@ def test_update_same_type_updates_in_place(
 
     # Check that only one history entry exists (updated in-place)
     with session as s:
-        history = s.query(SegmentHistory).filter(SegmentHistory.record_id == 1).all()
+        history = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .all()
+        )
         assert len(history) == 1
         assert history[0].id == initial_history_id
         assert history[0].diff is not None
@@ -226,11 +234,11 @@ def test_update_different_type_creates_new_history(
 
         # Create initial history entry with JSON diff format
         initial_diff = compute_diff("Test translation", "first")
-        initial_history = SegmentHistory(
+        initial_history = DocumentRecordHistory(
             record_id=records[0].id,
             diff=initial_diff,
             author_id=None,
-            change_type=SegmentHistoryChangeType.glossary_substitution,
+            change_type=DocumentRecordHistoryChangeType.glossary_substitution,
             timestamp=datetime.now(UTC) - timedelta(minutes=1),
         )
         s.add(initial_history)
@@ -250,14 +258,14 @@ def test_update_different_type_creates_new_history(
     # Check that a new history entry was created
     with session as s:
         history = (
-            s.query(SegmentHistory)
-            .filter(SegmentHistory.record_id == 1)
-            .order_by(SegmentHistory.timestamp.desc())
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .order_by(DocumentRecordHistory.timestamp.desc())
             .all()
         )
         assert len(history) == 2
         assert history[0].diff is not None
-        assert history[0].change_type == SegmentHistoryChangeType.manual_edit
+        assert history[0].change_type == DocumentRecordHistoryChangeType.manual_edit
 
 
 def test_history_cascade_delete_on_record_delete(
@@ -280,17 +288,17 @@ def test_history_cascade_delete_on_record_delete(
         # Add history entries with JSON diff format
         diff1 = compute_diff("Test translation", "diff1")
         diff2 = compute_diff("Test translation", "diff2")
-        history1 = SegmentHistory(
+        history1 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff1,
             author_id=None,
-            change_type=SegmentHistoryChangeType.manual_edit,
+            change_type=DocumentRecordHistoryChangeType.manual_edit,
         )
-        history2 = SegmentHistory(
+        history2 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff2,
             author_id=None,
-            change_type=SegmentHistoryChangeType.machine_translation,
+            change_type=DocumentRecordHistoryChangeType.machine_translation,
         )
         s.add_all([history1, history2])
         s.commit()
@@ -301,7 +309,7 @@ def test_history_cascade_delete_on_record_delete(
 
     # Check that history was cascade deleted
     with session as s:
-        history = s.query(SegmentHistory).all()
+        history = s.query(DocumentRecordHistory).all()
         assert len(history) == 0
 
 
@@ -334,7 +342,11 @@ def test_no_history_for_same_text(user_logged_client: TestClient, session: Sessi
 
     # Check that history was not created (due to approval change)
     with session as s:
-        history = s.query(SegmentHistory).filter(SegmentHistory.record_id == 1).all()
+        history = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .all()
+        )
         assert len(history) == 0
 
 
@@ -361,25 +373,25 @@ def test_history_ordering_by_timestamp(
         diff1 = compute_diff("Test translation", "diff1")
         diff2 = compute_diff("Test translation", "diff2")
         diff3 = compute_diff("Test translation", "diff3")
-        history1 = SegmentHistory(
+        history1 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff1,
             author_id=None,
-            change_type=SegmentHistoryChangeType.manual_edit,
+            change_type=DocumentRecordHistoryChangeType.manual_edit,
             timestamp=now - timedelta(minutes=10),
         )
-        history2 = SegmentHistory(
+        history2 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff2,
             author_id=None,
-            change_type=SegmentHistoryChangeType.machine_translation,
+            change_type=DocumentRecordHistoryChangeType.machine_translation,
             timestamp=now - timedelta(minutes=5),
         )
-        history3 = SegmentHistory(
+        history3 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff3,
             author_id=None,
-            change_type=SegmentHistoryChangeType.glossary_substitution,
+            change_type=DocumentRecordHistoryChangeType.glossary_substitution,
             timestamp=now,
         )
         s.add_all([history1, history2, history3])
@@ -424,11 +436,11 @@ def test_merge_diffs_correctly_merges_consecutive_changes(
 
         # Create initial history entry with JSON diff format
         initial_diff = compute_diff("", "Test translation")
-        initial_history = SegmentHistory(
+        initial_history = DocumentRecordHistory(
             record_id=records[0].id,
             diff=initial_diff,
             author_id=1,
-            change_type=SegmentHistoryChangeType.initial_import,
+            change_type=DocumentRecordHistoryChangeType.initial_import,
         )
         s.add(initial_history)
         s.commit()
@@ -458,13 +470,13 @@ def test_merge_diffs_correctly_merges_consecutive_changes(
     # Check that only one history entry exists (merged)
     with session as s:
         history = (
-            s.query(SegmentHistory)
-            .filter(SegmentHistory.record_id == 1)
-            .order_by(SegmentHistory.timestamp.desc())
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .order_by(DocumentRecordHistory.timestamp.desc())
             .all()
         )
         assert len(history) == 2
-        assert history[0].change_type == SegmentHistoryChangeType.manual_edit
+        assert history[0].change_type == DocumentRecordHistoryChangeType.manual_edit
         assert history[0].diff
 
         # Verify that the merged diff correctly represents the full transformation
@@ -524,7 +536,11 @@ def test_merge_diffs_with_insert_only_operations(
 
     # Check that only one history entry exists (merged)
     with session as s:
-        history = s.query(SegmentHistory).filter(SegmentHistory.record_id == 1).all()
+        history = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .all()
+        )
         assert len(history) == 1
         assert history[0].diff is not None
 
@@ -539,9 +555,7 @@ def test_merge_diffs_with_multiple_history_records(
     """Test that multiple consecutive changes by the same author are properly merged."""
     with session as s:
         records = [
-            DocumentRecord(
-                source="Hello World", target="Replacement", approved=False
-            ),
+            DocumentRecord(source="Hello World", target="Replacement", approved=False),
         ]
         s.add(
             Document(
@@ -555,17 +569,17 @@ def test_merge_diffs_with_multiple_history_records(
         s.commit()
 
         # Create initial history entry with JSON diff format
-        first = SegmentHistory(
+        first = DocumentRecordHistory(
             record_id=records[0].id,
             diff=compute_diff("", "Test translation"),
             author_id=None,
-            change_type=SegmentHistoryChangeType.initial_import,
+            change_type=DocumentRecordHistoryChangeType.initial_import,
         )
-        second = SegmentHistory(
+        second = DocumentRecordHistory(
             record_id=records[0].id,
             diff=compute_diff("Test translation", "Replacement"),
             author_id=2,
-            change_type=SegmentHistoryChangeType.machine_translation,
+            change_type=DocumentRecordHistoryChangeType.machine_translation,
         )
 
         # add one by one to preserve timestamps
@@ -602,13 +616,13 @@ def test_merge_diffs_with_multiple_history_records(
     # Check that only one history entry exists (merged)
     with session as s:
         history = (
-            s.query(SegmentHistory)
-            .filter(SegmentHistory.record_id == 1)
-            .order_by(SegmentHistory.timestamp.desc())
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .order_by(DocumentRecordHistory.timestamp.desc())
             .all()
         )
         assert len(history) == 3
-        assert history[0].change_type == SegmentHistoryChangeType.manual_edit
+        assert history[0].change_type == DocumentRecordHistoryChangeType.manual_edit
         assert history[0].diff
 
         # Verify that the merged diff correctly represents the full transformation

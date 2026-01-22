@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
 from app.comments.models import Comment
-from app.documents.models import SegmentHistory, SegmentHistoryChangeType
+from app.documents.models import DocumentRecordHistory, DocumentRecordHistoryChangeType
 from app.documents.schema import DocumentRecordFilter, DocumentRecordUpdate
 from app.glossary.models import Glossary
 from app.models import DocumentStatus
@@ -279,22 +279,26 @@ class SegmentHistoryQuery:
     def __init__(self, db: Session) -> None:
         self.__db = db
 
-    def get_history_by_record_id(self, record_id: int) -> Iterable[SegmentHistory]:
+    def get_history_by_record_id(
+        self, record_id: int
+    ) -> Iterable[DocumentRecordHistory]:
         return (
             self.__db.execute(
-                select(SegmentHistory)
-                .filter(SegmentHistory.record_id == record_id)
-                .order_by(SegmentHistory.timestamp.desc())
+                select(DocumentRecordHistory)
+                .filter(DocumentRecordHistory.record_id == record_id)
+                .order_by(DocumentRecordHistory.timestamp.desc())
             )
             .scalars()
             .all()
         )
 
-    def get_last_history_by_record_id(self, record_id: int) -> SegmentHistory | None:
+    def get_last_history_by_record_id(
+        self, record_id: int
+    ) -> DocumentRecordHistory | None:
         return self.__db.execute(
-            select(SegmentHistory)
-            .filter(SegmentHistory.record_id == record_id)
-            .order_by(SegmentHistory.timestamp.desc())
+            select(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == record_id)
+            .order_by(DocumentRecordHistory.timestamp.desc())
             .limit(1)
         ).scalar_one_or_none()
 
@@ -303,9 +307,9 @@ class SegmentHistoryQuery:
         record_id: int,
         diff: str,
         author_id: int | None,
-        change_type: SegmentHistoryChangeType,
-    ) -> SegmentHistory:
-        history = SegmentHistory(
+        change_type: DocumentRecordHistoryChangeType,
+    ) -> DocumentRecordHistory:
+        history = DocumentRecordHistory(
             record_id=record_id,
             diff=diff,
             author_id=author_id,
@@ -316,8 +320,8 @@ class SegmentHistoryQuery:
         return history
 
     def update_history_entry(
-        self, history: SegmentHistory, diff: str, timestamp: datetime
-    ) -> SegmentHistory:
+        self, history: DocumentRecordHistory, diff: str, timestamp: datetime
+    ) -> DocumentRecordHistory:
         history.diff = diff
         history.timestamp = timestamp
         self.__db.commit()
