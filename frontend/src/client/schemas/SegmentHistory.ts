@@ -5,7 +5,7 @@ import {SegmentHistoryChangeType} from './SegmentHistoryChangeType'
 
 export interface SegmentHistory {
   id: number
-  diff: string | null
+  diff: string
   author: ShortUser | null
   timestamp: string
   change_type: SegmentHistoryChangeType

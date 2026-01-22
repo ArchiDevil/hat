@@ -25,6 +25,7 @@ const emit = defineEmits<{
   focus: []
   startEdit: []
   addComment: []
+  viewHistory: []
 }>()
 
 const targetInput = useTemplateRef('targetInput')
@@ -75,6 +76,10 @@ const icon = computed(
 
 const showCommentsDialog = () => {
   emit('addComment')
+}
+
+const showHistory = () => {
+  emit('viewHistory')
 }
 
 const segSourceTitle = computed(() => {
@@ -171,6 +176,16 @@ const segSourceIcon = computed(() => {
       :severity="hasComments ? 'help' : 'secondary'"
       size="small"
       @click="showCommentsDialog"
+    />
+    <Button
+      icon="pi pi-history"
+      rounded
+      outlined
+      variant="text"
+      severity="secondary"
+      size="small"
+      title="View History"
+      @click="showHistory"
     />
     <Button
       icon="pi pi-check"

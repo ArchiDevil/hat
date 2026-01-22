@@ -11,6 +11,7 @@ import {
   getGlossaries,
   getRecordGlossaryRecords,
   getRecordSubstitutions,
+  getSegmentHistory,
   updateDocRecord,
 } from '../src/client/services/DocumentService'
 import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
@@ -376,6 +377,56 @@ export const documentMocks = [
         }
       }
       return HttpResponse.json(output)
+    }
+  ),
+  http.get<{segmentId: string}>(
+    'http://localhost:8000/document/records/:segmentId/history',
+    () => {
+      return HttpResponse.json<AwaitedReturnType<typeof getSegmentHistory>>({
+        history: [
+          {
+            id: 2,
+            author: {
+              id: 42,
+              username: 'User',
+            },
+            change_type: 'manual_edit',
+            diff: JSON.stringify({
+              ops: [
+                ['equal', 0, 4],
+                ['delete', 4, 12],
+                ['equal', 12, 34],
+                ['insert', 34, 34, ' этими'],
+                ['equal', 34, 73],
+                ['replace', 73, 82, 'указа'],
+                ['equal', 82, 117],
+              ],
+              old_len: 50,
+            }),
+            timestamp: faker.date.recent().toISOString().split('.')[0],
+          },
+          {
+            id: 1,
+            author: {
+              id: 42,
+              username: 'User',
+            },
+            change_type: 'initial_import',
+            diff: JSON.stringify({
+              ops: [
+                [
+                  'insert',
+                  0,
+                  0,
+                  'Семь из этих предысторий связаны с фракциями, описанными в главе 6 — они перечислены в таблице «Предыстории фракций».',
+                ],
+              ],
+              old_len: 0,
+            }),
+            timestamp: faker.date.past().toISOString().split('.')[0],
+          },
+        ],
+      })
     }
   ),
 ]
