@@ -20,7 +20,7 @@ down_revision: Union[str, None] = "32d5a77e6615"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-segmentsource = sa.Enum(
+recordsource = sa.Enum(
     "glossary",
     "machine_translation",
     "translation_memory",
@@ -30,12 +30,12 @@ segmentsource = sa.Enum(
 
 
 def upgrade() -> None:
-    segmentsource.create(op.get_bind(), checkfirst=True)
+    recordsource.create(op.get_bind(), checkfirst=True)
     op.add_column(
         "document_record",
         sa.Column(
             "target_source",
-            segmentsource,
+            recordsource,
             nullable=True,
         ),
     )
@@ -43,4 +43,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column("document_record", "target_source")
-    segmentsource.drop(op.get_bind(), checkfirst=True)
+    recordsource.drop(op.get_bind(), checkfirst=True)

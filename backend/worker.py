@@ -5,6 +5,7 @@
 import json
 import logging
 import time
+from enum import Enum
 from typing import Iterable, Literal, Sequence, overload
 
 from sqlalchemy import select
@@ -17,7 +18,6 @@ from app.documents.models import (
     DocumentRecordHistory,
     DocumentRecordHistoryChangeType,
     DocumentType,
-    RecordSource,
     TxtRecord,
     XliffRecord,
 )
@@ -36,6 +36,13 @@ from app.translators import llm, yandex
 from app.translators.common import LineWithGlossaries
 
 type FormatSegment = XliffSegment | TxtSegment
+
+
+class RecordSource(Enum):
+    glossary = "glossary"
+    machine_translation = "mt"
+    translation_memory = "tm"
+    full_match = "fm"  # for digits
 
 
 class WorkerSegment:
@@ -300,7 +307,7 @@ def translate_segments(
 def create_doc_segments(
     doc: Document,
     session: Session,
-    segments: Iterable[WorkerSegment],
+    segments: Sequence[WorkerSegment],
 ) -> None:
     doc_records = [
         DocumentRecord(
@@ -308,7 +315,6 @@ def create_doc_segments(
             source=segment.original_segment.original,
             target=segment.original_segment.translation or "",
             approved=segment.approved,
-            target_source=segment.segment_source,
             word_count=count_words(segment.original_segment.original),
         )
         for segment in segments
@@ -316,13 +322,25 @@ def create_doc_segments(
     session.add_all(doc_records)
     session.commit()
 
+    def convert_segment_src(
+        src: RecordSource | None,
+    ) -> DocumentRecordHistoryChangeType:
+        if src == RecordSource.glossary:
+            return DocumentRecordHistoryChangeType.glossary_substitution
+        elif src == RecordSource.machine_translation:
+            return DocumentRecordHistoryChangeType.machine_translation
+        elif src == RecordSource.translation_memory:
+            return DocumentRecordHistoryChangeType.tm_substitution
+        else:
+            return DocumentRecordHistoryChangeType.initial_import
+
     history_records = [
         DocumentRecordHistory(
             record_id=record.id,
             diff=json.dumps({"ops": [["insert", 0, 0, record.target]], "old_len": 0}),
-            change_type=DocumentRecordHistoryChangeType.initial_import,
+            change_type=convert_segment_src(segments[i].segment_source),
         )
-        for record in doc_records
+        for i, record in enumerate(doc_records)
     ]
     session.add_all(history_records)
     session.commit()

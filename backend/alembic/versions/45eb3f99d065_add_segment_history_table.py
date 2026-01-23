@@ -28,7 +28,7 @@ change_type = sa.Enum(
     'glossary_substitution',
     'repetition',
     'manual_edit',
-    name='segmenthistorychangetype'
+    name='documentrecordhistorychangetype'
 )
 
 

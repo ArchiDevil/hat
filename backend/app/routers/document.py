@@ -128,7 +128,7 @@ def get_record_substitutions(
 def get_segment_history(
     record_id: int,
     service: Annotated[DocumentService, Depends(get_service)],
-) -> doc_schema.SegmentHistoryListResponse:
+) -> doc_schema.DocumentRecordHistoryListResponse:
     try:
         return service.get_segment_history(record_id)
     except EntityNotFound as e:

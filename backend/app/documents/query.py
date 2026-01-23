@@ -273,7 +273,7 @@ class GenericDocsQuery:
         self.__db.commit()
 
 
-class SegmentHistoryQuery:
+class DocumentRecordHistoryQuery:
     """Query class for segment history operations."""
 
     def __init__(self, db: Session) -> None:

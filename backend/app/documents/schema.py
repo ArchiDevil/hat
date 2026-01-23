@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.documents.models import DocumentRecordHistoryChangeType, RecordSource, TmMode
+from app.documents.models import DocumentRecordHistoryChangeType, TmMode
 from app.glossary.schema import GlossaryResponse
 from app.models import DocumentStatus, Identified, MachineTranslationSettings, ShortUser
 from app.translation_memory.schema import TranslationMemory
@@ -34,7 +34,6 @@ class DocumentRecord(Identified):
     approved: bool
     repetitions_count: int
     has_comments: bool
-    translation_src: RecordSource | None
 
 
 class DocumentRecordListResponse(BaseModel):
@@ -91,7 +90,7 @@ class DocGlossaryUpdate(BaseModel):
     glossaries: list[Identified]
 
 
-class SegmentHistory(BaseModel):
+class DocumentRecordHistory(BaseModel):
     id: int
     diff: str
     author: ShortUser | None
@@ -99,5 +98,5 @@ class SegmentHistory(BaseModel):
     change_type: DocumentRecordHistoryChangeType
 
 
-class SegmentHistoryListResponse(BaseModel):
-    history: list[SegmentHistory]
+class DocumentRecordHistoryListResponse(BaseModel):
+    history: list[DocumentRecordHistory]

@@ -21,9 +21,9 @@ from app.documents.models import (
     XliffRecord,
 )
 from app.documents.query import (
+    DocumentRecordHistoryQuery,
     GenericDocsQuery,
     NotFoundDocumentRecordExc,
-    SegmentHistoryQuery,
 )
 from app.documents.utils import compute_diff, reconstruct_from_diffs
 from app.formats.txt import extract_txt_content
@@ -56,7 +56,7 @@ class DocumentService:
         self.__comments_query = CommentsQuery(db)
         self.__glossary_query = GlossaryQuery(db)
         self.__tm_query = TranslationMemoryQuery(db)
-        self.__history_query = SegmentHistoryQuery(db)
+        self.__history_query = DocumentRecordHistoryQuery(db)
 
     def get_documents(self) -> list[doc_schema.DocumentWithRecordsCount]:
         """
@@ -312,9 +312,6 @@ class DocumentService:
                 approved=record.approved,
                 repetitions_count=repetitions_count,
                 has_comments=has_comments,
-                translation_src=(
-                    record.target_source.value if record.target_source else None
-                ),
             )
             for record, repetitions_count, has_comments in records
         ]
@@ -406,7 +403,7 @@ class DocumentService:
 
     def get_segment_history(
         self, record_id: int
-    ) -> doc_schema.SegmentHistoryListResponse:
+    ) -> doc_schema.DocumentRecordHistoryListResponse:
         """
         Get the history of changes for a document record.
 
@@ -414,7 +411,7 @@ class DocumentService:
             record_id: Document record ID
 
         Returns:
-            SegmentHistoryListResponse object
+            DocumentRecordHistoryResponse object
 
         Raises:
             EntityNotFound: If record not found
@@ -423,7 +420,7 @@ class DocumentService:
         self._get_record_by_id(record_id)
         history_entries = self.__history_query.get_history_by_record_id(record_id)
         history_list = [
-            doc_schema.SegmentHistory(
+            doc_schema.DocumentRecordHistory(
                 id=entry.id,
                 diff=entry.diff,
                 author=models.ShortUser.model_validate(entry.author)
@@ -435,7 +432,7 @@ class DocumentService:
             for entry in history_entries
         ]
 
-        return doc_schema.SegmentHistoryListResponse(history=history_list)
+        return doc_schema.DocumentRecordHistoryListResponse(history=history_list)
 
     def get_glossaries(self, doc_id: int) -> list[doc_schema.DocGlossary]:
         """

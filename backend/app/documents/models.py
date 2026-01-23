@@ -110,13 +110,6 @@ class Document(Base):
     )
 
 
-class RecordSource(Enum):
-    glossary = "glossary"
-    machine_translation = "mt"
-    translation_memory = "tm"
-    full_match = "fm"  # for digits
-
-
 class DocumentRecord(Base):
     __tablename__ = "document_record"
 
@@ -125,7 +118,6 @@ class DocumentRecord(Base):
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()
     approved: Mapped[bool] = mapped_column(default=False)
-    target_source: Mapped[RecordSource] = mapped_column(nullable=True)
     word_count: Mapped[int] = mapped_column(default=0)
 
     document: Mapped["Document"] = relationship(back_populates="records")
@@ -137,7 +129,7 @@ class DocumentRecord(Base):
     history: Mapped[list["DocumentRecordHistory"]] = relationship(
         back_populates="record",
         cascade="all, delete-orphan",
-        order_by="SegmentHistory.timestamp.desc()",
+        order_by="DocumentRecordHistory.timestamp.desc()",
     )
 
 
