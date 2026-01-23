@@ -191,7 +191,6 @@ const segments: DocumentRecord[] = [
     target: 'Зацепки приключения',
     repetitions_count: 2,
     has_comments: false,
-    translation_src: 'glossary',
   },
   {
     id: 10001,
@@ -202,7 +201,6 @@ const segments: DocumentRecord[] = [
       'В тот момент, когда кинидийцы извлекли рог из монолита, их город был обречен.',
     repetitions_count: 1,
     has_comments: true,
-    translation_src: 'tm',
   },
   {
     id: 10002,
@@ -211,7 +209,6 @@ const segments: DocumentRecord[] = [
     target: 'Зацепки приключения',
     repetitions_count: 2,
     has_comments: true,
-    translation_src: 'mt',
   },
   {
     id: 10003,
@@ -220,7 +217,6 @@ const segments: DocumentRecord[] = [
     target: 'Зацепки приключения',
     repetitions_count: 3,
     has_comments: false,
-    translation_src: null,
   },
 ]
 

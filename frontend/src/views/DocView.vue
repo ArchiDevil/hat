@@ -298,7 +298,6 @@ const onShowHistory = (recordId: number) => {
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
               :has-comments="record.has_comments"
-              :record-src="record.translation_src ?? undefined"
               @commit="
                 (text, updateRepeats) =>
                   onSegmentCommit(record.id, text, updateRepeats, idx)

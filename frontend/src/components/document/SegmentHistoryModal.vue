@@ -6,15 +6,15 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import {getSegmentHistory} from '../../client/services/DocumentService'
-import type {SegmentHistory} from '../../client/schemas/SegmentHistory'
-import type {SegmentHistoryChangeType} from '../../client/schemas/SegmentHistoryChangeType'
+import type {DocumentRecordHistory} from '../../client/schemas/DocumentRecordHistory'
+import type {DocumentRecordHistoryChangeType} from '../../client/schemas/DocumentRecordHistoryChangeType'
 import {
   applyDiffOps,
   type DiffPart,
   type DiffData,
 } from '../../composables/useDiff'
 
-interface HistoryWithDiff extends SegmentHistory {
+interface HistoryWithDiff extends DocumentRecordHistory {
   diffParts?: DiffPart[]
 }
 
@@ -29,11 +29,11 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const history = ref<SegmentHistory[]>([])
+const history = ref<DocumentRecordHistory[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const changeTypeColors: Record<SegmentHistoryChangeType, string> = {
+const changeTypeColors: Record<DocumentRecordHistoryChangeType, string> = {
   initial_import: '#6B7280',
   machine_translation: '#3B82F6',
   tm_substitution: '#8B5CF6',
@@ -42,7 +42,7 @@ const changeTypeColors: Record<SegmentHistoryChangeType, string> = {
   manual_edit: '#F59E0B',
 }
 
-const changeTypeLabels: Record<SegmentHistoryChangeType, string> = {
+const changeTypeLabels: Record<DocumentRecordHistoryChangeType, string> = {
   initial_import: 'Initial Import',
   machine_translation: 'Machine Translation',
   tm_substitution: 'TM Substitution',
@@ -121,7 +121,7 @@ const historyWithDiffs = computed<HistoryWithDiff[]>(() => {
   return result.reverse()
 })
 
-const getAuthorName = (historyItem: SegmentHistory) => {
+const getAuthorName = (historyItem: DocumentRecordHistory) => {
   return historyItem.author?.username ?? 'System'
 }
 
@@ -242,10 +242,16 @@ const getDiffClass = (type: DiffPart['type']) => {
             class="inline-block px-2 py-1 rounded-full text-sm font-medium text-white"
             :style="{
               backgroundColor:
-                changeTypeColors[data.change_type as SegmentHistoryChangeType],
+                changeTypeColors[
+                  data.change_type as DocumentRecordHistoryChangeType
+                ],
             }"
           >
-            {{ changeTypeLabels[data.change_type as SegmentHistoryChangeType] }}
+            {{
+              changeTypeLabels[
+                data.change_type as DocumentRecordHistoryChangeType
+              ]
+            }}
           </span>
         </template>
       </Column>
