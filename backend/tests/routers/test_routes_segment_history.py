@@ -65,12 +65,14 @@ def test_get_segment_history_with_entries(
             diff=diff1,
             author_id=1,  # Use ID 1 which will be the test user
             change_type=DocumentRecordHistoryChangeType.manual_edit,
+            timestamp=datetime.now(UTC) - timedelta(minutes=1),
         )
         history2 = DocumentRecordHistory(
             record_id=records[0].id,
             diff=diff2,
             author_id=None,
             change_type=DocumentRecordHistoryChangeType.machine_translation,
+            timestamp=datetime.now(UTC) - timedelta(minutes=5),
         )
         s.add_all([history1, history2])
         s.commit()
