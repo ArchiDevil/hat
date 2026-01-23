@@ -221,38 +221,32 @@ class GenericDocsQuery:
         if data.approved is not None:
             record.approved = data.approved
 
-        # If update_repetitions is True AND the segment is being approved, find all records with the same source
-        if data.update_repetitions and data.approved is True:
-            repeated_records = (
-                self.__db.execute(
-                    select(DocumentRecord).filter(
-                        DocumentRecord.document_id == record.document_id,
-                        DocumentRecord.source == record.source,
-                    )
-                )
-                .scalars()
-                .all()
-            )
-
-            # Update all repeated records
-            for repeated_record in repeated_records:
-                repeated_record.target = data.target
-                repeated_record.approved = data.approved
-
-        # this should be better put on the service level, not here
-        if data.approved is True:
-            bound_tm = None
-            for memory in record.document.memory_associations:
-                if memory.mode == TmMode.write:
-                    bound_tm = memory.tm_id
-
-            if bound_tm:
-                TranslationMemoryQuery(self.__db).add_or_update_record(
-                    bound_tm, record.source, record.target
-                )
-
         self.__db.commit()
         return record
+
+    def bulk_update_record_by_src(
+        self, doc_id: int, source: str, target: str
+    ) -> list[int]:
+        repeated_records = (
+            self.__db.execute(
+                select(DocumentRecord).filter(
+                    DocumentRecord.document_id == doc_id,
+                    DocumentRecord.source == source,
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+        output = []
+        # Update all repeated records
+        for repeated_record in repeated_records:
+            repeated_record.target = target
+            repeated_record.approved = True
+            output.append(repeated_record.id)
+
+        self.__db.commit()
+        return output
 
     def set_document_memories(
         self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]
@@ -318,6 +312,24 @@ class DocumentRecordHistoryQuery:
         self.__db.add(history)
         self.__db.commit()
         return history
+
+    def bulk_create_history_entry(
+        self,
+        record_id_to_diff: list[tuple[int, str]],
+        author_id: int | None,
+        change_type: DocumentRecordHistoryChangeType,
+    ):
+        histories = [
+            DocumentRecordHistory(
+                record_id=history[0],
+                diff=history[1],
+                author_id=author_id,
+                change_type=change_type,
+            )
+            for history in record_id_to_diff
+        ]
+        self.__db.add_all(histories)
+        self.__db.commit()
 
     def update_history_entry(
         self, history: DocumentRecordHistory, diff: str, timestamp: datetime

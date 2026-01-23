@@ -153,6 +153,62 @@ def test_update_record_creates_history(
         assert history[0].author_id == 1
 
 
+def test_update_record_with_repetitions_creates_history(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=[
+                    DocumentRecord(source="Hello World", target="Test translation"),
+                    DocumentRecord(source="Hello World", target=""),
+                    DocumentRecord(source="No hello world", target=" translation"),
+                ],
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    # Update record
+    response = user_logged_client.put(
+        "/document/records/1",
+        json={
+            "target": "Updated translation",
+            "approved": True,
+            "update_repetitions": True,
+        },
+    )
+    assert response.status_code == 200
+
+    # Check that history was created
+    with session as s:
+        history = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 1)
+            .one()
+        )
+        assert history.change_type == DocumentRecordHistoryChangeType.manual_edit
+        assert history.author_id == 1
+
+        history = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 2)
+            .one()
+        )
+        assert history.change_type == DocumentRecordHistoryChangeType.repetition
+        assert history.author_id == 1
+
+        history = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == 3)
+            .all()
+        )
+        assert history == []
+
+
 def test_update_same_type_updates_in_place(
     user_logged_client: TestClient, session: Session
 ):

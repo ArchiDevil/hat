@@ -360,6 +360,33 @@ class DocumentService:
             updated_record = self.__query.update_record(record_id, data)
             new_target = updated_record.target
 
+            diff = None
+            if old_target != new_target:
+                diff = compute_diff(old_target, new_target)
+
+            # Update repetitions
+            if data.update_repetitions and data.approved is True and diff is not None:
+                updated_records = self.__query.bulk_update_record_by_src(
+                    record.document_id, record.source, record.target
+                )
+
+                # repetitions are not merged, this would be too slow to be done here
+                self.__history_query.bulk_create_history_entry(
+                    [(id_, diff) for id_ in updated_records if id_ != record.id],
+                    author_id,
+                    DocumentRecordHistoryChangeType.repetition,
+                )
+
+            # TM tracking
+            if data.approved is True:
+                for memory in record.document.memory_associations:
+                    if memory.mode == TmMode.write:
+                        self.__tm_query.add_or_update_record(
+                            memory.tm_id, record.source, record.target
+                        )
+                        break
+
+            # History tracking
             if not change_type:
                 change_type = DocumentRecordHistoryChangeType.manual_edit
 
