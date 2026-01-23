@@ -11,7 +11,6 @@ from app.documents.schema import DocumentRecordFilter, DocumentRecordUpdate
 from app.glossary.models import Glossary
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
-from app.translation_memory.query import TranslationMemoryQuery
 
 from .models import (
     DocGlossaryAssociation,
@@ -211,25 +210,21 @@ class GenericDocsQuery:
     def update_record(
         self, record_id: int, data: DocumentRecordUpdate
     ) -> DocumentRecord:
-        # TODO: a lot of logic from this function must be moved to the service layer
         record = self.get_record(record_id)
         if not record:
             raise NotFoundDocumentRecordExc()
 
         record.target = data.target
-
         if data.approved is not None:
             record.approved = data.approved
 
         self.__db.commit()
         return record
 
-    def bulk_update_record_by_src(
-        self, doc_id: int, source: str, target: str
-    ) -> list[int]:
-        repeated_records = (
+    def get_record_ids_by_source(self, doc_id: int, source: str) -> list[int]:
+        return list(
             self.__db.execute(
-                select(DocumentRecord).filter(
+                select(DocumentRecord.id).where(
                     DocumentRecord.document_id == doc_id,
                     DocumentRecord.source == source,
                 )
@@ -237,16 +232,6 @@ class GenericDocsQuery:
             .scalars()
             .all()
         )
-
-        output = []
-        # Update all repeated records
-        for repeated_record in repeated_records:
-            repeated_record.target = target
-            repeated_record.approved = True
-            output.append(repeated_record.id)
-
-        self.__db.commit()
-        return output
 
     def set_document_memories(
         self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]

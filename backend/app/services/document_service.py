@@ -339,7 +339,8 @@ class DocumentService:
         record_id: int,
         data: doc_schema.DocumentRecordUpdate,
         author_id: int,
-        change_type: DocumentRecordHistoryChangeType | None = None,
+        change_type: DocumentRecordHistoryChangeType,
+        shallow: bool = False,
     ) -> doc_schema.DocumentRecordUpdateResponse:
         """
         Update a document record.
@@ -347,6 +348,9 @@ class DocumentService:
         Args:
             record_id: Record ID
             data: Updated record data
+            author_id: Author ID of these changes
+            change_type: Type of the change
+            shallow: Whether to apply repetitions to its descendants
 
         Returns:
             DocumentRecordUpdateResponse object
@@ -360,25 +364,8 @@ class DocumentService:
             updated_record = self.__query.update_record(record_id, data)
             new_target = updated_record.target
 
-            diff = None
-            if old_target != new_target:
-                diff = compute_diff(old_target, new_target)
-
-            # Update repetitions
-            if data.update_repetitions and data.approved is True and diff is not None:
-                updated_records = self.__query.bulk_update_record_by_src(
-                    record.document_id, record.source, record.target
-                )
-
-                # repetitions are not merged, this would be too slow to be done here
-                self.__history_query.bulk_create_history_entry(
-                    [(id_, diff) for id_ in updated_records if id_ != record.id],
-                    author_id,
-                    DocumentRecordHistoryChangeType.repetition,
-                )
-
             # TM tracking
-            if data.approved is True:
+            if data.approved and not shallow:
                 for memory in record.document.memory_associations:
                     if memory.mode == TmMode.write:
                         self.__tm_query.add_or_update_record(
@@ -386,40 +373,27 @@ class DocumentService:
                         )
                         break
 
-            # History tracking
-            if not change_type:
-                change_type = DocumentRecordHistoryChangeType.manual_edit
+            self.track_history(
+                record.id, old_target, new_target, author_id, change_type
+            )
 
-            # Track history if the target changed
-            if old_target != new_target:
-                last_history = self.__history_query.get_last_history_by_record_id(
-                    record.id
+            # update repetitions
+            if data.approved and data.update_repetitions and not shallow:
+                updated_records = self.__query.get_record_ids_by_source(
+                    record.document_id, record.source
                 )
 
-                if last_history and DocumentService._are_segments_mergeable(
-                    last_history,
-                    author_id,
-                    change_type,
-                ):
-                    # we need to reconstruct original string before doing a merge
-                    all_history = list(
-                        self.__history_query.get_history_by_record_id(record.id)
-                    )
+                for rec in updated_records:
+                    # skip the current ID to avoid making more repetitions than needed
+                    if rec == record.id:
+                        continue
 
-                    diffs = [history.diff for history in all_history[1:]]
-                    original_text = reconstruct_from_diffs(reversed(diffs))
-                    merged_diff = compute_diff(original_text, new_target)
-
-                    self.__history_query.update_history_entry(
-                        last_history, merged_diff, datetime.now(UTC)
-                    )
-                else:
-                    # diffs are not mergeable, create a new one
-                    self.__history_query.create_history_entry(
-                        record.id,
-                        compute_diff(old_target, new_target),
+                    self.update_record(
+                        rec,
+                        data,
                         author_id,
-                        change_type,
+                        DocumentRecordHistoryChangeType.repetition,
+                        shallow=True,
                     )
 
             return doc_schema.DocumentRecordUpdateResponse.model_validate(
@@ -427,6 +401,44 @@ class DocumentService:
             )
         except NotFoundDocumentRecordExc:
             raise EntityNotFound("Record not found")
+
+    def track_history(
+        self,
+        record_id: int,
+        old_target: str,
+        new_target: str,
+        author_id: int,
+        change_type: DocumentRecordHistoryChangeType,
+    ):
+        # Track history if the target changed
+        if old_target == new_target:
+            return
+
+        last_history = self.__history_query.get_last_history_by_record_id(record_id)
+
+        if last_history and DocumentService._are_segments_mergeable(
+            last_history,
+            author_id,
+            change_type,
+        ):
+            # we need to reconstruct original string before doing a merge
+            all_history = list(self.__history_query.get_history_by_record_id(record_id))
+
+            diffs = [history.diff for history in all_history[1:]]
+            original_text = reconstruct_from_diffs(reversed(diffs))
+            merged_diff = compute_diff(original_text, new_target)
+
+            self.__history_query.update_history_entry(
+                last_history, merged_diff, datetime.now(UTC)
+            )
+        else:
+            # diffs are not mergeable, create a new one
+            self.__history_query.create_history_entry(
+                record_id,
+                compute_diff(old_target, new_target),
+                author_id,
+                change_type,
+            )
 
     def get_segment_history(
         self, record_id: int

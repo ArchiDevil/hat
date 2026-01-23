@@ -9,6 +9,7 @@ from app.base.exceptions import BusinessLogicError, EntityNotFound
 from app.comments.schema import CommentCreate, CommentResponse
 from app.db import get_db
 from app.documents import schema as doc_schema
+from app.documents.models import DocumentRecordHistoryChangeType
 from app.glossary.schema import GlossaryRecordSchema
 from app.services import DocumentService
 from app.translation_memory.schema import (
@@ -154,7 +155,9 @@ def update_doc_record(
     current_user: Annotated[int, Depends(get_current_user_id)],
 ) -> doc_schema.DocumentRecordUpdateResponse:
     try:
-        return service.update_record(record_id, record, current_user)
+        return service.update_record(
+            record_id, record, current_user, DocumentRecordHistoryChangeType.manual_edit
+        )
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
