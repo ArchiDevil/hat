@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import {ref, watch, computed} from 'vue'
+import {computed} from 'vue'
+import {useQuery} from '@pinia/colada'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
@@ -18,20 +22,14 @@ interface HistoryWithDiff extends DocumentRecordHistory {
   diffParts?: DiffPart[]
 }
 
-interface Props {
+const props = defineProps<{
   recordId: number
   show: boolean
-}
-
-const props = defineProps<Props>()
+}>()
 
 const emit = defineEmits<{
   close: []
 }>()
-
-const history = ref<DocumentRecordHistory[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
 
 const changeTypeColors: Record<DocumentRecordHistoryChangeType, string> = {
   initial_import: '#6B7280',
@@ -51,55 +49,21 @@ const changeTypeLabels: Record<DocumentRecordHistoryChangeType, string> = {
   manual_edit: 'Manual Edit',
 }
 
-const fetchHistory = async () => {
-  if (!props.recordId) return
-  loading.value = true
-  error.value = null
-  try {
-    const response = await getSegmentHistory(props.recordId)
-    history.value = response.history
-  } catch (err) {
-    error.value = 'Failed to load history'
-    console.error(err)
-  } finally {
-    loading.value = false
-  }
-}
-
-watch(
-  () => props.show,
-  (newVal) => {
-    if (newVal) {
-      void fetchHistory()
-    }
-  }
-)
+const {data: history, status: historyStatus} = useQuery({
+  key: () => ['history', props.recordId],
+  query: async () => (await getSegmentHistory(props.recordId)).history,
+  enabled: () => props.show,
+  placeholderData: <T,>(prevData: T) => prevData,
+})
 
 const formatTimestamp = (timestamp: string) => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
-
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
-
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  dayjs.extend(relativeTime)
+  return dayjs(timestamp).fromNow()
 }
 
 // Process history to calculate diffs between consecutive states
 const historyWithDiffs = computed<HistoryWithDiff[]>(() => {
-  if (!history.value || history.value.length === 0) return []
+  if (history.value === undefined || history.value.length === 0) return []
 
   // Process from oldest to newest (reverse order)
   const reversedHistory = [...history.value].reverse()
@@ -148,23 +112,21 @@ const getDiffClass = (type: DiffPart['type']) => {
     @update:visible="emit('close')"
   >
     <div
-      v-if="loading"
+      v-if="historyStatus === 'pending'"
       class="flex justify-center items-center py-8"
     >
       <i class="pi pi-spin pi-spinner text-2xl text-primary" />
       <span class="ml-2">Loading history...</span>
     </div>
-
     <div
-      v-else-if="error"
+      v-else-if="historyStatus === 'error'"
       class="text-red-600 py-4 text-center"
     >
       <i class="pi pi-exclamation-circle mr-2" />
-      {{ error }}
+      Failed to load history
     </div>
-
     <div
-      v-else-if="history.length === 0"
+      v-else-if="history && history.length === 0"
       class="text-surface-500 py-8 text-center"
     >
       <i class="pi pi-history text-4xl mb-2 block" />
