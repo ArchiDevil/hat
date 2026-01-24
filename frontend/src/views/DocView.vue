@@ -16,6 +16,7 @@ import ToolsPanel from '../components/document/ToolsPanel.vue'
 import TmSearchModal from '../components/TmSearchModal.vue'
 import RecordCommentModal from '../components/document/RecordCommentModal.vue'
 import AddTermModal from '../components/document/AddTermModal.vue'
+import SegmentHistoryModal from '../components/document/SegmentHistoryModal.vue'
 
 import {
   getDoc,
@@ -204,6 +205,13 @@ const onAddComment = (recordId: number) => {
 }
 
 const showAddTermModal = ref(false)
+
+const showHistoryModal = ref(false)
+const historyRecordId = ref<number>()
+const onShowHistory = (recordId: number) => {
+  historyRecordId.value = recordId
+  showHistoryModal.value = true
+}
 </script>
 
 <template>
@@ -290,7 +298,6 @@ const showAddTermModal = ref(false)
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
               :has-comments="record.has_comments"
-              :record-src="record.translation_src ?? undefined"
               @commit="
                 (text, updateRepeats) =>
                   onSegmentCommit(record.id, text, updateRepeats, idx)
@@ -302,6 +309,7 @@ const showAddTermModal = ref(false)
               @focus="focusedSegmentIdx = idx"
               @start-edit="() => onSegmentStartEdit(record.id)"
               @add-comment="() => onAddComment(record.id)"
+              @view-history="() => onShowHistory(record.id)"
             />
           </div>
           <SubstitutionsList
@@ -332,5 +340,11 @@ const showAddTermModal = ref(false)
   <AddTermModal
     v-model="showAddTermModal"
     :document-id="documentId"
+  />
+
+  <SegmentHistoryModal
+    :show="showHistoryModal"
+    :record-id="historyRecordId ?? -1"
+    @close="showHistoryModal = false"
   />
 </template>

@@ -9,11 +9,14 @@ importers:
   .:
     dependencies:
       '@pinia/colada':
-        specifier: ^0.17.8
-        version: 0.17.8(pinia@3.0.4(typescript@5.3.3)(vue@3.5.24(typescript@5.3.3)))(vue@3.5.24(typescript@5.3.3))
+        specifier: ^0.21.2
+        version: 0.21.2(pinia@3.0.4(typescript@5.3.3)(vue@3.5.24(typescript@5.3.3)))(vue@3.5.24(typescript@5.3.3))
       '@primevue/themes':
         specifier: 4.4.1
         version: 4.4.1
+      dayjs:
+        specifier: ^1.11.19
+        version: 1.11.19
       mande:
         specifier: ^2.0.9
         version: 2.0.9
@@ -596,8 +599,8 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@pinia/colada@0.17.8':
-    resolution: {integrity: sha512-xJ2LzQvkG7ztWhJBlU/3hsQPc8OYwmJcOrqRLrKykO2fSX2LNW7UQbo8rqg35XmNzBf6Unz0dW84kz1TldSnYQ==}
+  '@pinia/colada@0.21.2':
+    resolution: {integrity: sha512-k2epk1jed5cTmNA7l00UtsFRyqw9HfyU6WO4cV0BMUT3sSE4CMLCilprbLAL5h2bxD76WSiglciI/6o+Uh7Vzw==}
     peerDependencies:
       pinia: ^2.2.6 || ^3.0.0
       vue: ^3.5.17
@@ -912,9 +915,6 @@ packages:
   '@vue/devtools-api@7.7.7':
     resolution: {integrity: sha512-lwOnNBH2e7x1fIIbVT7yF5D+YWhqELm55/4ZKf45R9T8r9dE2AIOy8HKjfqzGsoTHFbWbr337O4E0A0QADnjBg==}
 
-  '@vue/devtools-api@8.0.3':
-    resolution: {integrity: sha512-YxZE7xNvvfq5XmjJh1ml+CzVNrRjuZYCuT5Xjj0u9RlXU7za/MRuZDUXcKfp0j7IvYkDut49vlKqbiQ1xhXP2w==}
-
   '@vue/devtools-core@8.0.3':
     resolution: {integrity: sha512-gCEQN7aMmeaigEWJQ2Z2o3g7/CMqGTPvNS1U3n/kzpLoAZ1hkAHNgi4ml/POn/9uqGILBk65GGOUdrraHXRj5Q==}
     peerDependencies:
@@ -1169,6 +1169,9 @@ packages:
   data-urls@6.0.0:
     resolution: {integrity: sha512-BnBS08aLUM+DKamupXs3w2tJJoqU+AkaE/+6vQxi/G/DPmIZFJJp9Dkb1kM03AZx8ADehDUZgsNxju3mPXZYIA==}
     engines: {node: '>=20'}
+
+  dayjs@1.11.19:
+    resolution: {integrity: sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -2841,9 +2844,8 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@pinia/colada@0.17.8(pinia@3.0.4(typescript@5.3.3)(vue@3.5.24(typescript@5.3.3)))(vue@3.5.24(typescript@5.3.3))':
+  '@pinia/colada@0.21.2(pinia@3.0.4(typescript@5.3.3)(vue@3.5.24(typescript@5.3.3)))(vue@3.5.24(typescript@5.3.3))':
     dependencies:
-      '@vue/devtools-api': 8.0.3
       pinia: 3.0.4(typescript@5.3.3)(vue@3.5.24(typescript@5.3.3))
       vue: 3.5.24(typescript@5.3.3)
 
@@ -3196,10 +3198,6 @@ snapshots:
     dependencies:
       '@vue/devtools-kit': 7.7.7
 
-  '@vue/devtools-api@8.0.3':
-    dependencies:
-      '@vue/devtools-kit': 8.0.3
-
   '@vue/devtools-core@8.0.3(vite@7.2.2(jiti@1.21.7))(vue@3.5.24(typescript@5.3.3))':
     dependencies:
       '@vue/devtools-kit': 8.0.3
@@ -3477,6 +3475,8 @@ snapshots:
     dependencies:
       whatwg-mimetype: 4.0.0
       whatwg-url: 15.1.0
+
+  dayjs@1.11.19: {}
 
   debug@4.4.3:
     dependencies:

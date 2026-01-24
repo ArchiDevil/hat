@@ -6,11 +6,11 @@ from sqlalchemy.orm import Session
 
 from app.base.exceptions import BaseQueryException
 from app.comments.models import Comment
+from app.documents.models import DocumentRecordHistory, DocumentRecordHistoryChangeType
 from app.documents.schema import DocumentRecordFilter, DocumentRecordUpdate
 from app.glossary.models import Glossary
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
-from app.translation_memory.query import TranslationMemoryQuery
 
 from .models import (
     DocGlossaryAssociation,
@@ -215,42 +215,23 @@ class GenericDocsQuery:
             raise NotFoundDocumentRecordExc()
 
         record.target = data.target
-
         if data.approved is not None:
             record.approved = data.approved
 
-        # If update_repetitions is True AND the segment is being approved, find all records with the same source
-        if data.update_repetitions and data.approved is True:
-            repeated_records = (
-                self.__db.execute(
-                    select(DocumentRecord).filter(
-                        DocumentRecord.document_id == record.document_id,
-                        DocumentRecord.source == record.source,
-                    )
-                )
-                .scalars()
-                .all()
-            )
-
-            # Update all repeated records
-            for repeated_record in repeated_records:
-                repeated_record.target = data.target
-                repeated_record.approved = data.approved
-
-        # this should be better put on the service level, not here
-        if data.approved is True:
-            bound_tm = None
-            for memory in record.document.memory_associations:
-                if memory.mode == TmMode.write:
-                    bound_tm = memory.tm_id
-
-            if bound_tm:
-                TranslationMemoryQuery(self.__db).add_or_update_record(
-                    bound_tm, record.source, record.target
-                )
-
         self.__db.commit()
         return record
+
+    def get_record_ids_by_source(self, doc_id: int, source: str) -> list[int]:
+        return list(
+            self.__db.execute(
+                select(DocumentRecord.id).where(
+                    DocumentRecord.document_id == doc_id,
+                    DocumentRecord.source == source,
+                )
+            )
+            .scalars()
+            .all()
+        )
 
     def set_document_memories(
         self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]
@@ -269,3 +250,76 @@ class GenericDocsQuery:
         ]
         document.glossary_associations = associations
         self.__db.commit()
+
+
+class DocumentRecordHistoryQuery:
+    """Query class for segment history operations."""
+
+    def __init__(self, db: Session) -> None:
+        self.__db = db
+
+    def get_history_by_record_id(
+        self, record_id: int
+    ) -> Iterable[DocumentRecordHistory]:
+        return (
+            self.__db.execute(
+                select(DocumentRecordHistory)
+                .filter(DocumentRecordHistory.record_id == record_id)
+                .order_by(DocumentRecordHistory.timestamp.desc())
+            )
+            .scalars()
+            .all()
+        )
+
+    def get_last_history_by_record_id(
+        self, record_id: int
+    ) -> DocumentRecordHistory | None:
+        return self.__db.execute(
+            select(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id == record_id)
+            .order_by(DocumentRecordHistory.timestamp.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+
+    def create_history_entry(
+        self,
+        record_id: int,
+        diff: str,
+        author_id: int | None,
+        change_type: DocumentRecordHistoryChangeType,
+    ) -> DocumentRecordHistory:
+        history = DocumentRecordHistory(
+            record_id=record_id,
+            diff=diff,
+            author_id=author_id,
+            change_type=change_type,
+        )
+        self.__db.add(history)
+        self.__db.commit()
+        return history
+
+    def bulk_create_history_entry(
+        self,
+        record_id_to_diff: list[tuple[int, str]],
+        author_id: int | None,
+        change_type: DocumentRecordHistoryChangeType,
+    ):
+        histories = [
+            DocumentRecordHistory(
+                record_id=history[0],
+                diff=history[1],
+                author_id=author_id,
+                change_type=change_type,
+            )
+            for history in record_id_to_diff
+        ]
+        self.__db.add_all(histories)
+        self.__db.commit()
+
+    def update_history_entry(
+        self, history: DocumentRecordHistory, diff: str, timestamp: datetime
+    ) -> DocumentRecordHistory:
+        history.diff = diff
+        history.timestamp = timestamp
+        self.__db.commit()
+        return history

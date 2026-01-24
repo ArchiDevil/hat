@@ -11,12 +11,16 @@ if TYPE_CHECKING:
     from app.models import User
 
 
+def utc_time():
+    return datetime.now(UTC)
+
+
 class Comment(Base):
     __tablename__ = "record_comment"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column()
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(default=utc_time)
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     record_id: Mapped[int] = mapped_column(ForeignKey("document_record.id"))
 

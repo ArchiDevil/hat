@@ -3,7 +3,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, PrimaryKeyConstraint
+from sqlalchemy import ForeignKey, Index, PrimaryKeyConstraint
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,6 +14,19 @@ if TYPE_CHECKING:
     from app.glossary.models import Glossary
     from app.models import User
     from app.translation_memory.models import TranslationMemory
+
+
+def utc_time():
+    return datetime.now(UTC)
+
+
+class DocumentRecordHistoryChangeType(Enum):
+    initial_import = "initial_import"
+    machine_translation = "machine_translation"
+    tm_substitution = "tm_substitution"
+    glossary_substitution = "glossary_substitution"
+    repetition = "repetition"
+    manual_edit = "manual_edit"
 
 
 class TmMode(Enum):
@@ -61,7 +74,7 @@ class Document(Base):
     type: Mapped[DocumentType] = mapped_column()
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     processing_status: Mapped[str] = mapped_column()
-    upload_time: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+    upload_time: Mapped[datetime] = mapped_column(default=utc_time)
 
     records: Mapped[list["DocumentRecord"]] = relationship(
         back_populates="document",
@@ -97,13 +110,6 @@ class Document(Base):
     )
 
 
-class RecordSource(Enum):
-    glossary = "glossary"
-    machine_translation = "mt"
-    translation_memory = "tm"
-    full_match = "fm"  # for digits
-
-
 class DocumentRecord(Base):
     __tablename__ = "document_record"
 
@@ -112,7 +118,6 @@ class DocumentRecord(Base):
     source: Mapped[str] = mapped_column()
     target: Mapped[str] = mapped_column()
     approved: Mapped[bool] = mapped_column(default=False)
-    target_source: Mapped[RecordSource] = mapped_column(nullable=True)
     word_count: Mapped[int] = mapped_column(default=0)
 
     document: Mapped["Document"] = relationship(back_populates="records")
@@ -120,6 +125,11 @@ class DocumentRecord(Base):
         back_populates="document_record",
         cascade="all, delete-orphan",
         order_by="Comment.id",
+    )
+    history: Mapped[list["DocumentRecordHistory"]] = relationship(
+        back_populates="record",
+        cascade="all, delete-orphan",
+        order_by="DocumentRecordHistory.timestamp.desc()",
     )
 
 
@@ -178,3 +188,20 @@ class XliffRecord(Base):
 
     parent: Mapped["DocumentRecord"] = relationship()
     document: Mapped["XliffDocument"] = relationship(back_populates="records")
+
+
+class DocumentRecordHistory(Base):
+    __tablename__ = "document_record_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    record_id: Mapped[int] = mapped_column(ForeignKey("document_record.id"))
+    diff: Mapped[str] = mapped_column()
+    author_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(default=utc_time)
+    change_type: Mapped[DocumentRecordHistoryChangeType] = mapped_column()
+
+    record: Mapped["DocumentRecord"] = relationship(back_populates="history")
+    author: Mapped["User"] = relationship()
+
+
+Index("document_record_history_record_id_idx", DocumentRecordHistory.record_id)

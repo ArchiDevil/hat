@@ -11,6 +11,7 @@ import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
 import {CommentResponse} from '../schemas/CommentResponse'
 import {CommentCreate} from '../schemas/CommentCreate'
 import {MemorySubstitution} from '../schemas/MemorySubstitution'
+import {DocumentRecordHistoryListResponse} from '../schemas/DocumentRecordHistoryListResponse'
 import {DocumentRecordUpdateResponse} from '../schemas/DocumentRecordUpdateResponse'
 import {DocumentRecordUpdate} from '../schemas/DocumentRecordUpdate'
 import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
@@ -49,6 +50,9 @@ export const createComment = async (record_id: number, content: CommentCreate): 
 }
 export const getRecordSubstitutions = async (record_id: number): Promise<MemorySubstitution[]> => {
   return await api.get<MemorySubstitution[]>(`/document/records/${record_id}/substitutions`)
+}
+export const getSegmentHistory = async (record_id: number): Promise<DocumentRecordHistoryListResponse> => {
+  return await api.get<DocumentRecordHistoryListResponse>(`/document/records/${record_id}/history`)
 }
 export const getRecordGlossaryRecords = async (record_id: number): Promise<GlossaryRecordSchema[]> => {
   return await api.get<GlossaryRecordSchema[]>(`/document/records/${record_id}/glossary_records`)

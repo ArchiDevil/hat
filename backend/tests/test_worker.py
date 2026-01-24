@@ -10,8 +10,8 @@ from app.documents.models import (
     DocGlossaryAssociation,
     DocMemoryAssociation,
     Document,
+    DocumentRecordHistoryChangeType,
     DocumentType,
-    RecordSource,
     TxtDocument,
     TxtRecord,
     XliffDocument,
@@ -122,7 +122,6 @@ def test_process_task_sets_xliff_records(session: Session):
         record = doc.records[0]
         assert record.source == "Regional Effects"
         assert record.target == "Translation"
-        assert record.target_source == RecordSource.translation_memory
         assert not record.approved
         assert record.word_count == 2
         xliff_record = (
@@ -130,12 +129,16 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675606
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.tm_substitution
+        )
 
         # It does not provide text for missing TM record
         record = doc.records[1]
         assert record.source == "Other Effects"
         assert record.target == ""
-        assert record.target_source is None
         assert not record.approved
         assert record.word_count == 2
         xliff_record = (
@@ -143,12 +146,16 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675607
         assert xliff_record.state == "needs-translation"
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
+        )
 
         # It does not touch approved record
         record = doc.records[2]
         assert record.source == "Regional Effects"
         assert record.target == "Региональные эффекты"
-        assert record.target_source is None
         assert record.approved
         assert record.word_count == 2
         xliff_record = (
@@ -156,12 +163,16 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675608
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
+        )
 
         # It does substitute numbers
         record = doc.records[3]
         assert record.source == "123456789"
         assert record.target == "123456789"
-        assert record.target_source == RecordSource.full_match
         assert record.approved
         assert record.word_count == 1
         xliff_record = (
@@ -169,12 +180,16 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675609
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
+        )
 
         # It does substitute glossary records
         record = doc.records[4]
         assert record.source == "Something else"
         assert record.target == "Глоссарный перевод"
-        assert record.target_source == RecordSource.glossary
         assert record.approved
         assert record.word_count == 2
         xliff_record = (
@@ -182,6 +197,11 @@ def test_process_task_sets_xliff_records(session: Session):
         )
         assert xliff_record.segment_id == 675610
         assert xliff_record.state == "translated"
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.glossary_substitution
+        )
 
 
 def test_process_task_sets_txt_records(session: Session):
@@ -230,6 +250,11 @@ def test_process_task_sets_txt_records(session: Session):
         assert not record.target
         assert record.word_count == 13
         assert s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 0
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
+        )
 
         record = doc.records[1]
         assert (
@@ -242,6 +267,11 @@ def test_process_task_sets_txt_records(session: Session):
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 91
             if crlf
             else 89
+        )
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
         )
 
         record = doc.records[2]
@@ -256,6 +286,11 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 182
         )
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
+        )
 
         record = doc.records[3]
         assert record.source == "“Fresh faces are always welcome in Camp Greenbriar!”"
@@ -266,16 +301,25 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 252
         )
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
+        )
 
         record = doc.records[4]
         assert record.source == "The sloth is named Razak."
         assert record.target == "Translation"
-        assert record.target_source == RecordSource.translation_memory
         assert record.word_count == 5
         assert (
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 310
             if crlf
             else 306
+        )
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.tm_substitution
         )
 
         record = doc.records[5]
@@ -289,6 +333,11 @@ def test_process_task_sets_txt_records(session: Session):
             s.query(TxtRecord).filter_by(parent_id=record.id).one().offset == 336
             if crlf
             else 332
+        )
+        assert len(record.history) == 1
+        assert (
+            record.history[0].change_type
+            == DocumentRecordHistoryChangeType.initial_import
         )
 
 

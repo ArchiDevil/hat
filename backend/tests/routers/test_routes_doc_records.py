@@ -10,7 +10,6 @@ from app.documents.models import (
     Document,
     DocumentRecord,
     DocumentType,
-    RecordSource,
 )
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 
@@ -23,7 +22,6 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             DocumentRecord(
                 source="Regional Effects",
                 target="Translation",
-                target_source=RecordSource.translation_memory,
             ),
             DocumentRecord(source="User Interface", target="UI", approved=True),
         ]
@@ -51,7 +49,6 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "approved": False,
             "repetitions_count": 1,
             "has_comments": False,
-            "translation_src": "tm",
         },
         {
             "id": 2,
@@ -60,7 +57,6 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "approved": True,
             "repetitions_count": 1,
             "has_comments": False,
-            "translation_src": None,
         },
     ]
 
@@ -101,7 +97,6 @@ def test_doc_records_returns_second_page(
         "approved": False,
         "repetitions_count": 1,
         "has_comments": False,
-        "translation_src": None,
     }
 
 

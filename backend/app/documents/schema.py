@@ -1,10 +1,11 @@
+from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.documents.models import RecordSource, TmMode
+from app.documents.models import DocumentRecordHistoryChangeType, TmMode
 from app.glossary.schema import GlossaryResponse
-from app.models import DocumentStatus, Identified, MachineTranslationSettings
+from app.models import DocumentStatus, Identified, MachineTranslationSettings, ShortUser
 from app.translation_memory.schema import TranslationMemory
 
 
@@ -33,7 +34,6 @@ class DocumentRecord(Identified):
     approved: bool
     repetitions_count: int
     has_comments: bool
-    translation_src: RecordSource | None
 
 
 class DocumentRecordListResponse(BaseModel):
@@ -46,6 +46,8 @@ class DocumentRecordUpdateResponse(Identified):
     source: str
     target: str
     approved: bool
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DocumentRecordUpdate(BaseModel):
@@ -86,3 +88,15 @@ class DocGlossary(BaseModel):
 
 class DocGlossaryUpdate(BaseModel):
     glossaries: list[Identified]
+
+
+class DocumentRecordHistory(BaseModel):
+    id: int
+    diff: str
+    author: ShortUser | None
+    timestamp: datetime
+    change_type: DocumentRecordHistoryChangeType
+
+
+class DocumentRecordHistoryListResponse(BaseModel):
+    history: list[DocumentRecordHistory]

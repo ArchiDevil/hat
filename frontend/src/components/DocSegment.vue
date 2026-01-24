@@ -4,7 +4,6 @@ import {computed, ref, useTemplateRef, watch} from 'vue'
 import Button from 'primevue/button'
 
 import {cleanableDebounce} from '../utilities/utils'
-import {RecordSource} from '../client/schemas/RecordSource'
 
 const props = defineProps<{
   id: number
@@ -16,7 +15,6 @@ const props = defineProps<{
   approved?: boolean
   repetitionsCount?: number
   hasComments?: boolean
-  recordSrc?: RecordSource
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +23,7 @@ const emit = defineEmits<{
   focus: []
   startEdit: []
   addComment: []
+  viewHistory: []
 }>()
 
 const targetInput = useTemplateRef('targetInput')
@@ -77,35 +76,9 @@ const showCommentsDialog = () => {
   emit('addComment')
 }
 
-const segSourceTitle = computed(() => {
-  switch (props.recordSrc) {
-    case 'glossary':
-      return 'Glossary term'
-    case 'mt':
-      return 'Machine translation'
-    case 'tm':
-      return 'Translation memory'
-    case 'fm':
-      return 'Exact match'
-    default:
-      return undefined
-  }
-})
-
-const segSourceIcon = computed(() => {
-  switch (props.recordSrc) {
-    case 'glossary':
-      return 'pi-globe'
-    case 'mt':
-      return 'pi-language'
-    case 'tm':
-      return 'pi-database'
-    case 'fm':
-      return 'pi-equals'
-    default:
-      return undefined
-  }
-})
+const showHistory = () => {
+  emit('viewHistory')
+}
 </script>
 
 <template>
@@ -152,16 +125,6 @@ const segSourceIcon = computed(() => {
     v-if="editable"
     class="flex flex-row text-center self-start gap-2 pr-2 h-full"
   >
-    <div
-      v-if="recordSrc"
-      class="py-1 px-2"
-      :title="segSourceTitle"
-    >
-      <i
-        class="pi text-surface-500"
-        :class="segSourceIcon"
-      />
-    </div>
     <Button
       class="ml-auto"
       :icon="icon"
@@ -171,6 +134,16 @@ const segSourceIcon = computed(() => {
       :severity="hasComments ? 'help' : 'secondary'"
       size="small"
       @click="showCommentsDialog"
+    />
+    <Button
+      icon="pi pi-history"
+      rounded
+      outlined
+      variant="text"
+      severity="secondary"
+      size="small"
+      title="View History"
+      @click="showHistory"
     />
     <Button
       icon="pi pi-check"
