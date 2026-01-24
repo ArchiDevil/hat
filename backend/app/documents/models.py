@@ -201,7 +201,7 @@ class DocumentRecordHistory(Base):
     change_type: Mapped[DocumentRecordHistoryChangeType] = mapped_column()
 
     record: Mapped["DocumentRecord"] = relationship(back_populates="history")
-    author: Mapped["User"] = relationship(foreign_keys=[author_id])
+    author: Mapped["User"] = relationship()
 
 
 Index("document_record_history_record_id_idx", DocumentRecordHistory.record_id)
