@@ -15,7 +15,7 @@ const logout = async () => {
 
 <template>
   <div class="flex items-baseline">
-    <div class="text-lg flex-grow uppercase">
+    <div class="text-lg grow uppercase">
       Human Assisted Translation project
     </div>
     <div class="pt-8">

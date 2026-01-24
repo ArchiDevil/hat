@@ -37,7 +37,7 @@ const openTermModal = () => {
 </script>
 
 <template>
-  <div class="mx-4 mt-4 p-4 bg-surface-50 rounded-lg border">
+  <div class="mx-4 mt-4 p-4 bg-surface-50 rounded-lg border border-surface">
     <div class="flex flex-row gap-4 items-center">
       <InputText
         v-model="sourceFilter"

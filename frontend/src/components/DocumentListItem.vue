@@ -72,7 +72,7 @@ const deleteFile = async () => {
       title="Open"
     />
     <div
-      class="border rounded-lg p-2 w-16 text-center uppercase"
+      class="border border-surface rounded-lg p-2 w-16 text-center uppercase"
       :class="classes"
     >
       {{ document.type }}

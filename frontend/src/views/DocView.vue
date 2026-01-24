@@ -219,7 +219,7 @@ const onShowHistory = (recordId: number) => {
     v-if="documentReady"
     class="w-full h-screen grid grid-rows-[auto_1fr] overflow-hidden"
   >
-    <div class="bg-surface-0 border-b">
+    <div class="bg-surface-0 border-b border-surface">
       <div>
         <h2 class="text-xl font-bold my-4 ml-4 inline-block">
           {{ document?.name }}
@@ -313,7 +313,7 @@ const onShowHistory = (recordId: number) => {
             />
           </div>
           <SubstitutionsList
-            class="border-l"
+            class="border-l border-surface"
             :document-id="documentId"
             :current-segment-id="currentSegmentId"
           />

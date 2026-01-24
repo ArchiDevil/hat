@@ -5,7 +5,7 @@ import SupportLinks from '../components/SupportLinks.vue'
 
 <template>
   <Panel
-    class="w-1/2 border rounded bg-red-50 px-4 mt-4"
+    class="w-1/2 border border-surface rounded bg-red-50 px-4 mt-4"
     header="Warning!"
     toggleable
   >

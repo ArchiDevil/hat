@@ -74,7 +74,7 @@ onMounted(async () => {
         >
           <template #body="slotProps">
             <div class="flex items-baseline">
-              <div class="flex-grow">
+              <div class="grow">
                 {{ slotProps.data.disabled ? 'Yes' : 'No' }}
               </div>
               <Button

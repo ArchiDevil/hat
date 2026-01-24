@@ -74,7 +74,7 @@ onMounted(async () => {
         :key="i"
       >
         <div
-          class="border rounded px-1 text-center h-fit"
+          class="border border-surface rounded px-1 text-center h-fit"
           :class="subClass(sub)"
         >
           <label v-if="sub.type == 'memory'">
@@ -87,10 +87,10 @@ onMounted(async () => {
             Term
           </label>
         </div>
-        <div class="border-b">
+        <div class="border-b border-surface">
           {{ sub.source }}
         </div>
-        <div class="border-b">
+        <div class="border-b border-surface">
           {{ sub.target }}
         </div>
       </template>
