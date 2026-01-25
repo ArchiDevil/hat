@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -28,7 +30,7 @@ class GlossaryQuery:
         self.db = db
 
     def get_glossary(self, glossary_id: int) -> Glossary:
-        glossary = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()  # type: ignore
+        glossary = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()
         if glossary:
             return glossary
         raise NotFoundGlossaryExc()
@@ -46,7 +48,7 @@ class GlossaryQuery:
     def get_glossary_record_by_id(self, record_id: int) -> GlossaryRecord:
         if (
             record := self.db.query(GlossaryRecord)
-            .filter(GlossaryRecord.id == record_id)  # type: ignore
+            .filter(GlossaryRecord.id == record_id)
             .first()
         ):
             return record
@@ -140,11 +142,9 @@ class GlossaryQuery:
         return glossary_record
 
     def update_glossary(self, glossary_id: int, glossary: GlossarySchema) -> Glossary:
-        result = (
-            self.db.query(Glossary)
-            .filter(Glossary.id == glossary_id)  # type: ignore
-            .update(glossary.model_dump())  # type: ignore
-        )
+        dump = glossary.model_dump()
+        dump["updated_at"] = datetime.now(UTC)
+        result = self.db.query(Glossary).filter(Glossary.id == glossary_id).update(dump)  # type: ignore
         if result:
             self.db.commit()
             return self.get_glossary(glossary_id)
@@ -152,7 +152,7 @@ class GlossaryQuery:
 
     def delete_glossary(self, glossary_id: int) -> bool:
         glossary = self.db.execute(
-            select(Glossary).where(Glossary.id == glossary_id)  # type: ignore
+            select(Glossary).where(Glossary.id == glossary_id)
         ).scalar_one_or_none()
         if not glossary:
             return False
@@ -162,7 +162,7 @@ class GlossaryQuery:
         return True
 
     def update_glossary_processing_status(self, glossary_id: int) -> Glossary | None:
-        doc = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()  # type: ignore
+        doc = self.db.query(Glossary).filter(Glossary.id == glossary_id).first()
         if doc:
             doc.processing_status = ProcessingStatuses.DONE
             self.db.commit()
@@ -178,9 +178,10 @@ class GlossaryQuery:
         dump["stemmed_source"] = " ".join(
             postprocess_stemmed_segment(stem_sentence(record.source))
         )
+        dump["updated_at"] = datetime.now(UTC)
         result = (
             self.db.query(GlossaryRecord)
-            .filter(GlossaryRecord.id == record_id)  # type: ignore
+            .filter(GlossaryRecord.id == record_id)
             .update(dump)  # type: ignore
         )
         if result:
@@ -191,7 +192,7 @@ class GlossaryQuery:
     def delete_record(self, record_id: int) -> bool:
         if (
             self.db.query(GlossaryRecord)
-            .filter(GlossaryRecord.id == record_id)  # type: ignore
+            .filter(GlossaryRecord.id == record_id)
             .delete()
         ):
             self.db.commit()
