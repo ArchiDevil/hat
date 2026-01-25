@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import models, schema
-from app.base.exceptions import BusinessLogicError, EntityNotFound, UnauthorizedAccess
+from app.base.exceptions import BusinessLogicError, EntityNotFound
 from app.comments.query import CommentsQuery
 from app.comments.schema import CommentCreate, CommentResponse
 from app.documents import schema as doc_schema
@@ -25,12 +25,12 @@ from app.documents.query import (
     GenericDocsQuery,
     NotFoundDocumentRecordExc,
 )
-from app.projects.query import ProjectQuery, NotFoundProjectExc
 from app.documents.utils import compute_diff, reconstruct_from_diffs
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
 from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
 from app.glossary.schema import GlossaryRecordSchema, GlossaryResponse
+from app.projects.query import NotFoundProjectExc, ProjectQuery
 from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import (
     MemorySubstitution,

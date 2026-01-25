@@ -16,7 +16,6 @@ from app.documents.models import (
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
-from app.projects.models import Project
 from app.glossary.models import ProcessingStatuses
 from app.glossary.query import GlossaryQuery
 from app.glossary.schema import (
@@ -24,6 +23,7 @@ from app.glossary.schema import (
     GlossarySchema,
 )
 from app.models import DocumentStatus
+from app.projects.models import Project
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory
 

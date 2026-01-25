@@ -2,6 +2,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.documents.models import Document, DocumentRecord, DocumentType
+from app.projects.models import Project
 from app.projects.query import ProjectQuery
 from app.projects.schema import ProjectCreate
 from main import app
@@ -158,3 +160,181 @@ def test_delete_project_not_found(user_logged_client: TestClient):
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Project with id 999 not found"
+
+
+def test_list_projects_with_aggregates(
+    user_logged_client: TestClient, session: Session
+):
+    """GET /projects/ - returns aggregate metrics for projects with documents"""
+    with session as s:
+        project = Project(user_id=1, name="Test Project")
+        s.add(project)
+        s.flush()
+
+        doc1 = Document(
+            name="doc1.txt",
+            type=DocumentType.txt,
+            processing_status="done",
+            created_by=1,
+            project_id=project.id,
+            records=[
+                DocumentRecord(
+                    source="Hello", target="Привет", approved=True, word_count=1
+                ),
+                DocumentRecord(
+                    source="World", target="Мир", approved=False, word_count=1
+                ),
+            ],
+        )
+        doc2 = Document(
+            name="doc2.txt",
+            type=DocumentType.txt,
+            processing_status="done",
+            created_by=1,
+            project_id=project.id,
+            records=[
+                DocumentRecord(
+                    source="Test", target="Тест", approved=True, word_count=1
+                ),
+                DocumentRecord(
+                    source="Data", target="Данные", approved=True, word_count=1
+                ),
+            ],
+        )
+        s.add_all([doc1, doc2])
+        s.commit()
+
+    response = user_logged_client.get("/projects/")
+    assert response.status_code == status.HTTP_200_OK
+    response_json = response.json()
+    assert len(response_json) == 1
+
+    project_data = response_json[0]
+    assert project_data["name"] == "Test Project"
+    # 3 approved records (Hello, Test, Data)
+    assert project_data["approved_segments_count"] == 3
+    # 4 total records (Hello, World, Test, Data)
+    assert project_data["total_segments_count"] == 4
+    # 3 approved words (1 + 1 + 1)
+    assert project_data["approved_words_count"] == 3
+    # 4 total words (1 + 1 + 1 + 1)
+    assert project_data["total_words_count"] == 4
+
+
+def test_list_projects_empty_project(user_logged_client: TestClient, session: Session):
+    """GET /projects/ - returns zeros for projects without documents"""
+    with session as s:
+        project = Project(user_id=1, name="Empty Project")
+        s.add(project)
+        s.commit()
+
+    response = user_logged_client.get("/projects/")
+    assert response.status_code == status.HTTP_200_OK
+    response_json = response.json()
+    assert len(response_json) == 1
+
+    project_data = response_json[0]
+    assert project_data["name"] == "Empty Project"
+    assert project_data["approved_segments_count"] == 0
+    assert project_data["total_segments_count"] == 0
+    assert project_data["approved_words_count"] == 0
+    assert project_data["total_words_count"] == 0
+
+
+def test_list_projects_project_with_documents_no_records(
+    user_logged_client: TestClient, session: Session
+):
+    """GET /projects/ - returns zeros for projects with documents but no records"""
+    with session as s:
+        project = Project(user_id=1, name="Project with Empty Docs")
+        s.add(project)
+        s.flush()
+
+        doc = Document(
+            name="empty_doc.txt",
+            type=DocumentType.txt,
+            processing_status="done",
+            created_by=1,
+            project_id=project.id,
+        )
+        s.add(doc)
+        s.commit()
+
+    response = user_logged_client.get("/projects/")
+    assert response.status_code == status.HTTP_200_OK
+    response_json = response.json()
+    assert len(response_json) == 1
+
+    project_data = response_json[0]
+    assert project_data["name"] == "Project with Empty Docs"
+    assert project_data["approved_segments_count"] == 0
+    assert project_data["total_segments_count"] == 0
+    assert project_data["approved_words_count"] == 0
+    assert project_data["total_words_count"] == 0
+
+
+def test_retrieve_project_with_aggregates(
+    user_logged_client: TestClient, session: Session
+):
+    """GET /projects/{project_id}/ - returns aggregate metrics for a single project"""
+    with session as s:
+        project = Project(user_id=1, name="Test Project")
+        s.add(project)
+        s.flush()
+        project_id = project.id
+
+        doc = Document(
+            name="doc.txt",
+            type=DocumentType.txt,
+            processing_status="done",
+            created_by=1,
+            project_id=project_id,
+            records=[
+                DocumentRecord(
+                    source="Hello", target="Привет", approved=True, word_count=1
+                ),
+                DocumentRecord(
+                    source="World", target="Мир", approved=False, word_count=1
+                ),
+                DocumentRecord(
+                    source="Test", target="Тест", approved=True, word_count=2
+                ),
+            ],
+        )
+        s.add(doc)
+        s.commit()
+
+    response = user_logged_client.get(f"/projects/{project_id}")
+    assert response.status_code == status.HTTP_200_OK
+    response_json = response.json()
+
+    assert response_json["id"] == project_id
+    assert response_json["name"] == "Test Project"
+    # 2 approved records (Hello, Test)
+    assert response_json["approved_segments_count"] == 2
+    # 3 total records (Hello, World, Test)
+    assert response_json["total_segments_count"] == 3
+    # 3 approved words (1 + 2)
+    assert response_json["approved_words_count"] == 3
+    # 4 total words (1 + 1 + 2)
+    assert response_json["total_words_count"] == 4
+
+
+def test_retrieve_project_empty(user_logged_client: TestClient, session: Session):
+    """GET /projects/{project_id}/ - returns zeros for empty project"""
+    with session as s:
+        project = Project(user_id=1, name="Empty Project")
+        s.add(project)
+        s.commit()
+        project_id = project.id
+
+    response = user_logged_client.get(f"/projects/{project_id}")
+    assert response.status_code == status.HTTP_200_OK
+    response_json = response.json()
+
+    assert response_json["id"] == project_id
+    assert response_json["name"] == "Empty Project"
+    assert response_json["approved_segments_count"] == 0
+    assert response_json["total_segments_count"] == 0
+    assert response_json["approved_words_count"] == 0
+    assert response_json["total_words_count"] == 0

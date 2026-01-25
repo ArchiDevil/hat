@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 from app.base.exceptions import EntityNotFound, UnauthorizedAccess
 from app.db import get_db
 from app.models import StatusMessage
-from app.projects.schema import ProjectCreate, ProjectResponse, ProjectUpdate
+from app.projects.schema import (
+    ProjectCreate,
+    ProjectResponse,
+    ProjectResponseWithWordsCount,
+    ProjectUpdate,
+)
 from app.services.project_service import ProjectService
 from app.user.depends import get_current_user_id, has_user_role
 
@@ -22,8 +27,7 @@ def get_service(db: Annotated[Session, Depends(get_db)]):
 @router.get(
     "/",
     description="Get a project list",
-    response_model=list[ProjectResponse],
-    status_code=status.HTTP_200_OK,
+    response_model=list[ProjectResponseWithWordsCount],
 )
 def list_projects(
     user_id: Annotated[int, Depends(get_current_user_id)],
@@ -35,8 +39,7 @@ def list_projects(
 @router.get(
     path="/{project_id}",
     description="Get a single project",
-    response_model=ProjectResponse,
-    status_code=status.HTTP_200_OK,
+    response_model=ProjectResponseWithWordsCount,
     responses={
         404: {
             "description": "Project requested by id",
@@ -85,7 +88,6 @@ def create_project(
     path="/{project_id}",
     description="Update a single project",
     response_model=ProjectResponse,
-    status_code=status.HTTP_200_OK,
     responses={
         404: {
             "description": "Project requested by id",
@@ -121,7 +123,6 @@ def update_project(
     path="/{project_id}",
     description="Delete a single project",
     response_model=StatusMessage,
-    status_code=status.HTTP_200_OK,
     responses={
         404: {
             "description": "Project requested by id",

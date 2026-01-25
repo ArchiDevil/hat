@@ -2,11 +2,16 @@
 
 from sqlalchemy.orm import Session
 
-from app.base.exceptions import EntityNotFound, UnauthorizedAccess
+from app.base.exceptions import EntityNotFound
+from app.models import ShortUser, StatusMessage
 from app.projects.models import Project
 from app.projects.query import NotFoundProjectExc, ProjectQuery
-from app.projects.schema import ProjectCreate, ProjectResponse, ProjectUpdate
-from app.models import StatusMessage
+from app.projects.schema import (
+    ProjectCreate,
+    ProjectResponse,
+    ProjectResponseWithWordsCount,
+    ProjectUpdate,
+)
 
 
 class ProjectService:
@@ -15,9 +20,9 @@ class ProjectService:
     def __init__(self, db: Session):
         self.__query = ProjectQuery(db)
 
-    def list_projects(self, user_id: int) -> list[ProjectResponse]:
+    def list_projects(self, user_id: int) -> list[ProjectResponseWithWordsCount]:
         """
-        Get list of all projects for a user.
+        Get list of all projects for a user with aggregate metrics.
 
         Args:
             user_id: ID of user
@@ -26,11 +31,30 @@ class ProjectService:
             List of ProjectResponse objects
         """
         projects = self.__query.list_projects(user_id)
-        return [ProjectResponse.model_validate(project) for project in projects]
+        return [
+            ProjectResponseWithWordsCount(
+                id=project.id,
+                name=project.name,
+                user_id=project.user_id,
+                user=ShortUser.model_validate(project.user),
+                created_at=project.created_at,
+                updated_at=project.updated_at,
+                approved_segments_count=aggregates[0],
+                total_segments_count=aggregates[1],
+                approved_words_count=aggregates[2],
+                total_words_count=aggregates[3],
+            )
+            for project, aggregates in [
+                (project, self.__query.get_project_aggregates(project.id))
+                for project in projects
+            ]
+        ]
 
-    def get_project(self, project_id: int, user_id: int) -> ProjectResponse:
+    def get_project(
+        self, project_id: int, user_id: int
+    ) -> ProjectResponseWithWordsCount:
         """
-        Get a single project by ID.
+        Get a single project by ID with aggregate metrics.
 
         Args:
             project_id: Project ID
@@ -46,7 +70,19 @@ class ProjectService:
         try:
             project = self.__query._get_project(project_id)
             self._check_ownership(project, user_id)
-            return ProjectResponse.model_validate(project)
+            aggregates = self.__query.get_project_aggregates(project_id)
+            return ProjectResponseWithWordsCount(
+                id=project.id,
+                name=project.name,
+                user_id=project.user_id,
+                user=ShortUser.model_validate(project.user),
+                created_at=project.created_at,
+                updated_at=project.updated_at,
+                approved_segments_count=aggregates[0],
+                total_segments_count=aggregates[1],
+                approved_words_count=aggregates[2],
+                total_words_count=aggregates[3],
+            )
         except NotFoundProjectExc:
             raise EntityNotFound("Project", project_id)
 
