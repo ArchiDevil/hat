@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import models
-from app.base.exceptions import BusinessLogicError, EntityNotFound
+from app.base.exceptions import BusinessLogicError, EntityNotFound, UnauthorizedAccess
 from app.comments.schema import CommentCreate, CommentResponse
 from app.db import get_db
 from app.documents import schema as doc_schema
@@ -288,3 +288,24 @@ def download_doc(
         return service.download_document(doc_id)
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.put("/{doc_id}")
+def update_document(
+    doc_id: int,
+    update_data: doc_schema.DocumentUpdate,
+    user_id: Annotated[int, Depends(get_current_user_id)],
+    service: Annotated[DocumentService, Depends(get_service)],
+) -> doc_schema.DocumentUpdateResponse:
+    try:
+        return service.update_document(doc_id, update_data, user_id)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except UnauthorizedAccess as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )

@@ -100,3 +100,27 @@ class DocumentRecordHistory(BaseModel):
 
 class DocumentRecordHistoryListResponse(BaseModel):
     history: list[DocumentRecordHistory]
+
+
+class DocumentUpdate(BaseModel):
+    name: str | None = Field(
+        default=None,
+        description="New name for the document.",
+        min_length=1,
+        max_length=255,
+    )
+    project_id: int | None = Field(
+        default=None,
+        description="ID of project to assign document to. Set to null to unassign.",
+        ge=1,
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentUpdateResponse(BaseModel):
+    id: int
+    name: str
+    project_id: int | None
+
+    model_config = ConfigDict(from_attributes=True)

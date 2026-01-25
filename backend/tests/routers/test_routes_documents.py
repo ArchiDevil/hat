@@ -16,6 +16,7 @@ from app.documents.models import (
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
+from app.projects.models import Project
 from app.glossary.models import ProcessingStatuses
 from app.glossary.query import GlossaryQuery
 from app.glossary.schema import (
@@ -1068,3 +1069,221 @@ def test_doc_glossary_search_returns_404_for_nonexistent_document(
 ):
     response = user_logged_client.get("/document/99/glossary_search?query=test")
     assert response.status_code == 404
+
+
+def test_update_document_name_only(user_logged_client: TestClient, session: Session):
+    """Test successful update of document name only."""
+    doc = Document(
+        name="original.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+    )
+    session.add(doc)
+    session.commit()
+
+    response = user_logged_client.put(
+        f"/document/{doc.id}", json={"name": "updated.txt"}
+    )
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["id"] == doc.id
+    assert response_json["name"] == "updated.txt"
+    assert response_json["project_id"] is None
+
+    with session as s:
+        updated_doc = s.query(Document).filter_by(id=doc.id).first()
+        assert updated_doc is not None
+        assert updated_doc.name == "updated.txt"
+        assert updated_doc.project_id is None
+
+
+def test_update_document_project_only(user_logged_client: TestClient, session: Session):
+    """Test successful update of document project_id only."""
+    doc = Document(
+        name="document.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+    )
+    project = Project(user_id=1, name="Test Project")
+    session.add(doc)
+    session.add(project)
+    session.commit()
+    project_id = project.id  # Save id before session expires
+
+    response = user_logged_client.put(
+        f"/document/{doc.id}", json={"project_id": project_id}
+    )
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["id"] == doc.id
+    assert response_json["name"] == "document.txt"
+    assert response_json["project_id"] == project_id
+
+    with session as s:
+        updated_doc = s.query(Document).filter_by(id=doc.id).first()
+        assert updated_doc is not None
+        assert updated_doc.project_id == project_id
+
+
+def test_update_document_name_and_project(
+    user_logged_client: TestClient, session: Session
+):
+    """Test successful update of both name and project_id."""
+    doc = Document(
+        name="original.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+    )
+    project = Project(user_id=1, name="Test Project")
+    session.add(doc)
+    session.add(project)
+    session.commit()
+    project_id = project.id  # Save id before session expires
+
+    response = user_logged_client.put(
+        f"/document/{doc.id}", json={"name": "updated.txt", "project_id": project_id}
+    )
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["id"] == doc.id
+    assert response_json["name"] == "updated.txt"
+    assert response_json["project_id"] == project_id
+
+    with session as s:
+        updated_doc = s.query(Document).filter_by(id=doc.id).first()
+        assert updated_doc is not None
+        assert updated_doc.name == "updated.txt"
+        assert updated_doc.project_id == project_id
+
+
+def test_unassign_document_from_project(
+    user_logged_client: TestClient, session: Session
+):
+    """Test successful unassignment of document from project."""
+    doc = Document(
+        name="document.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+        project_id=1,
+    )
+    project = Project(user_id=1, name="Test Project")
+    session.add(doc)
+    session.add(project)
+    session.commit()
+
+    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": None})
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["id"] == doc.id
+    assert response_json["name"] == "document.txt"
+    assert response_json["project_id"] is None
+
+    with session as s:
+        updated_doc = s.query(Document).filter_by(id=doc.id).first()
+        assert updated_doc is not None
+        assert updated_doc.project_id is None
+
+
+def test_update_document_not_found(user_logged_client: TestClient, session: Session):
+    """Test 404 when document doesn't exist."""
+    response = user_logged_client.put("/document/999", json={"name": "updated.txt"})
+    assert response.status_code == 404
+    assert "Document not found" in response.json()["detail"]
+
+
+def test_update_project_not_found(user_logged_client: TestClient, session: Session):
+    """Test 404 when project doesn't exist."""
+    doc = Document(
+        name="document.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+    )
+    session.add(doc)
+    session.commit()
+
+    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": 999})
+    assert response.status_code == 404
+    assert "Project with id 999 not found" in response.json()["detail"]
+
+
+def test_update_document_validation_error(
+    user_logged_client: TestClient, session: Session
+):
+    """Test 422 for invalid project_id (negative, zero) or invalid name."""
+    doc = Document(
+        name="document.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+    )
+    session.add(doc)
+    session.commit()
+
+    # Test invalid project_id (negative)
+    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": -1})
+    assert response.status_code == 422
+
+    # Test invalid project_id (zero)
+    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": 0})
+    assert response.status_code == 422
+
+    # Test invalid name (empty)
+    response = user_logged_client.put(f"/document/{doc.id}", json={"name": ""})
+    assert response.status_code == 422
+
+    # Test invalid name (too long - over 255 characters)
+    long_name = "a" * 256
+    response = user_logged_client.put(f"/document/{doc.id}", json={"name": long_name})
+    assert response.status_code == 422
+
+
+def test_update_document_unauthenticated(fastapi_client: TestClient, session: Session):
+    """Test 401 when user is not authenticated."""
+    doc = Document(
+        name="document.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+    )
+    session.add(doc)
+    session.commit()
+
+    response = fastapi_client.put(f"/document/{doc.id}", json={"name": "updated.txt"})
+    assert response.status_code == 401
+
+
+def test_update_document_to_same_project(
+    user_logged_client: TestClient, session: Session
+):
+    """Test idempotent update to same project."""
+    doc = Document(
+        name="document.txt",
+        type=DocumentType.txt,
+        processing_status="done",
+        created_by=1,
+        project_id=1,
+    )
+    project = Project(user_id=1, name="Test Project")
+    session.add(doc)
+    session.add(project)
+    session.commit()
+    project_id = project.id  # Save id before session expires
+
+    response = user_logged_client.put(
+        f"/document/{doc.id}", json={"project_id": project_id}
+    )
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["id"] == doc.id
+    assert response_json["name"] == "document.txt"
+    assert response_json["project_id"] == project_id
+
+    with session as s:
+        updated_doc = s.query(Document).filter_by(id=doc.id).first()
+        assert updated_doc is not None
+        assert updated_doc.project_id == project_id

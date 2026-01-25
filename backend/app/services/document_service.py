@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import models, schema
-from app.base.exceptions import BusinessLogicError, EntityNotFound
+from app.base.exceptions import BusinessLogicError, EntityNotFound, UnauthorizedAccess
 from app.comments.query import CommentsQuery
 from app.comments.schema import CommentCreate, CommentResponse
 from app.documents import schema as doc_schema
@@ -25,6 +25,7 @@ from app.documents.query import (
     GenericDocsQuery,
     NotFoundDocumentRecordExc,
 )
+from app.projects.query import ProjectQuery, NotFoundProjectExc
 from app.documents.utils import compute_diff, reconstruct_from_diffs
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import SegmentState, extract_xliff_content
@@ -823,6 +824,40 @@ class DocumentService:
         if not record:
             raise EntityNotFound("Document record not found")
         return record
+
+    def update_document(
+        self, doc_id: int, update_data: doc_schema.DocumentUpdate, user_id: int
+    ) -> doc_schema.DocumentUpdateResponse:
+        """
+        Update a document (name and/or project_id).
+
+        Args:
+            doc_id: Document ID
+            update_data: DocumentUpdate object with optional name and project_id
+            user_id: ID of user performing action
+
+        Returns:
+            DocumentUpdateResponse object
+
+        Raises:
+            EntityNotFound: If document or project not found
+            UnauthorizedAccess: If user doesn't own project
+        """
+        self._get_document_by_id(doc_id)
+        try:
+            if update_data.project_id is not None:
+                pq = ProjectQuery(self.__db)
+                # verify project exists
+                pq._get_project(update_data.project_id)
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", update_data.project_id)
+
+        updated_doc = self.__query.update_document(
+            doc_id, update_data.name, update_data.project_id
+        )
+        return doc_schema.DocumentUpdateResponse(
+            id=updated_doc.id, name=updated_doc.name, project_id=updated_doc.project_id
+        )
 
     def encode_to_latin_1(self, original: str):
         output = ""

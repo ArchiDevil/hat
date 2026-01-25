@@ -28,6 +28,10 @@ class NotFoundDocumentRecordExc(BaseQueryException):
     """Exception raised when document record not found"""
 
 
+class NotFoundDocumentExc(BaseQueryException):
+    """Exception raised when document not found"""
+
+
 class GenericDocsQuery:
     """Contain query to Document"""
 
@@ -220,6 +224,20 @@ class GenericDocsQuery:
 
         self.__db.commit()
         return record
+
+    def update_document(
+        self, doc_id: int, name: str | None, project_id: int | None
+    ) -> Document:
+        document = self.get_document(doc_id)
+        if not document:
+            raise NotFoundDocumentExc()
+
+        if name is not None:
+            document.name = name
+        document.project_id = project_id
+        self.__db.commit()
+        self.__db.refresh(document)
+        return document
 
     def get_record_ids_by_source(self, doc_id: int, source: str) -> list[int]:
         return list(
