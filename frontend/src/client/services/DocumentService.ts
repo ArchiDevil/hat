@@ -6,6 +6,8 @@ import {DocumentWithRecordsCount} from '../schemas/DocumentWithRecordsCount'
 import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {StatusMessage} from '../schemas/StatusMessage'
+import {DocumentUpdateResponse} from '../schemas/DocumentUpdateResponse'
+import {DocumentUpdate} from '../schemas/DocumentUpdate'
 import {DocumentRecordListResponse} from '../schemas/DocumentRecordListResponse'
 import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
 import {CommentResponse} from '../schemas/CommentResponse'
@@ -35,6 +37,9 @@ export const getDoc = async (doc_id: number): Promise<DocumentWithRecordsCount> 
 }
 export const deleteDoc = async (doc_id: number): Promise<StatusMessage> => {
   return await api.delete<StatusMessage>(`/document/${doc_id}`)
+}
+export const updateDocument = async (doc_id: number, content: DocumentUpdate): Promise<DocumentUpdateResponse> => {
+  return await api.put<DocumentUpdateResponse>(`/document/${doc_id}`, content)
 }
 export const getDocRecords = async (doc_id: number, page?: number | null, source?: string | null, target?: string | null): Promise<DocumentRecordListResponse> => {
   return await api.get<DocumentRecordListResponse>(`/document/${doc_id}/records`, {query: {page, source, target}})
