@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.comments.models import Comment
     from app.glossary.models import Glossary
     from app.models import User
+    from app.projects.models import Project
     from app.translation_memory.models import TranslationMemory
 
 
@@ -75,6 +76,9 @@ class Document(Base):
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     processing_status: Mapped[str] = mapped_column()
     upload_time: Mapped[datetime] = mapped_column(default=utc_time)
+    project_id: Mapped[int | None] = mapped_column(
+        ForeignKey("projects.id"), nullable=True
+    )
 
     records: Mapped[list["DocumentRecord"]] = relationship(
         back_populates="document",
@@ -82,6 +86,7 @@ class Document(Base):
         order_by="DocumentRecord.id",
     )
     user: Mapped["User"] = relationship("User", back_populates="documents")
+    project: Mapped["Project"] = relationship(back_populates="documents")
     xliff: Mapped["XliffDocument"] = relationship(
         back_populates="parent", cascade="all, delete-orphan"
     )
