@@ -22,9 +22,9 @@ import {
   getDoc,
   getDocRecords,
   getDownloadDocLink,
-  updateDocRecord,
 } from '../client/services/DocumentService'
 import {useDocStore} from '../stores/document'
+import {updateDocRecord} from '../client/services/RecordsService'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow

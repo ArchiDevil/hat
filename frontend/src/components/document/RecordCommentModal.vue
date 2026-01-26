@@ -9,7 +9,7 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
 
-import {createComment, getComments} from '../../client/services/DocumentService'
+import {createComment, getComments} from '../../client/services/RecordsService'
 import {CommentResponse} from '../../client/schemas/CommentResponse'
 
 const props = defineProps<{
@@ -30,7 +30,7 @@ const {data, isLoading} = useQuery({
     return await getComments(props.recordId)
   },
   enabled: () => props.recordId !== -1,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: <T,>(prevData: T) => prevData,
   staleTime: 60 * 1000,
 })
 
@@ -79,7 +79,10 @@ const addComment = async () => {
           header="Made by"
         />
         <Column
-          :field="(record: CommentResponse) => new Date(record.updated_at).toLocaleString()"
+          :field="
+            (record: CommentResponse) =>
+              new Date(record.updated_at).toLocaleString()
+          "
           header="Last updated"
         />
       </DataTable>

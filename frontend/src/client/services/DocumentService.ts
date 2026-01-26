@@ -10,12 +10,6 @@ import {DocumentUpdateResponse} from '../schemas/DocumentUpdateResponse'
 import {DocumentUpdate} from '../schemas/DocumentUpdate'
 import {DocumentRecordListResponse} from '../schemas/DocumentRecordListResponse'
 import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
-import {CommentResponse} from '../schemas/CommentResponse'
-import {CommentCreate} from '../schemas/CommentCreate'
-import {MemorySubstitution} from '../schemas/MemorySubstitution'
-import {DocumentRecordHistoryListResponse} from '../schemas/DocumentRecordHistoryListResponse'
-import {DocumentRecordUpdateResponse} from '../schemas/DocumentRecordUpdateResponse'
-import {DocumentRecordUpdate} from '../schemas/DocumentRecordUpdate'
 import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
 import {DocTranslationMemoryUpdate} from '../schemas/DocTranslationMemoryUpdate'
 import {TranslationMemoryListResponse} from '../schemas/TranslationMemoryListResponse'
@@ -46,24 +40,6 @@ export const getDocRecords = async (doc_id: number, page?: number | null, source
 }
 export const docGlossarySearch = async (doc_id: number, query: string): Promise<GlossaryRecordSchema[]> => {
   return await api.get<GlossaryRecordSchema[]>(`/document/${doc_id}/glossary_search`, {query: {query}})
-}
-export const getComments = async (record_id: number): Promise<CommentResponse[]> => {
-  return await api.get<CommentResponse[]>(`/document/records/${record_id}/comments`)
-}
-export const createComment = async (record_id: number, content: CommentCreate): Promise<CommentResponse> => {
-  return await api.post<CommentResponse>(`/document/records/${record_id}/comments`, content)
-}
-export const getRecordSubstitutions = async (record_id: number): Promise<MemorySubstitution[]> => {
-  return await api.get<MemorySubstitution[]>(`/document/records/${record_id}/substitutions`)
-}
-export const getSegmentHistory = async (record_id: number): Promise<DocumentRecordHistoryListResponse> => {
-  return await api.get<DocumentRecordHistoryListResponse>(`/document/records/${record_id}/history`)
-}
-export const getRecordGlossaryRecords = async (record_id: number): Promise<GlossaryRecordSchema[]> => {
-  return await api.get<GlossaryRecordSchema[]>(`/document/records/${record_id}/glossary_records`)
-}
-export const updateDocRecord = async (record_id: number, content: DocumentRecordUpdate): Promise<DocumentRecordUpdateResponse> => {
-  return await api.put<DocumentRecordUpdateResponse>(`/document/records/${record_id}`, content)
 }
 export const getTranslationMemories = async (doc_id: number): Promise<DocTranslationMemory[]> => {
   return await api.get<DocTranslationMemory[]>(`/document/${doc_id}/memories`)

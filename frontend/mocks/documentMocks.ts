@@ -4,16 +4,18 @@ import {faker, fakerRU} from '@faker-js/faker'
 import {glossaries} from './glossaryMocks'
 import {AwaitedReturnType} from './utils'
 import {
-  getComments,
   getDoc,
   getDocRecords,
   getDocs,
   getGlossaries,
+} from '../src/client/services/DocumentService'
+import {
+  getComments,
   getRecordGlossaryRecords,
   getRecordSubstitutions,
   getSegmentHistory,
   updateDocRecord,
-} from '../src/client/services/DocumentService'
+} from '../src/client/services/RecordsService'
 import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
 import {DocumentRecordUpdate} from '../src/client/schemas/DocumentRecordUpdate'
 import {CommentResponse} from '../src/client/schemas/CommentResponse'
