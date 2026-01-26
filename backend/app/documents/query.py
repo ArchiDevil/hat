@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.base.exceptions import BaseQueryException
 from app.comments.models import Comment
 from app.documents.models import DocumentRecordHistory, DocumentRecordHistoryChangeType
-from app.documents.schema import DocumentRecordFilter, DocumentRecordUpdate
+from app.documents.schema import DocumentRecordFilter
 from app.glossary.models import Glossary
 from app.models import DocumentStatus
 from app.translation_memory.models import TranslationMemory
@@ -22,10 +22,6 @@ from .models import (
     TxtDocument,
     XliffDocument,
 )
-
-
-class NotFoundDocumentRecordExc(BaseQueryException):
-    """Exception raised when document record not found"""
 
 
 class NotFoundDocumentExc(BaseQueryException):
@@ -205,25 +201,6 @@ class GenericDocsQuery:
             .offset(page_records * page)
             .limit(page_records)
         ).all()
-
-    def get_record(self, record_id: int) -> DocumentRecord | None:
-        return self.__db.execute(
-            select(DocumentRecord).filter(DocumentRecord.id == record_id)
-        ).scalar_one_or_none()
-
-    def update_record(
-        self, record_id: int, data: DocumentRecordUpdate
-    ) -> DocumentRecord:
-        record = self.get_record(record_id)
-        if not record:
-            raise NotFoundDocumentRecordExc()
-
-        record.target = data.target
-        if data.approved is not None:
-            record.approved = data.approved
-
-        self.__db.commit()
-        return record
 
     def update_document(
         self, doc_id: int, name: str | None, project_id: int | None
