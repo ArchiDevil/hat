@@ -7,9 +7,9 @@ from app.base.exceptions import EntityNotFound, UnauthorizedAccess
 from app.db import get_db
 from app.models import StatusMessage
 from app.projects.schema import (
+    DetailedProjectResponse,
     ProjectCreate,
     ProjectResponse,
-    ProjectResponseWithWordsCount,
     ProjectUpdate,
 )
 from app.services.project_service import ProjectService
@@ -27,7 +27,7 @@ def get_service(db: Annotated[Session, Depends(get_db)]):
 @router.get(
     "/",
     description="Get a project list",
-    response_model=list[ProjectResponseWithWordsCount],
+    response_model=list[ProjectResponse],
 )
 def list_projects(
     user_id: Annotated[int, Depends(get_current_user_id)],
@@ -39,7 +39,7 @@ def list_projects(
 @router.get(
     path="/{project_id}",
     description="Get a single project",
-    response_model=ProjectResponseWithWordsCount,
+    response_model=DetailedProjectResponse,
     responses={
         404: {
             "description": "Project requested by id",

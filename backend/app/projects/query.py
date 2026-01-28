@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Sequence
 
 from sqlalchemy import case, func, select, update
 from sqlalchemy.orm import Session
@@ -28,13 +29,12 @@ class ProjectQuery:
         raise NotFoundProjectExc()
 
     def list_projects(self, user_id: int) -> list[Project]:
-        """List all projects for a specific user."""
         return list(
             self.__db.execute(select(Project).order_by(Project.id)).scalars().all()
         )
 
     def create_project(self, user_id: int, data: ProjectCreate) -> Project:
-        project = Project(user_id=user_id, name=data.name)
+        project = Project(created_by=user_id, name=data.name)
         self.__db.add(project)
         self.__db.commit()
         return project
@@ -57,11 +57,20 @@ class ProjectQuery:
         self.__db.commit()
         return True
 
-    def get_project_aggregates(self, project_id: int) -> tuple[int, int, int, int]:
+    def get_project_documents(self, project_id: int | None) -> Sequence[Document]:
+        docs = (
+            self.__db.execute(select(Document).where(Document.project_id == project_id))
+            .scalars()
+            .all()
+        )
+        return docs
+
+    def get_project_aggregates(self, project_id: int | None):
         """
         Get aggregate metrics for a project.
 
         Returns a tuple containing:
+        - doc_id: Document ID
         - approved_segments_count: Total approved segments across all documents
         - total_segments_count: Total segments across all documents
         - approved_words_count: Total approved words across all documents
@@ -71,11 +80,12 @@ class ProjectQuery:
             project_id: ID of the project
 
         Returns:
-            Tuple of four integers: (approved_segments_count, total_segments_count,
-                                      approved_words_count, total_words_count)
+            List of tuples of five integers: (doc_id, approved_segments_count,
+            total_segments_count, approved_words_count, total_words_count)
         """
         stmt = (
             select(
+                DocumentRecord.document_id.label("doc_id"),
                 func.sum(case((DocumentRecord.approved.is_(True), 1), else_=0)).label(
                     "approved_segments"
                 ),
@@ -91,12 +101,7 @@ class ProjectQuery:
             .select_from(DocumentRecord)
             .join(Document, DocumentRecord.document_id == Document.id)
             .where(Document.project_id == project_id)
+            .group_by("doc_id")
         )
 
-        result = self.__db.execute(stmt).one()
-        return (
-            result.approved_segments or 0,
-            result.total_segments or 0,
-            result.approved_words or 0,
-            result.total_words or 0,
-        )
+        return self.__db.execute(stmt).all()

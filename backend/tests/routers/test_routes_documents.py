@@ -30,61 +30,6 @@ from app.translation_memory.models import TranslationMemory
 # pylint: disable=C0116
 
 
-def test_can_get_list_of_docs(user_logged_client: TestClient, session: Session):
-    with session as s:
-        s.add_all(
-            [
-                Document(
-                    name="first_doc.txt",
-                    type=DocumentType.txt,
-                    processing_status="pending",
-                    records=[
-                        DocumentRecord(
-                            source="Regional Effects",
-                            target="Translation",
-                            word_count=2,
-                        )
-                    ],
-                    created_by=1,
-                ),
-                Document(
-                    name="another_doc.xliff",
-                    type=DocumentType.xliff,
-                    processing_status="done",
-                    created_by=1,
-                ),
-            ]
-        )
-        s.commit()
-
-    response = user_logged_client.get("/document")
-    assert response.status_code == 200
-    assert response.json() == [
-        {
-            "id": 1,
-            "name": "first_doc.txt",
-            "status": "pending",
-            "created_by": 1,
-            "type": "txt",
-            "approved_records_count": 0,
-            "records_count": 1,
-            "approved_word_count": 0,
-            "total_word_count": 2,
-        },
-        {
-            "id": 2,
-            "name": "another_doc.xliff",
-            "status": "done",
-            "created_by": 1,
-            "type": "xliff",
-            "approved_records_count": 0,
-            "records_count": 0,
-            "approved_word_count": 0,
-            "total_word_count": 0,
-        },
-    ]
-
-
 def test_can_get_document(user_logged_client: TestClient, session: Session):
     with session as s:
         records = [
@@ -118,7 +63,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         "status": "pending",
         "created_by": 1,
         "approved_records_count": 0,
-        "records_count": 2,
+        "total_records_count": 2,
         "type": "txt",
         "approved_word_count": 0,
         "total_word_count": 4,
@@ -1106,7 +1051,7 @@ def test_update_document_project_only(user_logged_client: TestClient, session: S
         processing_status="done",
         created_by=1,
     )
-    project = Project(user_id=1, name="Test Project")
+    project = Project(created_by=1, name="Test Project")
     session.add(doc)
     session.add(project)
     session.commit()
@@ -1137,7 +1082,7 @@ def test_update_document_name_and_project(
         processing_status="done",
         created_by=1,
     )
-    project = Project(user_id=1, name="Test Project")
+    project = Project(created_by=1, name="Test Project")
     session.add(doc)
     session.add(project)
     session.commit()
@@ -1170,7 +1115,7 @@ def test_unassign_document_from_project(
         created_by=1,
         project_id=1,
     )
-    project = Project(user_id=1, name="Test Project")
+    project = Project(created_by=1, name="Test Project")
     session.add(doc)
     session.add(project)
     session.commit()
@@ -1268,7 +1213,7 @@ def test_update_document_to_same_project(
         created_by=1,
         project_id=1,
     )
-    project = Project(user_id=1, name="Test Project")
+    project = Project(created_by=1, name="Test Project")
     session.add(doc)
     session.add(project)
     session.commit()

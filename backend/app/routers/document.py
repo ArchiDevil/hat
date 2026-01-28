@@ -25,13 +25,6 @@ def get_service(db: Annotated[Session, Depends(get_db)]):
     return DocumentService(db)
 
 
-@router.get("/")
-def get_docs(
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> list[doc_schema.DocumentWithRecordsCount]:
-    return service.get_documents()
-
-
 @router.get("/{doc_id}")
 def get_doc(
     doc_id: int,

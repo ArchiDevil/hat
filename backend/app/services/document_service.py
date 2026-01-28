@@ -49,33 +49,6 @@ class DocumentService:
         self.__glossary_query = GlossaryQuery(db)
         self.__tm_query = TranslationMemoryQuery(db)
 
-    def get_documents(self) -> list[doc_schema.DocumentWithRecordsCount]:
-        """
-        Get list of all documents.
-
-        Returns:
-            List of DocumentWithRecordsCount objects
-        """
-        docs = self.__query.get_documents_list()
-        output = []
-        for doc in docs:
-            records = self.__query.get_document_records_count_with_approved(doc)
-            words = self.__query.get_document_word_count_with_approved(doc)
-            output.append(
-                doc_schema.DocumentWithRecordsCount(
-                    id=doc.id,
-                    name=doc.name,
-                    status=models.DocumentStatus(doc.processing_status),
-                    created_by=doc.created_by,
-                    type=doc.type.value,
-                    approved_records_count=records[0],
-                    records_count=records[1],
-                    approved_word_count=words[0],
-                    total_word_count=words[1],
-                )
-            )
-        return output
-
     def get_document(self, doc_id: int) -> doc_schema.DocumentWithRecordsCount:
         """
         Get a single document by ID.
@@ -101,7 +74,7 @@ class DocumentService:
             created_by=doc.created_by,
             type=doc.type.value,
             approved_records_count=records[0],
-            records_count=records[1],
+            total_records_count=records[1],
             approved_word_count=words[0],
             total_word_count=words[1],
         )
