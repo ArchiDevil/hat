@@ -3,8 +3,6 @@
 import {getApiBase, api} from '../defaults'
 
 import {DocumentWithRecordsCount} from '../schemas/DocumentWithRecordsCount'
-import {Document} from '../schemas/Document'
-import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentUpdateResponse} from '../schemas/DocumentUpdateResponse'
 import {DocumentUpdate} from '../schemas/DocumentUpdate'
@@ -16,16 +14,10 @@ import {TranslationMemoryListResponse} from '../schemas/TranslationMemoryListRes
 import {TranslationMemoryListSimilarResponse} from '../schemas/TranslationMemoryListSimilarResponse'
 import {DocGlossary} from '../schemas/DocGlossary'
 import {DocGlossaryUpdate} from '../schemas/DocGlossaryUpdate'
+import {Document} from '../schemas/Document'
+import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
 
-export const getDocs = async (): Promise<DocumentWithRecordsCount[]> => {
-  return await api.get<DocumentWithRecordsCount[]>(`/document/`)
-}
-export const createDoc = async (data: Body_create_doc_document__post): Promise<Document> => {
-  const formData = new FormData()
-  formData.append('file', data.file)
-  return await api.post<Document>(`/document/`, formData)
-}
 export const getDoc = async (doc_id: number): Promise<DocumentWithRecordsCount> => {
   return await api.get<DocumentWithRecordsCount>(`/document/${doc_id}`)
 }
@@ -58,6 +50,11 @@ export const getGlossaries = async (doc_id: number): Promise<DocGlossary[]> => {
 }
 export const setGlossaries = async (doc_id: number, content: DocGlossaryUpdate): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/document/${doc_id}/glossaries`, content)
+}
+export const createDoc = async (data: Body_create_doc_document__post): Promise<Document> => {
+  const formData = new FormData()
+  formData.append('file', data.file)
+  return await api.post<Document>(`/document/`, formData)
 }
 export const processDoc = async (doc_id: number, content: DocumentProcessingSettings): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/document/${doc_id}/process`, content)

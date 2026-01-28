@@ -2,20 +2,20 @@
 
 import {getApiBase, api} from '../defaults'
 
-import {ProjectResponseWithWordsCount} from '../schemas/ProjectResponseWithWordsCount'
 import {ProjectResponse} from '../schemas/ProjectResponse'
 import {ProjectCreate} from '../schemas/ProjectCreate'
+import {DetailedProjectResponse} from '../schemas/DetailedProjectResponse'
 import {ProjectUpdate} from '../schemas/ProjectUpdate'
 import {StatusMessage} from '../schemas/StatusMessage'
 
-export const listProjects = async (): Promise<ProjectResponseWithWordsCount[]> => {
-  return await api.get<ProjectResponseWithWordsCount[]>(`/projects/`)
+export const listProjects = async (): Promise<ProjectResponse[]> => {
+  return await api.get<ProjectResponse[]>(`/projects/`)
 }
 export const createProject = async (content: ProjectCreate): Promise<ProjectResponse> => {
   return await api.post<ProjectResponse>(`/projects/`, content)
 }
-export const retrieveProject = async (project_id: number): Promise<ProjectResponseWithWordsCount> => {
-  return await api.get<ProjectResponseWithWordsCount>(`/projects/${project_id}`)
+export const retrieveProject = async (project_id: number): Promise<DetailedProjectResponse> => {
+  return await api.get<DetailedProjectResponse>(`/projects/${project_id}`)
 }
 export const updateProject = async (project_id: number, content: ProjectUpdate): Promise<ProjectResponse> => {
   return await api.put<ProjectResponse>(`/projects/${project_id}`, content)
