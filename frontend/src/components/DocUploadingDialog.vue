@@ -187,7 +187,7 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
         </div>
       </template>
       <template #empty>
-        <span v-if="!status">Choose a file to upload.</span>
+        <span v-if="!status">Choose a file to upload into Unnamed project.</span>
       </template>
     </FileUpload>
   </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, triggerRef, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {useQuery} from '@pinia/colada'
+import {useQuery, useQueryCache} from '@pinia/colada'
 
 import Paginator, {PageState} from 'primevue/paginator'
 import ProgressBar from 'primevue/progressbar'
@@ -23,7 +23,6 @@ import {
   getDocRecords,
   getDownloadDocLink,
 } from '../client/services/DocumentService'
-import {useDocStore} from '../stores/document'
 import {updateDocRecord} from '../client/services/RecordsService'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
@@ -39,6 +38,8 @@ const page = computed(() => {
   return Number(route.query.page ?? '0')
 })
 
+const queryCache = useQueryCache()
+
 const {
   data: document,
   isLoading: documentLoading,
@@ -46,7 +47,7 @@ const {
 } = useQuery({
   key: () => ['document', documentId.value],
   query: () => getDoc(documentId.value),
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: <T,>(prevData: T) => prevData,
 })
 
 watch(document, (newVal) => {
@@ -110,7 +111,7 @@ const {data: recordsData, refetch: refetchRecords} = useQuery({
   },
   // be cautious as incorrect changes here will trigger a lot of updates
   enabled: () => documentReady.value,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: <T,>(prevData: T) => prevData,
 })
 
 const recordsCount = computed(() => recordsData.value?.total_records)
@@ -150,7 +151,13 @@ const onSegmentUpdate = async (
   // rerequest a document to update its records count this is because more than
   // one record can be updated by a backend (repetitions, for example)
   await refetchDoc()
-  await useDocStore().updateDocument(documentId.value)
+  await queryCache.invalidateQueries({
+    key: ['documents', documentId.value],
+  })
+  // TODO: this should be done too
+  // await queryCache.invalidateQueries({
+  //   key: ['projects', projectId.value],
+  // })
 }
 
 const onSegmentCommit = async (
