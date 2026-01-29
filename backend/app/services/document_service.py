@@ -514,7 +514,10 @@ class DocumentService:
         doc = self._get_document_by_id(doc_id)
         glossary_ids = {g.id for g in settings.glossaries}
         try:
-            glossaries = list(self.__glossary_query.get_glossaries(list(glossary_ids)))
+            if not glossary_ids:
+                glossaries = []
+            else:
+                glossaries = list(self.__glossary_query.get_glossaries(list(glossary_ids)))
         except NotFoundGlossaryExc:
             raise EntityNotFound("Glossary not found")
 
