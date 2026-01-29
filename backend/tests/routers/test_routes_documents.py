@@ -67,7 +67,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         "type": "txt",
         "approved_word_count": 0,
         "total_word_count": 4,
-        "project_id": None
+        "project_id": None,
     }
 
 

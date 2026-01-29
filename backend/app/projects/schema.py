@@ -31,12 +31,3 @@ class DetailedProjectResponse(ProjectResponse):
     total_words_count: int
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class ProjectResponseWithWordsCount(ProjectResponse):
-    approved_segments_count: int
-    total_segments_count: int
-    approved_words_count: int
-    total_words_count: int
-
-    model_config = ConfigDict(from_attributes=True)

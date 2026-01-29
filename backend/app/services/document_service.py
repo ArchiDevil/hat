@@ -332,7 +332,9 @@ class DocumentService:
             if not glossary_ids:
                 glossaries = []
             else:
-                glossaries = list(self.__glossary_query.get_glossaries(list(glossary_ids)))
+                glossaries = list(
+                    self.__glossary_query.get_glossaries(list(glossary_ids))
+                )
         except NotFoundGlossaryExc:
             raise EntityNotFound("Glossary not found")
 
