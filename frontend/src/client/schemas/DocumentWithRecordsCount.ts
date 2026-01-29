@@ -8,6 +8,7 @@ export interface DocumentWithRecordsCount {
   status: DocumentStatus
   created_by: number
   type: string
+  project_id: number | null
   approved_records_count: number
   total_records_count: number
   approved_word_count: number

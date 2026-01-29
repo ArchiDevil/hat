@@ -73,6 +73,7 @@ class DocumentService:
             status=models.DocumentStatus(doc.processing_status),
             created_by=doc.created_by,
             type=doc.type.value,
+            project_id=doc.project_id,
             approved_records_count=records[0],
             total_records_count=records[1],
             approved_word_count=words[0],
@@ -128,6 +129,7 @@ class DocumentService:
             status=models.DocumentStatus(doc.processing_status),
             created_by=doc.created_by,
             type=doc.type.value,
+            project_id=None,
         )
 
     def delete_document(self, doc_id: int) -> models.StatusMessage:

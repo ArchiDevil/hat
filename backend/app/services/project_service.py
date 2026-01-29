@@ -107,6 +107,7 @@ class ProjectService:
                         created_by=document.created_by,
                         status=DocumentStatus(document.processing_status),
                         type=document.type.value,
+                        project_id=project.id,
                         approved_records_count=find_doc(document.id)[1],
                         total_records_count=find_doc(document.id)[2],
                         approved_word_count=find_doc(document.id)[3],
