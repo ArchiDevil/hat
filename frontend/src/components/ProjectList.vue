@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import {useQuery} from '@pinia/colada'
-
+import {ProgressSpinner} from 'primevue'
 import ProjectListItem from './ProjectListItem.vue'
-import {listProjects} from '../client/services/ProjectsService'
+import {useProjects} from '../queries/projects'
 
-const {data: projects, status: projectsStatus} = useQuery({
-  key: ['projects'],
-  query: async () => {
-    return await listProjects()
-  },
-  placeholderData: <T,>(prevData: T) => prevData,
-})
+const {data: projects, status: projectsStatus} = useProjects()
 
 defineEmits<{
   openSettings: [number]

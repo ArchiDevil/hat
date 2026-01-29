@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useQuery, useQueryCache} from '@pinia/colada'
-import {Panel, ProgressBar} from 'primevue'
+import {Panel, ProgressBar, ProgressSpinner} from 'primevue'
 
 import {ProjectResponse} from '../client/schemas/ProjectResponse'
 import {retrieveProject} from '../client/services/ProjectsService'
 
 import DocumentList from './DocumentList.vue'
+import {PROJECT_KEYS} from '../queries/projects'
 
 const {project} = defineProps<{
   project: ProjectResponse
@@ -19,7 +20,7 @@ defineEmits<{
 const collapsed = ref(true)
 
 const {data: detailedInfo, status} = useQuery({
-  key: () => ['projects', project.id],
+  key: () => PROJECT_KEYS.byId(project.id),
   query: async () => {
     return await retrieveProject(project.id)
   },
@@ -71,7 +72,7 @@ const progressBarTitle = computed(() => {
         class="pt-2 flex flex-row items-center gap-2"
       >
         <i class="pi pi-info-circle text-xl text-surface-500" />
-        <span class="text-lg"> No documents in the project </span>
+        <span class="text-lg">No documents in the project</span>
       </div>
       <DocumentList
         v-else
@@ -80,7 +81,7 @@ const progressBarTitle = computed(() => {
         @delete="
           () =>
             queryCache.invalidateQueries({
-              key: ['projects', project.id],
+              key: PROJECT_KEYS.byId(project.id),
             })
         "
       />
