@@ -5,15 +5,12 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app import models
-from app.base.exceptions import BusinessLogicError, EntityNotFound
-from app.comments.schema import CommentCreate, CommentResponse
+from app.base.exceptions import BusinessLogicError, EntityNotFound, UnauthorizedAccess
 from app.db import get_db
 from app.documents import schema as doc_schema
-from app.documents.models import DocumentRecordHistoryChangeType
 from app.glossary.schema import GlossaryRecordSchema
 from app.services import DocumentService
 from app.translation_memory.schema import (
-    MemorySubstitution,
     TranslationMemoryListResponse,
     TranslationMemoryListSimilarResponse,
 )
@@ -26,13 +23,6 @@ router = APIRouter(
 
 def get_service(db: Annotated[Session, Depends(get_db)]):
     return DocumentService(db)
-
-
-@router.get("/")
-def get_docs(
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> list[doc_schema.DocumentWithRecordsCount]:
-    return service.get_documents()
 
 
 @router.get("/{doc_id}")
@@ -81,83 +71,6 @@ def doc_glossary_search(
 ) -> list[GlossaryRecordSchema]:
     try:
         return service.doc_glossary_search(doc_id, query)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.get("/records/{record_id}/comments")
-def get_comments(
-    record_id: int,
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> list[CommentResponse]:
-    """Get all comments for a document record"""
-    try:
-        return service.get_comments(record_id)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.post("/records/{record_id}/comments")
-def create_comment(
-    record_id: int,
-    comment_data: CommentCreate,
-    service: Annotated[DocumentService, Depends(get_service)],
-    current_user: Annotated[int, Depends(get_current_user_id)],
-) -> CommentResponse:
-    """Create a new comment for a document record"""
-    try:
-        return service.create_comment(record_id, comment_data, current_user)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.get("/records/{record_id}/substitutions")
-def get_record_substitutions(
-    record_id: int,
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> list[MemorySubstitution]:
-    try:
-        return service.get_record_substitutions(record_id)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.get(
-    "/records/{record_id}/history",
-    description="Get the history of changes for a document record",
-)
-def get_segment_history(
-    record_id: int,
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> doc_schema.DocumentRecordHistoryListResponse:
-    try:
-        return service.get_segment_history(record_id)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.get("/records/{record_id}/glossary_records")
-def get_record_glossary_records(
-    record_id: int,
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> list[GlossaryRecordSchema]:
-    try:
-        return service.get_record_glossary_records(record_id)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.put("/records/{record_id}")
-def update_doc_record(
-    record_id: int,
-    record: doc_schema.DocumentRecordUpdate,
-    service: Annotated[DocumentService, Depends(get_service)],
-    current_user: Annotated[int, Depends(get_current_user_id)],
-) -> doc_schema.DocumentRecordUpdateResponse:
-    try:
-        return service.update_record(
-            record_id, record, current_user, DocumentRecordHistoryChangeType.manual_edit
-        )
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
@@ -288,3 +201,24 @@ def download_doc(
         return service.download_document(doc_id)
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.put("/{doc_id}")
+def update_document(
+    doc_id: int,
+    update_data: doc_schema.DocumentUpdate,
+    user_id: Annotated[int, Depends(get_current_user_id)],
+    service: Annotated[DocumentService, Depends(get_service)],
+) -> doc_schema.DocumentUpdateResponse:
+    try:
+        return service.update_document(doc_id, update_data, user_id)
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except UnauthorizedAccess as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )

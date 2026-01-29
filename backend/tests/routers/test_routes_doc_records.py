@@ -170,7 +170,7 @@ def test_can_update_doc_record(
         )
         s.commit()
 
-    response = user_logged_client.put("/document/records/2", json=arguments)
+    response = user_logged_client.put("/records/2", json=arguments)
     assert response.status_code == 200, response.text
     assert response.json() == {
         "id": 2,
@@ -217,7 +217,7 @@ def test_record_approving_creates_memory(
         s.commit()
 
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Updated",
             "approved": True,
@@ -272,7 +272,7 @@ def test_record_approving_updates_memory(
         s.commit()
 
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Updated",
             "approved": True,
@@ -300,7 +300,7 @@ def test_returns_404_for_nonexistent_doc_when_updating_record(
     user_logged_client: TestClient,
 ):
     response = user_logged_client.put(
-        "/document/records/3",
+        "/records/3",
         json={
             "target": "Updated",
             "approved": None,
@@ -354,7 +354,7 @@ def test_can_update_doc_record_with_repetitions(
 
     # Update record 1 with repetition update enabled
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={"target": "Updated Hello", "approved": True, "update_repetitions": True},
     )
     assert response.status_code == 200
@@ -397,7 +397,7 @@ def test_update_repetitions_default_behavior(
 
     # Update without specifying update_repetitions (should default to False)
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Updated Hello",
             "approved": True,
@@ -666,7 +666,7 @@ def test_update_repetitions_only_when_approved(
 
     # Update record 1 with repetition update enabled but NOT approved
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={"target": "Updated Hello", "approved": False, "update_repetitions": True},
     )
     assert response.status_code == 200
@@ -688,7 +688,7 @@ def test_update_repetitions_only_when_approved(
 
     # Now update record 1 with repetition update enabled AND approved
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={"target": "Final Hello", "approved": True, "update_repetitions": True},
     )
     assert response.status_code == 200

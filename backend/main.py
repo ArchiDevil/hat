@@ -6,13 +6,25 @@ from app.routers import (
     comments,
     document,
     glossary,
+    projects,
+    records,
     translation_memory,
     user,
     users,
 )
 from app.settings import settings
 
-ROUTERS = (auth, comments, document, translation_memory, user, users, glossary)
+ROUTERS = (
+    auth,
+    comments,
+    document,
+    records,
+    translation_memory,
+    user,
+    users,
+    glossary,
+    projects,
+)
 
 
 def create_app():

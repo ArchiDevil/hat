@@ -6,7 +6,7 @@ import {GlossarySubstitution, MemorySubstitution} from './types'
 import {
   getRecordGlossaryRecords,
   getRecordSubstitutions,
-} from '../../client/services/DocumentService'
+} from '../../client/services/RecordsService'
 import {useGlossaryStore} from '../../stores/glossary'
 
 const {documentId, currentSegmentId = undefined} = defineProps<{
@@ -27,17 +27,13 @@ const subClass = (sub: MemorySubstitution | GlossarySubstitution) => {
 const {data: substitutions} = useQuery({
   key: () => ['substitutions', documentId, currentSegmentId ?? -1],
   query: async () => {
-    const memorySubs = (
-      await getRecordSubstitutions(currentSegmentId!)
-    )
+    const memorySubs = (await getRecordSubstitutions(currentSegmentId!))
       .map((sub): MemorySubstitution => {
         return {type: 'memory', ...sub}
       })
       .sort((a, b) => b.similarity - a.similarity)
 
-    const glossarySubs = (
-      await getRecordGlossaryRecords(currentSegmentId!)
-    )
+    const glossarySubs = (await getRecordGlossaryRecords(currentSegmentId!))
       .map((sub): GlossarySubstitution => {
         return {
           type: 'glossary',
@@ -55,7 +51,7 @@ const {data: substitutions} = useQuery({
     return [...memorySubs, ...glossarySubs]
   },
   enabled: () => currentSegmentId !== undefined,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: <T,>(prevData: T) => prevData,
   staleTime: 30 * 1000,
 })
 

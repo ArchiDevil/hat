@@ -9,7 +9,7 @@ import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
-import {getSegmentHistory} from '../../client/services/DocumentService'
+import {getSegmentHistory} from '../../client/services/RecordsService'
 import type {DocumentRecordHistory} from '../../client/schemas/DocumentRecordHistory'
 import type {DocumentRecordHistoryChangeType} from '../../client/schemas/DocumentRecordHistoryChangeType'
 import {

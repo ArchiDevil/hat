@@ -8,4 +8,5 @@ export interface Document {
   status: DocumentStatus
   created_by: number
   type: string
+  project_id: number | null
 }

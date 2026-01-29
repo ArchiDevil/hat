@@ -1,23 +1,22 @@
 <script setup lang="ts">
-import {ref, watchEffect, computed} from 'vue'
+import {ref, watchEffect, computed, watch} from 'vue'
+import {useQuery, useQueryCache} from '@pinia/colada'
+import {Button, Dialog, InputText, Listbox, Select} from 'primevue'
 
 import {
+  getDoc,
   getGlossaries,
   getTranslationMemories,
   setGlossaries,
   setTranslationMemories,
+  updateDocument,
 } from '../client/services/DocumentService'
 import {TmMode} from '../client/schemas/TmMode'
 import {useTmStore} from '../stores/tm'
-
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Listbox from 'primevue/listbox'
-import Select from 'primevue/select'
 import {useGlossaryStore} from '../stores/glossary'
+import {PROJECT_KEYS, useProjects} from '../queries/projects'
 
-const props = defineProps<{
+const {documentId} = defineProps<{
   documentId: number
 }>()
 
@@ -36,7 +35,7 @@ const tmWriteOptions = computed(() => {
   return [{id: -1, name: "Don't use TM"}].concat(tmReadOptions.value)
 })
 
-const chosenTmId = ref<number>(-1)
+const chosenWriteTmId = ref<number>(-1)
 const createNewMode = ref(false)
 const newTmName = ref('')
 const createNewTm = async () => {
@@ -61,24 +60,25 @@ const glossaryOptions = computed(() => {
 
 // eslint-disable-next-line @typescript-eslint/no-misused-promises
 watchEffect(async () => {
-  const docMemories = await getTranslationMemories(props.documentId)
+  const docMemories = await getTranslationMemories(documentId)
   chosenTms.value = docMemories
     .filter((memory) => memory.mode == 'read')
     .map((memory) => {
       return {id: memory.memory.id, name: memory.memory.name}
     })
-  chosenTmId.value =
+  chosenWriteTmId.value =
     docMemories.find((memory) => memory.mode == 'write')?.memory.id ?? -1
 
-  const docGlossaries = await getGlossaries(props.documentId)
+  const docGlossaries = await getGlossaries(documentId)
   chosenGlossaries.value = docGlossaries.map(({glossary}) => {
     return {id: glossary.id, name: glossary.name}
   })
 })
 
+const queryCache = useQueryCache()
 const save = async () => {
   busy.value = true
-  await setTranslationMemories(props.documentId, {
+  await setTranslationMemories(documentId, {
     memories: chosenTms.value
       .map((tm) => {
         return {
@@ -87,21 +87,53 @@ const save = async () => {
         }
       })
       .concat(
-        chosenTmId.value !== -1
-          ? [{id: chosenTmId.value, mode: 'write' as TmMode}]
+        chosenWriteTmId.value !== -1
+          ? [{id: chosenWriteTmId.value, mode: 'write' as TmMode}]
           : []
       ),
   })
-  await setGlossaries(props.documentId, {
+  await setGlossaries(documentId, {
     glossaries: chosenGlossaries.value.map((glossary) => {
       return {
         id: glossary.id,
       }
     }),
   })
+  await updateDocument(documentId, {
+    project_id: chosenProject.value,
+  })
+  await queryCache.invalidateQueries({
+    key: PROJECT_KEYS.root,
+  })
   modalVisible.value = false
   busy.value = false
 }
+
+const {data: document} = useQuery({
+  key: () => ['documents', documentId],
+  query: async () => {
+    return await getDoc(documentId)
+  },
+  enabled: () => modalVisible.value == true,
+  placeholderData: <T,>(prevData: T) => prevData,
+})
+
+const {data: projects} = useProjects()
+const chosenProject = ref<number>()
+watch(document, (newVal) => {
+  if (!newVal) return
+  chosenProject.value = newVal.project_id ?? -1
+})
+const projectOptions = computed(() => {
+  if (!projects.value) return []
+
+  return projects.value.map((p) => {
+    return {
+      id: p.id,
+      name: p.name,
+    }
+  })
+})
 </script>
 
 <template>
@@ -159,7 +191,7 @@ const save = async () => {
 
     <span class="mb-2 block">Select memory to write into:</span>
     <Select
-      v-model="chosenTmId"
+      v-model="chosenWriteTmId"
       class="mb-4 w-full"
       :options="tmWriteOptions"
       option-label="name"
@@ -177,13 +209,30 @@ const save = async () => {
       />
     </div>
 
-    <div class="flex justify-end gap-2">
+    <span class="mb-2 block">Select project to put into:</span>
+    <Select
+      v-model="chosenProject"
+      class="w-full"
+      :options="projectOptions"
+      option-label="name"
+      option-value="id"
+      :loading="chosenProject === undefined"
+    />
+
+    <template #footer>
+      <Button
+        type="button"
+        severity="secondary"
+        label="Cancel"
+        :disabled="busy"
+        @click="modalVisible = false"
+      />
       <Button
         type="button"
         label="Save"
         :disabled="busy"
         @click="save"
       />
-    </div>
+    </template>
   </Dialog>
 </template>

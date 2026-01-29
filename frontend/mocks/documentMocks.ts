@@ -4,16 +4,17 @@ import {faker, fakerRU} from '@faker-js/faker'
 import {glossaries} from './glossaryMocks'
 import {AwaitedReturnType} from './utils'
 import {
-  getComments,
   getDoc,
   getDocRecords,
-  getDocs,
   getGlossaries,
+} from '../src/client/services/DocumentService'
+import {
+  getComments,
   getRecordGlossaryRecords,
   getRecordSubstitutions,
   getSegmentHistory,
   updateDocRecord,
-} from '../src/client/services/DocumentService'
+} from '../src/client/services/RecordsService'
 import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
 import {DocumentRecordUpdate} from '../src/client/schemas/DocumentRecordUpdate'
 import {CommentResponse} from '../src/client/schemas/CommentResponse'
@@ -230,7 +231,7 @@ const docs: DocumentWithRecordsCount[] = [
   {
     id: 1,
     created_by: 12,
-    records_count: segments.length,
+    total_records_count: segments.length,
     approved_records_count: segments.filter(({approved}) => approved).length,
     total_word_count: 20,
     approved_word_count: 4,
@@ -241,9 +242,6 @@ const docs: DocumentWithRecordsCount[] = [
 ]
 
 export const documentMocks = [
-  http.get('http://localhost:8000/document/', () =>
-    HttpResponse.json<AwaitedReturnType<typeof getDocs>>(docs)
-  ),
   http.get<{id: string}>('http://localhost:8000/document/:id', ({params}) => {
     const doc = docs.find((doc) => doc.id === Number(params.id))
     if (doc !== undefined) {

@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from app.comments.models import Comment
     from app.documents.models import Document
     from app.glossary.models import Glossary
+    from app.projects.models import Project
     from app.translation_memory.models import TranslationMemory
 
 
@@ -36,6 +37,11 @@ class User(Base):
     )
     documents: Mapped[list["Document"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", order_by="Document.id"
+    )
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="Project.id",
     )
     glossaries: Mapped[list["Glossary"]] = relationship(
         back_populates="created_by_user",

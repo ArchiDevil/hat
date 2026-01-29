@@ -19,11 +19,12 @@ class Document(Identified):
     status: DocumentStatus
     created_by: int
     type: Literal["xliff", "txt"]
+    project_id: int | None
 
 
 class DocumentWithRecordsCount(Document):
     approved_records_count: int
-    records_count: int
+    total_records_count: int
     approved_word_count: int
     total_word_count: int
 
@@ -100,3 +101,26 @@ class DocumentRecordHistory(BaseModel):
 
 class DocumentRecordHistoryListResponse(BaseModel):
     history: list[DocumentRecordHistory]
+
+
+class DocumentUpdate(BaseModel):
+    name: str | None = Field(
+        default=None,
+        description="New name for the document.",
+        min_length=1,
+        max_length=255,
+    )
+    project_id: int | None = Field(
+        default=None,
+        description="ID of project to assign document to. Set to -1 to unassign.",
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentUpdateResponse(BaseModel):
+    id: int
+    name: str
+    project_id: int | None
+
+    model_config = ConfigDict(from_attributes=True)

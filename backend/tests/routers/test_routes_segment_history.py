@@ -33,7 +33,7 @@ def test_get_segment_history_empty(user_logged_client: TestClient, session: Sess
         )
         s.commit()
 
-    response = user_logged_client.get("/document/records/1/history")
+    response = user_logged_client.get("/records/1/history")
     assert response.status_code == 200
     response_data = response.json()
     assert response_data["history"] == []
@@ -81,7 +81,7 @@ def test_get_segment_history_with_entries(
         history1_id = history1.id
         history2_id = history2.id
 
-    response = user_logged_client.get("/document/records/1/history")
+    response = user_logged_client.get("/records/1/history")
     assert response.status_code == 200
     response_data = response.json()
     assert len(response_data["history"]) == 2
@@ -111,7 +111,7 @@ def test_get_segment_history_with_entries(
 def test_get_segment_history_404_for_nonexistent_record(
     user_logged_client: TestClient,
 ):
-    response = user_logged_client.get("/document/records/999/history")
+    response = user_logged_client.get("/records/999/history")
     assert response.status_code == 404
 
 
@@ -134,7 +134,7 @@ def test_update_record_creates_history(
 
     # Update record
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Updated translation",
             "approved": False,
@@ -176,7 +176,7 @@ def test_update_record_with_repetitions_creates_history(
 
     # Update record
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Updated translation",
             "approved": True,
@@ -246,7 +246,7 @@ def test_update_same_type_updates_in_place(
         initial_history_id = initial_history.id
 
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Updated first",
             "approved": False,
@@ -304,7 +304,7 @@ def test_update_different_type_creates_new_history(
 
     # Update approved record with different target text
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Updated translation",
             "approved": False,
@@ -389,7 +389,7 @@ def test_no_history_for_same_text(user_logged_client: TestClient, session: Sessi
 
     # Update with same text but different approval status
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Same text",
             "approved": False,
@@ -460,7 +460,7 @@ def test_history_ordering_by_timestamp(
         history2_id = history2.id
         history3_id = history3.id
 
-    response = user_logged_client.get("/document/records/1/history")
+    response = user_logged_client.get("/records/1/history")
     assert response.status_code == 200
     response_data = response.json()
     assert len(response_data["history"]) == 3
@@ -505,7 +505,7 @@ def test_merge_diffs_correctly_merges_consecutive_changes(
 
     # First update: "Test translation" -> "Hello World"
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Hello World",
             "approved": False,
@@ -516,7 +516,7 @@ def test_merge_diffs_correctly_merges_consecutive_changes(
 
     # Second update: "Hello World" -> "Hello World!" (same author, same type)
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Hello World!",
             "approved": False,
@@ -572,7 +572,7 @@ def test_merge_diffs_with_insert_only_operations(
 
     # First update: "Hi" -> "Hi there"
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Hi there",
             "approved": False,
@@ -583,7 +583,7 @@ def test_merge_diffs_with_insert_only_operations(
 
     # Second update: "Hi there" -> "Hi there!" (same author, same type)
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Hi there!",
             "approved": False,
@@ -651,7 +651,7 @@ def test_merge_diffs_with_multiple_history_records(
 
     # First update: "Replacement" -> "Hello World"
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Hello World",
             "approved": False,
@@ -662,7 +662,7 @@ def test_merge_diffs_with_multiple_history_records(
 
     # Second update: "Hello World" -> "Hello World!" (same author, same type)
     response = user_logged_client.put(
-        "/document/records/1",
+        "/records/1",
         json={
             "target": "Hello World!",
             "approved": False,

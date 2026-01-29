@@ -10,6 +10,7 @@ from app.documents.models import (
     XliffRecord,
 )
 from app.glossary.models import Glossary, GlossaryRecord
+from app.projects.models import Project
 from app.schema import (
     DocumentTask,
     User,
@@ -32,4 +33,5 @@ __all__ = [
     "DocumentType",
     "TxtDocument",
     "TxtRecord",
+    "Project",
 ]
