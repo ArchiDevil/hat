@@ -112,8 +112,7 @@ class DocumentUpdate(BaseModel):
     )
     project_id: int | None = Field(
         default=None,
-        description="ID of project to assign document to. Set to null to unassign.",
-        ge=1,
+        description="ID of project to assign document to. Set to -1 to unassign.",
     )
 
     model_config = ConfigDict(from_attributes=True)

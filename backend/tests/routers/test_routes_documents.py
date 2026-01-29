@@ -1121,7 +1121,7 @@ def test_unassign_document_from_project(
     session.add(project)
     session.commit()
 
-    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": None})
+    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": -1})
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["id"] == doc.id
@@ -1171,12 +1171,12 @@ def test_update_document_validation_error(
     session.commit()
 
     # Test invalid project_id (negative)
-    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": -1})
-    assert response.status_code == 422
+    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": -25})
+    assert response.status_code == 404
 
     # Test invalid project_id (zero)
     response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": 0})
-    assert response.status_code == 422
+    assert response.status_code == 404
 
     # Test invalid name (empty)
     response = user_logged_client.put(f"/document/{doc.id}", json={"name": ""})

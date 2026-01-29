@@ -551,7 +551,7 @@ class DocumentService:
         """
         self._get_document_by_id(doc_id)
         try:
-            if update_data.project_id is not None:
+            if update_data.project_id is not None and update_data.project_id != -1:
                 pq = ProjectQuery(self.__db)
                 # verify project exists
                 pq._get_project(update_data.project_id)
@@ -559,7 +559,9 @@ class DocumentService:
             raise EntityNotFound("Project", update_data.project_id)
 
         updated_doc = self.__query.update_document(
-            doc_id, update_data.name, update_data.project_id
+            doc_id,
+            update_data.name,
+            update_data.project_id,
         )
         return doc_schema.DocumentUpdateResponse(
             id=updated_doc.id, name=updated_doc.name, project_id=updated_doc.project_id
