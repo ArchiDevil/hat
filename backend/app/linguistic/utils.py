@@ -16,4 +16,8 @@ def stem_sentence(sentence: str) -> list[str]:
 
 def postprocess_stemmed_segment(stemmed_words: list[str]) -> list[str]:
     # remove 's and similar tokenized suffixes, produced by NLTKWordTokenizer
-    return [word for word in stemmed_words if not word.startswith("'")]
+    return [
+        word
+        for word in stemmed_words
+        if not word.startswith("'") and (word.isalnum() or "'" in word)
+    ]

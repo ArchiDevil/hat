@@ -23,14 +23,6 @@ def test_some_contractions_unchanged():
     assert "n't" in result
 
 
-def test_punctuation_preservation():
-    """Test that punctuation is preserved."""
-    result = postprocess_stemmed_segment(stem_sentence("Hello, world!"))
-    # Should preserve punctuation as separate tokens
-    assert any("," in token for token in result)
-    assert any("!" in token for token in result)
-
-
 def test_apostrophes_remapping():
     """Test that different Unicode apostrophes are ignored too."""
     result = postprocess_stemmed_segment(

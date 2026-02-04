@@ -58,7 +58,9 @@ class GlossaryQuery:
         self, phrase: str, glossary_ids: list[int]
     ) -> list[GlossaryRecord]:
         words = postprocess_stemmed_segment(stem_sentence(phrase))
-        or_clauses = [GlossaryRecord.source.ilike(f"%{word}%") for word in words]
+        or_clauses = [
+            GlossaryRecord.stemmed_source.ilike(f"%{word}%") for word in words
+        ]
         records = self.db.execute(
             select(GlossaryRecord).where(
                 or_(*or_clauses),
