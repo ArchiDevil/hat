@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from io import BytesIO
 
 from fastapi import UploadFile
 from fastapi.responses import StreamingResponse
@@ -245,6 +246,41 @@ class DocumentService:
             )
 
         raise EntityNotFound("Unknown document type")
+
+    def download_original_document(self, doc_id: int) -> StreamingResponse:
+        """
+        Download original document.
+
+        Args:
+            doc_id: Document ID
+
+        Returns:
+            StreamingResponse with document file
+
+        Raises:
+            EntityNotFound: If document not found or file not available
+        """
+        doc = self._get_document_by_id(doc_id)
+        if doc.type == DocumentType.xliff:
+            if not doc.xliff:
+                raise EntityNotFound("No XLIFF file found")
+            original_document = doc.xliff.original_document.encode("utf-8")
+            output = BytesIO(original_document)
+        elif doc.type == DocumentType.txt:
+            if not doc.txt:
+                raise EntityNotFound("No TXT file found")
+            original_document = doc.txt.original_document
+            output = BytesIO(original_document.encode())
+        else:
+            raise EntityNotFound("Unknown document type")
+
+        return StreamingResponse(
+            output,
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{self.encode_to_latin_1(doc.name)}"'
+            },
+        )
 
     def get_document_records(
         self,
