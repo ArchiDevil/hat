@@ -238,6 +238,7 @@ const docs: DocumentWithRecordsCount[] = [
     name: 'Some document',
     status: 'done' as DocumentStatus,
     type: 'XLIFF',
+    project_id: 1,
   },
 ]
 

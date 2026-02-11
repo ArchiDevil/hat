@@ -62,3 +62,6 @@ export const processDoc = async (doc_id: number, content: DocumentProcessingSett
 export const getDownloadDocLink = (doc_id: number): string => {
   return getApiBase() + `/document/${doc_id}/download`
 }
+export const getDownloadOriginalDocLink = (doc_id: number): string => {
+  return getApiBase() + `/document/${doc_id}/download_original`
+}
