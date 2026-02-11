@@ -1,8 +1,10 @@
+from datetime import UTC, datetime
 from enum import Enum
 from io import BytesIO
 from typing import Optional
 
 from lxml import etree
+from lxml.builder import ElementMaker
 
 from .base import BaseSegment, get_seg_text
 
@@ -134,6 +136,72 @@ class XliffData:
         output = BytesIO()
         et: etree._ElementTree = etree.ElementTree(self.__root)
         et.write(output, pretty_print=True, xml_declaration=True, encoding="utf-8")
+        output.seek(0)
+        return output
+
+
+class XliffNewFile:
+    # This class is used create a new XLIFF XML file.
+    def __init__(self, segments: list[XliffSegment], original: str) -> None:
+        self.__segments = segments
+        self.__original = original
+
+    def serialize(self) -> BytesIO:
+        E = ElementMaker(
+            nsmap={None: "urn:oasis:names:tc:xliff:document:1.2"},
+        )
+        XLIFF = E.xliff
+        FILE = E.file
+        HEADER = E.header
+        TOOL = E.tool
+        BODY = E.body
+        TRANS_UNIT = getattr(E, "trans-unit")
+        SOURCE = E.source
+        TARGET = E.target
+
+        XML_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
+
+        doc = XLIFF(
+            FILE(
+                HEADER(
+                    TOOL(
+                        **{
+                            "tool-name": "Human Assisted Translator",
+                            "tool-id": "5ae5ad5c-6d82-41a8-a653-ba96b6f8eb01",
+                            "tool-version": "0.9",
+                        }
+                    )
+                ),
+                BODY(
+                    *[
+                        TRANS_UNIT(
+                            SOURCE(segment.original, **{XML_SPACE: "preserve"}),
+                            TARGET(
+                                segment.translation,
+                                **{XML_SPACE: "preserve", "state": segment.state.value},
+                            ),
+                            id=str(segment.id_),
+                            approved="yes" if segment.approved else "no",
+                        )
+                        for segment in self.__segments
+                    ]
+                ),
+                **{
+                    "datatype": "plaintext",
+                    "date": datetime.now(UTC).isoformat().split("+")[0],
+                    "original": self.__original,
+                    "source-language": "en",
+                    "target-language": "ru",
+                },
+            ),
+            version="1.2",
+        )
+        output = BytesIO()
+        output.write(
+            etree.tostring(
+                doc, xml_declaration=True, encoding="utf-8", pretty_print=True
+            )
+        )
         output.seek(0)
         return output
 

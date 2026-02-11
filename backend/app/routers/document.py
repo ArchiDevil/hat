@@ -222,6 +222,25 @@ def download_original_doc(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+@router.get(
+    "/{doc_id}/download_xliff",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Successful Response",
+            "content": {"application/octet-stream": {"schema": {"type": "string"}}},
+        }
+    },
+)
+def download_xliff(
+    doc_id: int, service: Annotated[DocumentService, Depends(get_service)]
+):
+    try:
+        return service.download_xliff(doc_id)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.put("/{doc_id}")
 def update_document(
     doc_id: int,

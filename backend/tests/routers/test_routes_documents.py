@@ -1265,3 +1265,46 @@ def test_download_original_shows_404_for_unknown_doc(user_logged_client: TestCli
     """Test 404 when downloading original for non-existent document."""
     response = user_logged_client.get("/document/1/download_original")
     assert response.status_code == 404
+
+
+def test_download_xliff(user_logged_client: TestClient, session: Session):
+    """Test downloading document as XLIFF."""
+    with session as s:
+        records = [
+            DocumentRecord(
+                source="Regional Effects",
+                target="Региональные эффекты",
+                approved=True,
+            ),
+            DocumentRecord(
+                source="User Interface",
+                target="Пользовательский интерфейс",
+                approved=False,
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get("/document/1/download_xliff")
+    assert response.status_code == 200
+
+    data = response.read().decode("utf-8")
+    assert data.startswith("<?xml version=")
+    assert "Regional Effects" in data
+    assert "Региональные эффекты" in data
+    assert "User Interface" in data
+    assert "Пользовательский интерфейс" in data
+
+
+def test_download_xliff_shows_404_for_unknown_doc(user_logged_client: TestClient):
+    """Test 404 when downloading XLIFF for non-existent document."""
+    response = user_logged_client.get("/document/1/download_xliff")
+    assert response.status_code == 404

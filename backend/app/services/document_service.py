@@ -21,7 +21,12 @@ from app.documents.query import (
     GenericDocsQuery,
 )
 from app.formats.txt import extract_txt_content
-from app.formats.xliff import SegmentState, extract_xliff_content
+from app.formats.xliff import (
+    SegmentState,
+    XliffNewFile,
+    XliffSegment,
+    extract_xliff_content,
+)
 from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
 from app.glossary.schema import GlossaryRecordSchema, GlossaryResponse
 from app.projects.query import NotFoundProjectExc, ProjectQuery
@@ -279,6 +284,44 @@ class DocumentService:
             media_type="application/octet-stream",
             headers={
                 "Content-Disposition": f'attachment; filename="{self.encode_to_latin_1(doc.name)}"'
+            },
+        )
+
+    def download_xliff(self, doc_id: int) -> StreamingResponse:
+        """
+        Download a document's XLIFF.
+
+        Args:
+            doc_id: Document ID
+
+        Returns:
+            StreamingResponse with XLIFF for a document
+
+        Raises:
+            EntityNotFound: If document not found or file not available
+        """
+        doc = self._get_document_by_id(doc_id)
+        data = XliffNewFile(
+            [
+                XliffSegment(
+                    id_=rec.id,
+                    approved=rec.approved,
+                    source=rec.source,
+                    target=rec.target,
+                    state=SegmentState.NEEDS_TRANSLATION.value
+                    if rec.approved
+                    else SegmentState.FINAL.value,
+                )
+                for rec in doc.records
+            ],
+            str(doc.id),
+        )
+        file = data.serialize()
+        return StreamingResponse(
+            file,
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{self.encode_to_latin_1(doc.name)}.xliff"'
             },
         )
 
