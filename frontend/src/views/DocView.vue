@@ -3,14 +3,12 @@ import {computed, ref, triggerRef, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useQuery, useQueryCache} from '@pinia/colada'
 
-import Paginator, {PageState} from 'primevue/paginator'
-import ProgressBar from 'primevue/progressbar'
+import {Button, ProgressBar, Paginator, PageState} from 'primevue'
 
 import Link from '../components/NavLink.vue'
 import DocSegment from '../components/DocSegment.vue'
 import SubstitutionsList from '../components/document/SubstitutionsList.vue'
 import ProcessingErrorMessage from '../components/document/ProcessingErrorMessage.vue'
-import RoutingLink from '../components/RoutingLink.vue'
 import DocumentSkeleton from '../components/document/DocumentSkeleton.vue'
 import ToolsPanel from '../components/document/ToolsPanel.vue'
 import TmSearchModal from '../components/TmSearchModal.vue'
@@ -22,6 +20,7 @@ import {
   getDoc,
   getDocRecords,
   getDownloadDocLink,
+  getDownloadOriginalDocLink,
 } from '../client/services/DocumentService'
 import {updateDocRecord} from '../client/services/RecordsService'
 
@@ -68,9 +67,10 @@ const documentReady = computed(() => {
   return doc.status == 'done' || doc.status == 'error'
 })
 
-const documentDownloadLink = computed(() => {
-  return getDownloadDocLink(documentId.value)
-})
+const downloadLink = computed(() => getDownloadDocLink(documentId.value))
+const originalLink = computed(() =>
+  getDownloadOriginalDocLink(documentId.value)
+)
 
 const translationProgress = computed(() => {
   const doc = document.value
@@ -219,6 +219,15 @@ const onShowHistory = (recordId: number) => {
   historyRecordId.value = recordId
   showHistoryModal.value = true
 }
+
+const percentage = computed(() =>
+  document.value !== undefined
+    ? Number(
+        (document.value.approved_word_count / document.value.total_word_count) *
+          100
+      )
+    : 0.0
+)
 </script>
 
 <template>
@@ -227,35 +236,34 @@ const onShowHistory = (recordId: number) => {
     class="w-full h-screen grid grid-rows-[auto_1fr] overflow-hidden"
   >
     <div class="bg-surface-0 border-b border-surface">
-      <div>
-        <h2 class="text-xl font-bold my-4 ml-4 inline-block">
+      <div class="flex flex-row gap-2 items-center ml-4 mt-4 mb-1">
+        <Button
+          icon="pi pi-home"
+          severity="secondary"
+          size="small"
+          @click="router.push('/')"
+        />
+
+        <h2 class="text-xl font-bold">
           {{ document?.name }}
         </h2>
-        <RoutingLink
-          name="home"
-          class="ml-4"
-          title="Return to main page"
-        />
-      </div>
-      <div class="ml-4 flex flex-row gap-2 items-baseline">
-        Progress:
         <ProgressBar
-          class="w-64 h-2 inline-block"
+          class="w-64 h-3 inline-block mx-2"
           :value="translationProgress"
           :show-value="false"
         />
         {{ document?.approved_word_count }} /
-        {{ document?.total_word_count }} words <span class="text-gray-500">({{
-          document !== undefined
-            ? Number(
-              document.approved_word_count / document.total_word_count * 100
-            ).toFixed(2)
-            : 0.0
-        }}%)</span>
+        {{ document?.total_word_count }} words
+        <span class="text-gray-500">({{ percentage.toFixed(2) }}%)</span>
         <Link
-          :href="documentDownloadLink"
+          :href="downloadLink"
           class="inline-block"
-          title="Download in the current state"
+          title="Download current file"
+        />
+        <Link
+          :href="originalLink"
+          class="inline-block"
+          title="Download original file"
         />
       </div>
       <template v-if="documentReady && !documentLoading">
@@ -266,6 +274,7 @@ const onShowHistory = (recordId: number) => {
       </template>
 
       <ToolsPanel
+        class="mx-4 mt-2"
         @source-filter-update="(val) => (sourceFilter = val)"
         @target-filter-update="(val) => (targetFilter = val)"
         @open-tm-search="showTmSearchModal = true"

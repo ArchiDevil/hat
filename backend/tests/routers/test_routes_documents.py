@@ -1233,3 +1233,35 @@ def test_update_document_to_same_project(
         updated_doc = s.query(Document).filter_by(id=doc.id).first()
         assert updated_doc is not None
         assert updated_doc.project_id == project_id
+
+
+def test_download_original_xliff_doc(user_logged_client: TestClient, session: Session):
+    """Test downloading original XLIFF document."""
+    with open("tests/fixtures/small.xliff", "rb") as fp:
+        user_logged_client.post("/document/", files={"file": fp})
+
+    response = user_logged_client.get("/document/1/download_original")
+    assert response.status_code == 200
+
+    data = response.read().decode("utf-8")
+    assert data.startswith("<?xml version=")
+    assert "Regional Effects" in data
+
+
+def test_download_original_txt_doc(user_logged_client: TestClient, session: Session):
+    """Test downloading original TXT document."""
+    with open("tests/fixtures/small.txt", "rb") as fp:
+        user_logged_client.post("/document/", files={"file": fp})
+
+    response = user_logged_client.get("/document/1/download_original")
+    assert response.status_code == 200
+
+    data = response.read().decode("utf-8")
+    assert data.startswith("Soon after the characters enter Camp")
+    assert "The sloth is named Razak" in data
+
+
+def test_download_original_shows_404_for_unknown_doc(user_logged_client: TestClient):
+    """Test 404 when downloading original for non-existent document."""
+    response = user_logged_client.get("/document/1/download_original")
+    assert response.status_code == 404

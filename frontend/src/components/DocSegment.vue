@@ -123,26 +123,23 @@ const showHistory = () => {
   </div>
   <div
     v-if="editable"
-    class="flex flex-row text-center self-start gap-2 pr-2 h-full"
+    class="flex flex-row text-center self-start gap-2 pr-4 h-full"
   >
     <Button
       class="ml-auto"
       :icon="icon"
       rounded
-      outlined
-      variant="text"
       :severity="hasComments ? 'help' : 'secondary'"
       size="small"
+      title="View comments"
       @click="showCommentsDialog"
     />
     <Button
       icon="pi pi-history"
       rounded
-      outlined
-      variant="text"
       severity="secondary"
       size="small"
-      title="View History"
+      title="View history"
       @click="showHistory"
     />
     <Button
@@ -150,6 +147,7 @@ const showHistory = () => {
       rounded
       :severity="approved ? 'success' : 'secondary'"
       size="small"
+      title="Approve"
       @click="commitData"
     />
   </div>
