@@ -309,7 +309,7 @@ class DocumentService:
                     source=rec.source,
                     target=rec.target,
                     state=SegmentState.NEEDS_TRANSLATION.value
-                    if rec.approved
+                    if not rec.approved
                     else SegmentState.FINAL.value,
                 )
                 for rec in doc.records
