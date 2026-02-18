@@ -211,6 +211,8 @@ def extract_xliff_content(content: bytes) -> XliffData:
     root: etree._Element = etree.fromstring(
         content, parser=etree.XMLParser(recover=True)
     )
+    if root is None:
+        raise RuntimeError("Error: Invalid XML file")
 
     version = root.attrib.get("version")
     if not version or version != "1.2":

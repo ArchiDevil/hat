@@ -28,6 +28,7 @@ class DocumentRecordHistoryChangeType(Enum):
     glossary_substitution = "glossary_substitution"
     repetition = "repetition"
     manual_edit = "manual_edit"
+    translation_update = "translation_update"
 
 
 class TmMode(Enum):

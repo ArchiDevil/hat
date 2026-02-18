@@ -13,13 +13,17 @@ from app.base.exceptions import BusinessLogicError, EntityNotFound
 from app.documents import schema as doc_schema
 from app.documents.models import (
     Document,
+    DocumentRecord,
+    DocumentRecordHistoryChangeType,
     DocumentType,
     TmMode,
     XliffRecord,
 )
 from app.documents.query import (
+    DocumentRecordHistoryQuery,
     GenericDocsQuery,
 )
+from app.documents.utils import compute_diff
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import (
     SegmentState,
@@ -54,6 +58,7 @@ class DocumentService:
         self.__query = GenericDocsQuery(db)
         self.__glossary_query = GlossaryQuery(db)
         self.__tm_query = TranslationMemoryQuery(db)
+        self.__history_query = DocumentRecordHistoryQuery(db)
 
     def get_document(self, doc_id: int) -> doc_schema.DocumentWithRecordsCount:
         """
@@ -653,3 +658,101 @@ class DocumentService:
         for c in original:
             output += c if (c.isalnum() or c in "'().[] -") else "_"
         return output
+
+    async def upload_xliff(
+        self,
+        file: UploadFile,
+        options: doc_schema.XliffUploadOptions,
+        current_user: int,
+    ) -> models.StatusMessage:
+        """
+        Upload XLIFF file and update document records.
+
+        Args:
+            file: Uploaded XLIFF file
+            options: Upload options including update_approved flag
+            current_user: ID of user performing the upload
+
+        Returns:
+            StatusMessage indicating success
+
+        Raises:
+            EntityNotFound: If document not found
+        """
+        # Read file content
+        file_data = await file.read()
+        original_document = file_data.decode("utf-8")
+
+        # Parse XLIFF
+        try:
+            xliff_data = extract_xliff_content(original_document.encode("utf-8"))
+        except RuntimeError:
+            raise BusinessLogicError("Invalid XLIFF format")
+
+        # Extract document ID from first file element
+        file_element = xliff_data.xliff_file.find(
+            ".//{urn:oasis:names:tc:xliff:document:1.2}file",
+            namespaces=xliff_data.xliff_file.nsmap,
+        )
+        if file_element is None:
+            raise BusinessLogicError("Invalid XLIFF format: no file element found")
+
+        doc_id_str = file_element.get("original")
+        if not doc_id_str:
+            raise BusinessLogicError(
+                "Invalid XLIFF format: file element missing original attribute"
+            )
+
+        try:
+            doc_id = int(doc_id_str)
+        except ValueError:
+            raise BusinessLogicError(f"Invalid document ID in XLIFF: {doc_id_str}")
+
+        # Validate document exists
+        self._get_document_by_id(doc_id)
+
+        # Prepare history entries for bulk creation
+        history_entries = []
+
+        # Update records
+        for segment in xliff_data.segments:
+            record = (
+                self.__db.query(DocumentRecord)
+                .filter_by(document_id=doc_id, id=segment.id_)
+                .first()
+            )
+
+            if not record:
+                continue
+
+            # Check if we should update this record
+            should_update = options.update_approved or not record.approved
+
+            if not should_update:
+                continue
+
+            old_target = record.target
+            new_target = segment.translation or ""
+            # Only update if the new translation is different and not empty
+            if old_target != new_target and new_target:
+                record.target = new_target
+                record.approved = segment.approved
+
+                # Prepare history entry
+                history_entries.append(
+                    (record.id, compute_diff(old_target, new_target))
+                )
+
+        # Bulk create history entries
+        if history_entries:
+            self.__history_query.bulk_create_history_entry(
+                history_entries,
+                current_user,
+                DocumentRecordHistoryChangeType.translation_update,
+            )
+
+        self.__db.commit()
+        updated_count = len(history_entries)
+        return models.StatusMessage(
+            message=f"Successfully updated {updated_count} record(s)"
+        )

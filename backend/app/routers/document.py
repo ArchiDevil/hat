@@ -1,6 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -258,5 +267,30 @@ def update_document(
     except UnauthorizedAccess as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )
+
+
+@router.post("/upload_xliff")
+async def upload_xliff(
+    service: Annotated[DocumentService, Depends(get_service)],
+    current_user: Annotated[int, Depends(get_current_user_id)],
+    file: Annotated[UploadFile, File()],
+    update_approved: Annotated[bool, Form()] = False,
+) -> models.StatusMessage:
+    try:
+        return await service.upload_xliff(
+            file,
+            doc_schema.XliffUploadOptions(update_approved=update_approved),
+            current_user,
+        )
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except BusinessLogicError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )

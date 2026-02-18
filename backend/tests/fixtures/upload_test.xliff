@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2"
+    xmlns:sc="SmartcatXliff"
+    xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file datatype="plaintext" date="2023-11-07T20:56:05.0017382Z" original="1" source-language="en" target-language="ru">
+        <header>
+            <tool tool-name="Smartcat.ai" tool-id="40c7d5b2-da26-4b36-84f1-8305b3aadb03" tool-version="1.0.11.0" />
+        </header>
+        <body>
+            <trans-unit id="1" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.711Z" sc:last-modified-user="Person 1">
+                <source xml:space="preserve">Regional Effects</source>
+                <target state="translated" xml:space="preserve">Региональные эффекты</target>
+            </trans-unit>
+            <trans-unit id="2" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.911Z" sc:last-modified-user="Person 2">
+                <source xml:space="preserve">User Interface</source>
+                <target state="needs-translation" xml:space="preserve">Пользовательский интерфейс</target>
+            </trans-unit>
+            <trans-unit id="3" approved="yes" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.967Z" sc:last-modified-user="Person 3">
+                <source xml:space="preserve">Approved Segment</source>
+                <target state="final" xml:space="preserve">Утвержденный сегмент</target>
+            </trans-unit>
+            <trans-unit id="4" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:22.968Z" sc:last-modified-user="Person 4">
+                <source xml:space="preserve">123456789</source>
+                <target state="needs-translation" xml:space="preserve"></target>
+            </trans-unit>
+            <trans-unit id="5" approved="no" sc:locked="false" sc:last-modified-date="2023-10-19T18:29:23.968Z" sc:last-modified-user="Person 5">
+                <source xml:space="preserve">Something else</source>
+                <target state="translated" xml:space="preserve">Что-то еще</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
