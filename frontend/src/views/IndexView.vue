@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
-import {useRouter} from 'vue-router'
 import {Button, Panel} from 'primevue'
 
 import {useTmStore} from '../stores/tm'
 import {useGlossaryStore} from '../stores/glossary'
 
-import DocUploadingDialog from '../components/DocUploadingDialog.vue'
 import TmRecord from '../components/TmRecord.vue'
 import PageNav from '../components/PageNav.vue'
 import DocSettingsModal from '../components/DocSettingsModal.vue'
@@ -15,8 +13,8 @@ import GlossaryUploadingDialog from '../components/glossary/GlossaryUploadingDia
 import GlossaryRecord from '../components/glossary/GlossaryRecord.vue'
 import ProjectList from '../components/ProjectList.vue'
 import AddProjectModal from '../components/AddProjectModal.vue'
-
-const router = useRouter()
+import AddDocumentModal from '../components/AddDocumentModal.vue'
+import UploadXliffModal from '../components/UploadXliffModal.vue'
 
 const tmStore = useTmStore()
 const glossaryStore = useGlossaryStore()
@@ -25,6 +23,8 @@ const docSettingsVisible = ref(false)
 const selectedDocumentId = ref<number | undefined>(undefined)
 
 const addProjectVisible = ref(false)
+const addDocumentVisible = ref(false)
+const uploadXliffVisible = ref(false)
 
 onMounted(async () => {
   await tmStore.fetchMemories()
@@ -39,21 +39,30 @@ onMounted(async () => {
     <div class="flex flex-col gap-4">
       <Panel header="Projects">
         <template #icons>
-          <Button
-            icon="pi pi-plus"
-            size="small"
-            label="Add new project"
-            @click="addProjectVisible = true"
-          />
+          <div class="flex flex-row gap-4">
+            <Button
+              icon="pi pi-file-arrow-up"
+              size="small"
+              label="Upload XLIFF"
+              severity="secondary"
+              @click="uploadXliffVisible = true"
+            />
+            <Button
+              icon="pi pi-file-arrow-up"
+              size="small"
+              label="Upload document"
+              @click="addDocumentVisible = true"
+            />
+            <Button
+              icon="pi pi-plus"
+              size="small"
+              label="Add new project"
+              severity="secondary"
+              @click="addProjectVisible = true"
+            />
+          </div>
         </template>
         <template #default>
-          <DocUploadingDialog
-            class="mb-4"
-            title="Select a file to upload:"
-            @processed="
-              (fileId) => router.push({name: 'document', params: {id: fileId}})
-            "
-          />
           <ProjectList
             @open-settings="
               (docId) => {
@@ -95,4 +104,6 @@ onMounted(async () => {
   />
 
   <AddProjectModal v-model="addProjectVisible" />
+  <AddDocumentModal v-model="addDocumentVisible" />
+  <UploadXliffModal v-model="uploadXliffVisible" />
 </template>
