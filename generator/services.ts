@@ -191,10 +191,12 @@ const getMethod = (method: ServiceMethod) => {
     const queryMethodParams = !query ? '' : `, {query: {${query}}}`
     if (method.description.requestBody) {
       if (isFormData(method.description.requestBody.content)) {
-        // TODO: it should be done smarter, not just hardcoded 'data.file'
         functionBody = [
           `  const formData = new FormData()`,
-          `  formData.append('file', data.file)`,
+          `  for (const key of Object.keys(data) as Array<keyof typeof data>) {`,
+          `    const val = data[key];`,
+          `    if (val !== undefined) formData.append(key, val instanceof Blob ? val : String(val))`,
+          `  }`,
           `  return await api.${method.httpMethod}${mandeType}(\`${interpolatedPath}\`, formData${queryMethodParams})`,
         ]
       } else if (isJsonData(method.description.requestBody.content)) {

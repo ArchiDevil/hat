@@ -41,6 +41,9 @@ export const deleteGlossaryRecord = async (record_id: number): Promise<StatusMes
 }
 export const createGlossaryFromFile = async (glossary_name: string, data: Body_create_glossary_from_file_glossary_load_file_post): Promise<GlossaryLoadFileResponse> => {
   const formData = new FormData()
-  formData.append('file', data.file)
+  for (const key of Object.keys(data) as Array<keyof typeof data>) {
+    const val = data[key];
+    if (val !== undefined) formData.append(key, val instanceof Blob ? val : String(val))
+  }
   return await api.post<GlossaryLoadFileResponse>(`/glossary/load_file`, formData, {query: {glossary_name}})
 }

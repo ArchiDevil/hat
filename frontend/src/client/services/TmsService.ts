@@ -30,7 +30,10 @@ export const getMemoryRecordsSimilar = async (tm_id: number, query: string): Pro
 }
 export const createMemoryFromFile = async (data: Body_create_memory_from_file_translation_memory_upload_post): Promise<TranslationMemory> => {
   const formData = new FormData()
-  formData.append('file', data.file)
+  for (const key of Object.keys(data) as Array<keyof typeof data>) {
+    const val = data[key];
+    if (val !== undefined) formData.append(key, val instanceof Blob ? val : String(val))
+  }
   return await api.post<TranslationMemory>(`/translation_memory/upload`, formData)
 }
 export const getDownloadMemoryLink = (tm_id: number): string => {
