@@ -38,6 +38,7 @@ const changeTypeColors: Record<DocumentRecordHistoryChangeType, string> = {
   glossary_substitution: '#10B981',
   repetition: '#14B8A6',
   manual_edit: '#F59E0B',
+  translation_update: '#EC4899',
 }
 
 const changeTypeLabels: Record<DocumentRecordHistoryChangeType, string> = {
@@ -47,6 +48,7 @@ const changeTypeLabels: Record<DocumentRecordHistoryChangeType, string> = {
   glossary_substitution: 'Glossary Substitution',
   repetition: 'Repetition',
   manual_edit: 'Manual Edit',
+  translation_update: 'Translation Update',
 }
 
 const {data: history, status: historyStatus} = useQuery({
