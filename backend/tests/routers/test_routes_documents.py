@@ -8,6 +8,8 @@ from app.documents.models import (
     DocMemoryAssociation,
     Document,
     DocumentRecord,
+    DocumentRecordHistory,
+    DocumentRecordHistoryChangeType,
     DocumentType,
     TmMode,
     TxtDocument,
@@ -1308,3 +1310,218 @@ def test_download_xliff_shows_404_for_unknown_doc(user_logged_client: TestClient
     """Test 404 when downloading XLIFF for non-existent document."""
     response = user_logged_client.get("/document/1/download_xliff")
     assert response.status_code == 404
+
+
+def test_upload_xliff_success(user_logged_client: TestClient, session: Session):
+    """Test successful XLIFF upload with record updates."""
+    with session as s:
+        records = [
+            DocumentRecord(
+                source="Regional Effects",
+                target="",
+                approved=False,
+            ),
+            DocumentRecord(
+                source="User Interface",
+                target="",
+                approved=False,
+            ),
+            DocumentRecord(
+                source="Approved Segment",
+                target="Old approved text",
+                approved=True,
+            ),
+            DocumentRecord(
+                source="123456789",
+                target="",
+                approved=False,
+            ),
+            DocumentRecord(
+                source="Something else",
+                target="",
+                approved=False,
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="done",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    with open("tests/fixtures/upload_test.xliff", "rb") as fp:
+        response = user_logged_client.post(
+            "/document/upload_xliff", files={"file": fp}, data={}
+        )
+    assert response.status_code == 200
+    assert response.json() == {"message": "Successfully updated 3 record(s)"}
+
+    with session as s:
+        updated_records = s.query(DocumentRecord).filter_by(document_id=1).all()
+        # Check that records with non-empty targets were updated
+        regional_effects = next(
+            (r for r in updated_records if r.source == "Regional Effects"), None
+        )
+        assert regional_effects
+        assert regional_effects.target == "Региональные эффекты"
+        assert regional_effects.approved is False
+
+        user_interface = next(
+            (r for r in updated_records if r.source == "User Interface"), None
+        )
+        assert user_interface
+        assert user_interface.target == "Пользовательский интерфейс"
+        assert user_interface.approved is False
+
+        # Check that approved record was NOT updated
+        approved_segment = next(
+            (r for r in updated_records if r.source == "Approved Segment"), None
+        )
+        assert approved_segment
+        assert approved_segment.target == "Old approved text"
+        assert approved_segment.approved is True
+
+        # Check that records with empty targets were NOT updated
+        record_123456789 = next(
+            (r for r in updated_records if r.source == "123456789"), None
+        )
+        assert record_123456789
+        assert record_123456789.target == ""
+        assert record_123456789.approved is False
+
+        something_else = next(
+            (r for r in updated_records if r.source == "Something else"), None
+        )
+        assert something_else
+        assert something_else.target == "Что-то еще"
+        assert something_else.approved is False
+
+
+def test_upload_xliff_with_update_approved(
+    user_logged_client: TestClient, session: Session
+):
+    """Test XLIFF upload with update_approved=True to update approved records."""
+    with session as s:
+        records = [
+            DocumentRecord(
+                source="Regional Effects",
+                target="Old text",
+                approved=True,
+            ),
+            DocumentRecord(
+                source="User Interface",
+                target="Old text",
+                approved=False,
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc.xliff",
+                type=DocumentType.xliff,
+                records=records,
+                processing_status="done",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    with open("tests/fixtures/upload_test.xliff", "rb") as fp:
+        response = user_logged_client.post(
+            "/document/upload_xliff",
+            files={"file": fp},
+            data={"update_approved": "true"},
+        )
+    assert response.status_code == 200
+    assert response.json() == {"message": "Successfully updated 2 record(s)"}
+
+    with session as s:
+        updated_records = s.query(DocumentRecord).filter_by(document_id=1).all()
+        # Check that approved record WAS updated
+        regional_effects = next(
+            (r for r in updated_records if r.source == "Regional Effects"), None
+        )
+        assert regional_effects
+        assert regional_effects.target == "Региональные эффекты"
+        assert regional_effects.approved is False  # it is False in XLIFF
+
+
+def test_upload_xliff_document_not_found(user_logged_client: TestClient):
+    """Test XLIFF upload with non-existent document ID."""
+    with open("tests/fixtures/upload_test.xliff", "rb") as fp:
+        response = user_logged_client.post(
+            "/document/upload_xliff", files={"file": fp}, data={}
+        )
+    assert response.status_code == 404
+    assert "Document not found" in response.json()["detail"]
+
+
+def test_upload_xliff_invalid_format(user_logged_client: TestClient):
+    """Test XLIFF upload with invalid XLIFF format."""
+    with open("tests/fixtures/small.txt", "rb") as fp:
+        response = user_logged_client.post("/document/upload_xliff", files={"file": fp})
+    assert response.status_code == 400
+    assert "Invalid XLIFF format" in response.json()["detail"]
+
+
+def test_upload_xliff_history_tracking(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that history entries are created for XLIFF upload."""
+    with session as s:
+        records = [
+            DocumentRecord(
+                id=1,
+                source="Regional Effects",
+                target="Old text",
+                approved=False,
+            ),
+            DocumentRecord(
+                id=2,
+                source="User Interface",
+                target="Old text",
+                approved=False,
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="done",
+                created_by=1,
+            )
+        )
+        s.commit()
+
+    with open("tests/fixtures/upload_test.xliff", "rb") as fp:
+        response = user_logged_client.post(
+            "/document/upload_xliff", files={"file": fp}, data={}
+        )
+    assert response.status_code == 200
+
+    with session as s:
+        history_entries = (
+            s.query(DocumentRecordHistory)
+            .filter(DocumentRecordHistory.record_id.in_([1, 2]))
+            .all()
+        )
+        assert len(history_entries) == 2
+        assert all(
+            h.change_type == DocumentRecordHistoryChangeType.translation_update
+            for h in history_entries
+        )
+        assert all(h.author_id == 1 for h in history_entries)
+
+
+def test_upload_xliff_unauthenticated(fastapi_client: TestClient):
+    """Test that unauthenticated requests are rejected."""
+    # Clear any existing cookies to ensure clean state
+    fastapi_client.cookies.clear()
+
+    with open("tests/fixtures/upload_test.xliff", "rb") as fp:
+        response = fastapi_client.post("/document/upload_xliff", files={"file": fp})
+    assert response.status_code == 401

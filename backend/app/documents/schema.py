@@ -124,3 +124,10 @@ class DocumentUpdateResponse(BaseModel):
     project_id: int | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class XliffUploadOptions(BaseModel):
+    update_approved: bool = Field(
+        default=False,
+        description="If True, forcefully update approved records. If False (default), skip approved records.",
+    )

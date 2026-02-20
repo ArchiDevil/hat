@@ -28,6 +28,7 @@ class DocumentRecordHistoryChangeType(Enum):
     glossary_substitution = "glossary_substitution"
     repetition = "repetition"
     manual_edit = "manual_edit"
+    translation_update = "translation_update"
 
 
 class TmMode(Enum):
@@ -203,7 +204,9 @@ class DocumentRecordHistory(Base):
     diff: Mapped[str] = mapped_column()
     author_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), nullable=True)
     timestamp: Mapped[datetime] = mapped_column(default=utc_time)
-    change_type: Mapped[DocumentRecordHistoryChangeType] = mapped_column()
+    change_type: Mapped[DocumentRecordHistoryChangeType] = mapped_column(
+        SqlEnum(DocumentRecordHistoryChangeType, native_enum=False)
+    )
 
     record: Mapped["DocumentRecord"] = relationship(back_populates="history")
     author: Mapped["User"] = relationship()

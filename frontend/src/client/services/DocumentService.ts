@@ -17,6 +17,7 @@ import {DocGlossaryUpdate} from '../schemas/DocGlossaryUpdate'
 import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
+import {Body_upload_xliff_document_upload_xliff_post} from '../schemas/Body_upload_xliff_document_upload_xliff_post'
 
 export const getDoc = async (doc_id: number): Promise<DocumentWithRecordsCount> => {
   return await api.get<DocumentWithRecordsCount>(`/document/${doc_id}`)
@@ -53,7 +54,10 @@ export const setGlossaries = async (doc_id: number, content: DocGlossaryUpdate):
 }
 export const createDoc = async (data: Body_create_doc_document__post): Promise<Document> => {
   const formData = new FormData()
-  formData.append('file', data.file)
+  for (const key of Object.keys(data) as Array<keyof typeof data>) {
+    const val = data[key];
+    if (val !== undefined) formData.append(key, val instanceof Blob ? val : String(val))
+  }
   return await api.post<Document>(`/document/`, formData)
 }
 export const processDoc = async (doc_id: number, content: DocumentProcessingSettings): Promise<StatusMessage> => {
@@ -64,4 +68,15 @@ export const getDownloadDocLink = (doc_id: number): string => {
 }
 export const getDownloadOriginalDocLink = (doc_id: number): string => {
   return getApiBase() + `/document/${doc_id}/download_original`
+}
+export const getDownloadXliffLink = (doc_id: number): string => {
+  return getApiBase() + `/document/${doc_id}/download_xliff`
+}
+export const uploadXliff = async (data: Body_upload_xliff_document_upload_xliff_post): Promise<StatusMessage> => {
+  const formData = new FormData()
+  for (const key of Object.keys(data) as Array<keyof typeof data>) {
+    const val = data[key];
+    if (val !== undefined) formData.append(key, val instanceof Blob ? val : String(val))
+  }
+  return await api.post<StatusMessage>(`/document/upload_xliff`, formData)
 }
