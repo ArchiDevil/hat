@@ -455,3 +455,74 @@ def test_delete_glossary_record_returns_404_for_nonexistent_record(
     response = user_logged_client.delete("/glossary/records/999")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Glossary record with id 999 not found"
+
+
+def test_download_glossary_csv(user_logged_client: TestClient, session: Session):
+    """GET /glossary/{glossary_id}/download"""
+    repo = GlossaryQuery(session)
+    glossary = repo.create_glossary(
+        user_id=1, glossary=GlossarySchema(name="Test Glossary")
+    )
+
+    # Create test records
+    records = [
+        GlossaryRecordCreate(comment="Greeting", source="Hello", target="Привет"),
+        GlossaryRecordCreate(comment=None, source="World", target="Мир"),
+        GlossaryRecordCreate(
+            comment="With comma", source="Hello, world", target="Привет, мир"
+        ),
+    ]
+    for rec in records:
+        repo.create_glossary_record(user_id=1, record=rec, glossary_id=glossary.id)
+
+    path = app.url_path_for("download_glossary_csv", **{"glossary_id": glossary.id})
+    response = user_logged_client.get(path)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers["content-type"] == "text/csv; charset=utf-8"
+    assert "Test Glossary.csv" in response.headers["content-disposition"]
+
+    csv_content = response.text
+    assert "Оригинал,Перевод,Комментарий" in csv_content
+    assert "Hello,Привет,Greeting" in csv_content
+    assert "World,Мир," in csv_content
+    assert '"Hello, world","Привет, мир",With comma' in csv_content
+
+
+def test_download_glossary_csv_empty(user_logged_client: TestClient, session: Session):
+    """GET /glossary/{glossary_id}/download - empty glossary"""
+    repo = GlossaryQuery(session)
+    glossary = repo.create_glossary(
+        user_id=1, glossary=GlossarySchema(name="Empty Glossary")
+    )
+
+    path = app.url_path_for("download_glossary_csv", **{"glossary_id": glossary.id})
+    response = user_logged_client.get(path)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "Empty Glossary.csv" in response.headers["content-disposition"]
+    assert response.text.strip() == "Оригинал,Перевод,Комментарий"
+
+
+def test_download_glossary_csv_filename_sanitization(
+    user_logged_client: TestClient, session: Session
+):
+    """GET /glossary/{glossary_id}/download - filename sanitization"""
+    repo = GlossaryQuery(session)
+    glossary = repo.create_glossary(
+        user_id=1, glossary=GlossarySchema(name="Test Glossary (Special) 2024!")
+    )
+
+    path = app.url_path_for("download_glossary_csv", **{"glossary_id": glossary.id})
+    response = user_logged_client.get(path)
+
+    assert response.status_code == status.HTTP_200_OK
+    # Special characters should be removed, spaces replaced with underscores
+    assert "Test Glossary (Special) 2024_.csv" in response.headers["content-disposition"]
+
+
+def test_download_glossary_csv_404(user_logged_client: TestClient):
+    """GET /glossary/{glossary_id}/download - 404 for non-existent glossary"""
+    response = user_logged_client.get("/glossary/999/download")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Glossary with id 999 not found"

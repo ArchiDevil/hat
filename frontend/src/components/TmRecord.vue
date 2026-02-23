@@ -40,18 +40,16 @@ const deleteFile = async () => {
   <div
     class="my-1 py-1 px-2 border flex gap-8 items-baseline rounded-border border-surface bg-surface-50"
   >
-    <div
-      class="w-[24rem] text-ellipsis whitespace-nowrap overflow-hidden"
-      :title="file.name"
-    >
-      #{{ file.id }} {{ file.name }}
+    <div class="w-[24rem] truncate">
+      <RoutingLink
+        name="tm"
+        :params="{id: file.id}"
+        :disabled="busy"
+        :title="file.name"
+      >
+        #{{ file.id }} {{ file.name }}
+      </RoutingLink>
     </div>
-    <RoutingLink
-      name="tm"
-      :params="{id: file.id}"
-      :disabled="busy"
-      title="Open"
-    />
     <span v-if="status">
       {{ status }}
     </span>

@@ -1,5 +1,6 @@
 """Glossary service for glossary and glossary record operations."""
 
+import csv
 import io
 from dataclasses import dataclass
 from datetime import datetime
@@ -219,6 +220,39 @@ class GlossaryService:
         if not self.__query.delete_record(record_id):
             raise EntityNotFound("Glossary record", record_id)
         return StatusMessage(message="Deleted")
+
+    def export_glossary_to_csv(self, glossary_id: int) -> tuple[str, str]:
+        """
+        Export glossary records to CSV format.
+
+        Args:
+            glossary_id: Glossary ID
+
+        Returns:
+            Tuple of (CSV content as string, glossary name)
+
+        Raises:
+            EntityNotFound: If glossary not found
+        """
+        try:
+            glossary = self.__query.get_glossary(glossary_id)
+            records = self.__query.get_all_glossary_records(glossary_id)
+
+            # Use Python's csv module for proper CSV formatting
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write CSV header
+            writer.writerow(["Оригинал", "Перевод", "Комментарий"])
+
+            # Write CSV rows
+            for record in records:
+                writer.writerow([record.source, record.target, record.comment or ""])
+
+            return (output.getvalue(), glossary.name)
+
+        except NotFoundGlossaryExc:
+            raise EntityNotFound("Glossary", glossary_id)
 
     def create_glossary_from_file(
         self, file: UploadFile, user_id: int, glossary_name: str

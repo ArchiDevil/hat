@@ -47,3 +47,6 @@ export const createGlossaryFromFile = async (glossary_name: string, data: Body_c
   }
   return await api.post<GlossaryLoadFileResponse>(`/glossary/load_file`, formData, {query: {glossary_name}})
 }
+export const getDownloadGlossaryCsvLink = (glossary_id: number): string => {
+  return getApiBase() + `/glossary/${glossary_id}/download`
+}

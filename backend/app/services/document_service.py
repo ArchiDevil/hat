@@ -40,6 +40,7 @@ from app.translation_memory.schema import (
     TranslationMemoryListResponse,
     TranslationMemoryListSimilarResponse,
 )
+from app.utils import encode_to_latin_1
 
 
 @dataclass
@@ -229,7 +230,7 @@ class DocumentService:
                 file,
                 media_type="application/octet-stream",
                 headers={
-                    "Content-Disposition": f'attachment; filename="{self.encode_to_latin_1(doc.name)}"'
+                    "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
                 },
             )
         if doc.type == DocumentType.txt:
@@ -251,7 +252,7 @@ class DocumentService:
                 file,
                 media_type="application/octet-stream",
                 headers={
-                    "Content-Disposition": f'attachment; filename="{self.encode_to_latin_1(doc.name)}"'
+                    "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
                 },
             )
 
@@ -288,7 +289,7 @@ class DocumentService:
             output,
             media_type="application/octet-stream",
             headers={
-                "Content-Disposition": f'attachment; filename="{self.encode_to_latin_1(doc.name)}"'
+                "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}"'
             },
         )
 
@@ -326,7 +327,7 @@ class DocumentService:
             file,
             media_type="application/octet-stream",
             headers={
-                "Content-Disposition": f'attachment; filename="{self.encode_to_latin_1(doc.name)}.xliff"'
+                "Content-Disposition": f'attachment; filename="{encode_to_latin_1(doc.name)}.xliff"'
             },
         )
 
@@ -652,12 +653,6 @@ class DocumentService:
         return doc_schema.DocumentUpdateResponse(
             id=updated_doc.id, name=updated_doc.name, project_id=updated_doc.project_id
         )
-
-    def encode_to_latin_1(self, original: str):
-        output = ""
-        for c in original:
-            output += c if (c.isalnum() or c in "'().[] -") else "_"
-        return output
 
     async def upload_xliff(
         self,

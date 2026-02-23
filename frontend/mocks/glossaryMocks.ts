@@ -45,6 +45,16 @@ export const glossaries: GlossaryResponse[] = [
     created_by_user: defaultUser,
     records_count: glossarySegments.length,
   },
+  {
+    id: 52,
+    name: 'Such a long long long long long name of the glossary to the its truncation',
+    created_at: faker.date.recent().toISOString().split('.')[0],
+    updated_at: faker.date.recent().toISOString().split('.')[0],
+    processing_status: 'done',
+    upload_time: faker.date.recent().toISOString().split('.')[0],
+    created_by_user: defaultUser,
+    records_count: glossarySegments.length,
+  },
 ]
 
 export const glossaryMocks = [

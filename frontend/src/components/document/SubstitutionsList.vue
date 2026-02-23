@@ -78,7 +78,11 @@ onMounted(async () => {
           </label>
           <label
             v-else-if="sub.type == 'glossary'"
-            :title="sub.parentName"
+            :title="
+              sub.comment
+                ? `${sub.comment} (${sub.parentName})`
+                : sub.parentName
+            "
           >
             Term
           </label>

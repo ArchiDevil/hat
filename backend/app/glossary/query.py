@@ -103,6 +103,30 @@ class GlossaryQuery:
         total_rows = query.count()
         return selected_rows, total_rows
 
+    def get_all_glossary_records(self, glossary_id: int) -> list[GlossaryRecord]:
+        """
+        Get all glossary records for a glossary (no pagination).
+
+        Args:
+            glossary_id: Glossary ID
+
+        Returns:
+            List of all GlossaryRecord objects
+
+        Raises:
+            NotFoundGlossaryExc: If glossary not found
+        """
+        if not self.db.query(Glossary).filter(Glossary.id == glossary_id).first():
+            raise NotFoundGlossaryExc()
+
+        records = (
+            self.db.query(GlossaryRecord)
+            .filter(GlossaryRecord.glossary_id == glossary_id)
+            .order_by(GlossaryRecord.id)
+            .all()
+        )
+        return records
+
     def create_glossary(
         self,
         user_id: int,

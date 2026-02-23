@@ -110,7 +110,8 @@ const getMethod = (method: ServiceMethod) => {
 
   if (
     responseData.content &&
-    'application/octet-stream' in responseData.content
+    ('application/octet-stream' in responseData.content ||
+      'text/csv' in responseData.content)
   ) {
     // replace all OpenAPI path parameters with JS template literals
     const interpolatedPath = method.path.replace(/\{(\w+)\}/g, '${$1}')

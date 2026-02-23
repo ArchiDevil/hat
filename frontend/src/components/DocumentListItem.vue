@@ -32,7 +32,9 @@ const progressBarTitle = computed(() => {
 
 const progressValue = computed(() => {
   if (props.document.total_word_count === 0) return 0
-  return (props.document.approved_word_count / props.document.total_word_count) * 100
+  return (
+    (props.document.approved_word_count / props.document.total_word_count) * 100
+  )
 })
 
 const busy = ref(false)
@@ -59,18 +61,16 @@ const deleteFile = async () => {
   <div
     class="my-1 py-1 px-2 border flex gap-8 items-baseline rounded-border border-surface bg-surface-50"
   >
-    <div
-      class="w-[24rem] text-ellipsis whitespace-nowrap overflow-hidden"
-      :title="document.name"
-    >
-      #{{ document.id }} {{ document.name }}
+    <div class="w-[24rem] truncate">
+      <RoutingLink
+        name="document"
+        :params="{id: document.id}"
+        :disabled="busy"
+        :title="document.name"
+      >
+        #{{ document.id }} {{ document.name }}
+      </RoutingLink>
     </div>
-    <RoutingLink
-      name="document"
-      :params="{id: document.id}"
-      :disabled="busy"
-      title="Open"
-    />
     <div
       class="border border-surface rounded-lg p-2 w-16 text-center uppercase"
       :class="classes"

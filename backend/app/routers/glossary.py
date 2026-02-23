@@ -1,3 +1,4 @@
+from fileinput import filename
 from typing import Annotated, Final
 
 from fastapi import (
@@ -6,6 +7,7 @@ from fastapi import (
     Depends,
     HTTPException,
     Query,
+    Response,
     UploadFile,
     status,
 )
@@ -27,6 +29,7 @@ from app.glossary.tasks import create_glossary_from_file_tasks
 from app.models import StatusMessage
 from app.services import GlossaryService
 from app.user.depends import get_current_user_id, has_user_role
+from app.utils import encode_to_latin_1
 
 router = APIRouter(
     prefix="/glossary", tags=["glossary"], dependencies=[Depends(has_user_role)]
@@ -280,3 +283,58 @@ def create_glossary_from_file(
         glossary_id=glossary.id,
     )
     return GlossaryLoadFileResponse(glossary_id=glossary.id)
+
+
+@router.get(
+    path="/{glossary_id}/download",
+    description="Download glossary as CSV file",
+    response_class=Response,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {
+            "description": "CSV file download",
+            "content": {
+                "text/csv": {"example": "source,target,comment\nHello,Привет,Greeting"}
+            },
+        },
+        404: {
+            "description": "Glossary requested by id",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Glossary with id 1 not found"}
+                }
+            },
+        },
+    },
+)
+def download_glossary_csv(
+    glossary_id: int,
+    service: Annotated[GlossaryService, Depends(get_service)],
+):
+    """
+    Download glossary records as a CSV file.
+
+    The CSV file contains three columns:
+    - source: Source text
+    - target: Target translation
+    - comment: Optional comment/note
+
+    CSV format uses comma as separator and properly escapes fields containing
+    commas, quotes, or newlines.
+    """
+    try:
+        csv_content, glossary_name = service.export_glossary_to_csv(glossary_id)
+        safe_filename = encode_to_latin_1(glossary_name)
+        return Response(
+            content=csv_content,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f'attachment; filename="{safe_filename}.csv"'
+            },
+        )
+
+    except EntityNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
