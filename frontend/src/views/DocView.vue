@@ -21,6 +21,7 @@ import {
   getDocRecords,
   getDownloadDocLink,
   getDownloadOriginalDocLink,
+  getDownloadXliffLink,
 } from '../client/services/DocumentService'
 import {updateDocRecord} from '../client/services/RecordsService'
 
@@ -71,6 +72,7 @@ const downloadLink = computed(() => getDownloadDocLink(documentId.value))
 const originalLink = computed(() =>
   getDownloadOriginalDocLink(documentId.value)
 )
+const xliffLink = computed(() => getDownloadXliffLink(documentId.value))
 
 const translationProgress = computed(() => {
   const doc = document.value
@@ -264,6 +266,11 @@ const percentage = computed(() =>
           :href="originalLink"
           class="inline-block"
           title="Download original file"
+        />
+        <Link
+          :href="xliffLink"
+          class="inline-block"
+          title="Download XLIFF file"
         />
       </div>
       <template v-if="documentReady && !documentLoading">
