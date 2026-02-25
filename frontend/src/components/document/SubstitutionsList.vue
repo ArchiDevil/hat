@@ -27,7 +27,16 @@ const subClass = (sub: MemorySubstitution | GlossarySubstitution) => {
 const {data: substitutions} = useQuery({
   key: () => ['substitutions', documentId, currentSegmentId ?? -1],
   query: async () => {
+    const knownTargets = new Set<string>()
     const memorySubs = (await getRecordSubstitutions(currentSegmentId!))
+      .filter((sub) => {
+        if (knownTargets.has(sub.target)) {
+          return false
+        } else {
+          knownTargets.add(sub.target)
+          return true
+        }
+      })
       .map((sub): MemorySubstitution => {
         return {type: 'memory', ...sub}
       })
