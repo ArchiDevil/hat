@@ -1,4 +1,3 @@
-from fileinput import filename
 from typing import Annotated, Final
 
 from fastapi import (

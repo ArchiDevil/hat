@@ -518,7 +518,9 @@ def test_download_glossary_csv_filename_sanitization(
 
     assert response.status_code == status.HTTP_200_OK
     # Special characters should be removed, spaces replaced with underscores
-    assert "Test Glossary (Special) 2024_.csv" in response.headers["content-disposition"]
+    assert (
+        "Test Glossary (Special) 2024_.csv" in response.headers["content-disposition"]
+    )
 
 
 def test_download_glossary_csv_404(user_logged_client: TestClient):
