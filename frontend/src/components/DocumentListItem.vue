@@ -87,17 +87,21 @@ const deleteFile = async () => {
       {{ status }}
     </span>
     <Button
-      label="Settings"
+      icon="pi pi-cog"
       severity="secondary"
       :disabled="busy"
+      variant="text"
+      rounded
       @click="$emit('openSettings', document.id)"
     />
     <Button
       v-if="isAdmin()"
       class="ml-auto"
-      label="Delete"
+      icon="pi pi-trash"
       severity="danger"
       :disabled="busy"
+      variant="text"
+      rounded
       @click="deleteFile()"
     />
   </div>

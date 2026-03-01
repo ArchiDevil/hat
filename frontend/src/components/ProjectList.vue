@@ -7,6 +7,7 @@ const {data: projects, status: projectsStatus} = useProjects()
 
 defineEmits<{
   openSettings: [number]
+  uploadDocument: [number]
 }>()
 </script>
 
@@ -19,6 +20,7 @@ defineEmits<{
       :key="project.name"
       :project="project"
       @open-settings="(docId) => $emit('openSettings', docId)"
+      @upload-document="(projectId) => $emit('uploadDocument', projectId)"
     />
   </div>
 </template>

@@ -1,6 +1,5 @@
 """Project service for project management operations."""
 
-from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -36,14 +35,6 @@ class ProjectService:
         projects = self.__query.list_projects(user_id)
         return [
             ProjectResponse(
-                id=-1,
-                name="Unnamed project",
-                created_by=-1,
-                created_at=datetime.now(UTC),
-                updated_at=datetime.now(UTC),
-            )
-        ] + [
-            ProjectResponse(
                 id=project.id,
                 name=project.name,
                 created_by=project.created_by,
@@ -69,24 +60,10 @@ class ProjectService:
             UnauthorizedAccess: If user doesn't own the project
         """
         try:
-            project = (
-                self.__query._get_project(project_id)
-                if project_id != -1
-                else Project(
-                    id=-1,
-                    name="Unnamed project",
-                    created_by=-1,
-                    created_at=datetime.now(UTC),
-                    updated_at=datetime.now(UTC),
-                )
-            )
+            project = self.__query._get_project(project_id)
             self._check_ownership(project, user_id)
-            aggregates = self.__query.get_project_aggregates(
-                project_id if project_id != -1 else None
-            )
-            documents = self.__query.get_project_documents(
-                project_id if project_id != -1 else None
-            )
+            aggregates = self.__query.get_project_aggregates(project_id)
+            documents = self.__query.get_project_documents(project_id)
 
             def find_doc(doc_id: int):
                 for aggregate in aggregates:

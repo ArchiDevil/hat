@@ -26,6 +26,8 @@ from app.glossary.schema import (
 )
 from app.models import DocumentStatus
 from app.projects.models import Project
+from app.projects.query import ProjectQuery
+from app.projects.schema import ProjectCreate
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory
 
@@ -34,6 +36,7 @@ from app.translation_memory.models import TranslationMemory
 
 def test_can_get_document(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -53,6 +56,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -69,7 +73,7 @@ def test_can_get_document(user_logged_client: TestClient, session: Session):
         "type": "txt",
         "approved_word_count": 0,
         "total_word_count": 4,
-        "project_id": None,
+        "project_id": 1,
     }
 
 
@@ -80,6 +84,7 @@ def test_returns_404_when_doc_not_found(user_logged_client: TestClient):
 
 def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             XliffDocument(
                 parent_id=1,
@@ -92,6 +97,7 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
                 type=DocumentType.txt,
                 processing_status="waiting",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -107,6 +113,7 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
 
 def test_can_delete_txt_doc(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             TxtDocument(
                 parent_id=1,
@@ -119,6 +126,7 @@ def test_can_delete_txt_doc(user_logged_client: TestClient, session: Session):
                 type=DocumentType.txt,
                 processing_status="waiting",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -140,8 +148,13 @@ def test_returns_404_when_deleting_nonexistent_doc(
 
 
 def test_upload_xliff(user_logged_client: TestClient, session: Session):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        response = user_logged_client.post("/document/", files={"file": fp})
+        response = user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
     assert response.status_code == 200
 
     with session as s:
@@ -161,8 +174,13 @@ def test_upload_xliff(user_logged_client: TestClient, session: Session):
 
 
 def test_upload_txt(user_logged_client: TestClient, session: Session):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = user_logged_client.post("/document/", files={"file": fp})
+        response = user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
     assert response.status_code == 200
 
     with session as s:
@@ -187,14 +205,22 @@ def test_upload_no_file(user_logged_client: TestClient):
     assert response.status_code == 422
 
 
-def test_upload_fails_with_unknown_type(user_logged_client: TestClient):
+def test_upload_fails_with_unknown_type(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.tmx", "rb") as fp:
-        response = user_logged_client.post("/document/", files={"file": fp})
+        response = user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
     assert response.status_code == 400
 
 
 def test_upload_removes_old_files(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="some_doc.txt",
@@ -202,12 +228,15 @@ def test_upload_removes_old_files(user_logged_client: TestClient, session: Sessi
                 processing_status=DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = user_logged_client.post("/document/", files={"file": fp})
+        response = user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
     assert response.status_code == 200
 
     with session as s:
@@ -218,6 +247,7 @@ def test_upload_removes_only_uploaded_documents(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="uploaded_doc.txt",
@@ -225,6 +255,7 @@ def test_upload_removes_only_uploaded_documents(
                 processing_status=DocumentStatus.UPLOADED.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.add(
@@ -234,12 +265,15 @@ def test_upload_removes_only_uploaded_documents(
                 processing_status=DocumentStatus.DONE.value,
                 upload_time=(datetime.now() - timedelta(days=2)),
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = user_logged_client.post("/document/", files={"file": fp})
+        response = user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
     assert response.status_code == 200
 
     with session as s:
@@ -250,8 +284,13 @@ def test_upload_removes_only_uploaded_documents(
 def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
     user_logged_client: TestClient, session: Session
 ):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     response = user_logged_client.post(
         "/document/1/process",
@@ -270,8 +309,13 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
 def test_process_sets_document_in_pending_stage_and_creates_task_txt(
     user_logged_client: TestClient, session: Session
 ):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     response = user_logged_client.post(
         "/document/1/process",
@@ -290,8 +334,13 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
 def test_process_creates_task_for_xliff(
     user_logged_client: TestClient, session: Session
 ):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     response = user_logged_client.post(
         "/document/1/process",
@@ -317,8 +366,13 @@ def test_process_creates_task_for_xliff(
 
 
 def test_process_creates_task_for_txt(user_logged_client: TestClient, session: Session):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     response = user_logged_client.post(
         "/document/1/process",
@@ -356,8 +410,13 @@ def test_returns_404_when_processing_nonexistent_doc(
 
 
 def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     with session as s:
         records = [
@@ -416,8 +475,13 @@ def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
 
 
 def test_download_txt_doc(user_logged_client: TestClient, session: Session):
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     with session as s:
         txt_records = [
@@ -477,12 +541,14 @@ def test_download_shows_404_for_unknown_doc(user_logged_client: TestClient):
 
 def test_returns_linked_tms(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="small.xliff",
                 type=DocumentType.xliff,
                 created_by=1,
                 processing_status="UPLOADED",
+                project_id=p.id,
             )
         )
         s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
@@ -509,12 +575,14 @@ def test_returns_linked_tms(user_logged_client: TestClient, session: Session):
 
 def test_sets_new_linked_tms(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="small.xliff",
                 type=DocumentType.xliff,
                 created_by=1,
                 processing_status="UPLOADED",
+                project_id=p.id,
             )
         )
         s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
@@ -544,12 +612,14 @@ def test_new_linked_tms_work_with_duplicated_ids(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="small.xliff",
                 type=DocumentType.xliff,
                 created_by=1,
                 processing_status="UPLOADED",
+                project_id=p.id,
             )
         )
         s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
@@ -589,12 +659,14 @@ def test_new_linked_tms_replaces_old_ones(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="small.xliff",
                 type=DocumentType.xliff,
                 created_by=1,
                 processing_status="UPLOADED",
+                project_id=p.id,
             )
         )
         s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
@@ -621,12 +693,14 @@ def test_set_linked_tms_fail_if_not_exists(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="small.xliff",
                 type=DocumentType.xliff,
                 created_by=1,
                 processing_status="UPLOADED",
+                project_id=p.id,
             )
         )
         s.commit()
@@ -642,6 +716,7 @@ def test_set_linked_tms_fail_with_multiple_writes(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add_all(
             [
                 Document(
@@ -649,6 +724,7 @@ def test_set_linked_tms_fail_with_multiple_writes(
                     type=DocumentType.xliff,
                     created_by=1,
                     processing_status="UPLOADED",
+                    project_id=p.id,
                 ),
                 TranslationMemory(name="first_doc.tmx", created_by=1),
                 TranslationMemory(name="another_doc.tmx", created_by=1),
@@ -668,6 +744,7 @@ def test_can_get_glossaries_substitutions(
 ):
     dq = GenericDocsQuery(session)
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -685,6 +762,7 @@ def test_can_get_glossaries_substitutions(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -715,6 +793,7 @@ def test_glossary_substitution_returns_404_for_non_existent_record(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -732,6 +811,7 @@ def test_glossary_substitution_returns_404_for_non_existent_record(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -742,6 +822,7 @@ def test_glossary_substitution_returns_404_for_non_existent_record(
 
 def test_can_get_linked_glossaries(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -759,6 +840,7 @@ def test_can_get_linked_glossaries(user_logged_client: TestClient, session: Sess
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -795,12 +877,14 @@ def test_can_set_glossaries_for_document(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="small.xliff",
                 type=DocumentType.xliff,
                 created_by=1,
                 processing_status="UPLOADED",
+                project_id=p.id,
             )
         )
         s.commit()
@@ -836,12 +920,14 @@ def test_setting_glossaries_returns_404_for_non_existing_glossaries(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="small.xliff",
                 type=DocumentType.xliff,
                 created_by=1,
                 processing_status="UPLOADED",
+                project_id=p.id,
             )
         )
         s.commit()
@@ -861,6 +947,7 @@ def test_get_doc_records_with_repetitions(
 ):
     """Test that document records endpoint returns repetition counts"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Goodbye", target="Пока"),
@@ -875,6 +962,7 @@ def test_get_doc_records_with_repetitions(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -901,6 +989,7 @@ def test_doc_glossary_search_with_matching_records(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Regional Effects", target=""),
             DocumentRecord(source="User Interface", target=""),
@@ -912,6 +1001,7 @@ def test_doc_glossary_search_with_matching_records(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -953,6 +1043,7 @@ def test_doc_glossary_search_returns_empty_when_no_glossaries(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Regional Effects", target=""),
         ]
@@ -963,6 +1054,7 @@ def test_doc_glossary_search_returns_empty_when_no_glossaries(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -978,6 +1070,7 @@ def test_doc_glossary_search_returns_empty_when_no_matches(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Regional Effects", target=""),
         ]
@@ -988,6 +1081,7 @@ def test_doc_glossary_search_returns_empty_when_no_matches(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -1021,11 +1115,13 @@ def test_doc_glossary_search_returns_404_for_nonexistent_document(
 
 def test_update_document_name_only(user_logged_client: TestClient, session: Session):
     """Test successful update of document name only."""
+    p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
         name="original.txt",
         type=DocumentType.txt,
         processing_status="done",
         created_by=1,
+        project_id=p.id,
     )
     session.add(doc)
     session.commit()
@@ -1037,22 +1133,24 @@ def test_update_document_name_only(user_logged_client: TestClient, session: Sess
     response_json = response.json()
     assert response_json["id"] == doc.id
     assert response_json["name"] == "updated.txt"
-    assert response_json["project_id"] is None
+    assert response_json["project_id"] == 1
 
     with session as s:
         updated_doc = s.query(Document).filter_by(id=doc.id).first()
         assert updated_doc is not None
         assert updated_doc.name == "updated.txt"
-        assert updated_doc.project_id is None
+        assert updated_doc.project_id == 1
 
 
 def test_update_document_project_only(user_logged_client: TestClient, session: Session):
     """Test successful update of document project_id only."""
+    p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
         name="document.txt",
         type=DocumentType.txt,
         processing_status="done",
         created_by=1,
+        project_id=p.id,
     )
     project = Project(created_by=1, name="Test Project")
     session.add(doc)
@@ -1079,11 +1177,13 @@ def test_update_document_name_and_project(
     user_logged_client: TestClient, session: Session
 ):
     """Test successful update of both name and project_id."""
+    p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
         name="original.txt",
         type=DocumentType.txt,
         processing_status="done",
         created_by=1,
+        project_id=p.id,
     )
     project = Project(created_by=1, name="Test Project")
     session.add(doc)
@@ -1107,36 +1207,7 @@ def test_update_document_name_and_project(
         assert updated_doc.project_id == project_id
 
 
-def test_unassign_document_from_project(
-    user_logged_client: TestClient, session: Session
-):
-    """Test successful unassignment of document from project."""
-    doc = Document(
-        name="document.txt",
-        type=DocumentType.txt,
-        processing_status="done",
-        created_by=1,
-        project_id=1,
-    )
-    project = Project(created_by=1, name="Test Project")
-    session.add(doc)
-    session.add(project)
-    session.commit()
-
-    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": -1})
-    assert response.status_code == 200
-    response_json = response.json()
-    assert response_json["id"] == doc.id
-    assert response_json["name"] == "document.txt"
-    assert response_json["project_id"] is None
-
-    with session as s:
-        updated_doc = s.query(Document).filter_by(id=doc.id).first()
-        assert updated_doc is not None
-        assert updated_doc.project_id is None
-
-
-def test_update_document_not_found(user_logged_client: TestClient, session: Session):
+def test_update_document_not_found(user_logged_client: TestClient):
     """Test 404 when document doesn't exist."""
     response = user_logged_client.put("/document/999", json={"name": "updated.txt"})
     assert response.status_code == 404
@@ -1145,11 +1216,13 @@ def test_update_document_not_found(user_logged_client: TestClient, session: Sess
 
 def test_update_project_not_found(user_logged_client: TestClient, session: Session):
     """Test 404 when project doesn't exist."""
+    p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
         name="document.txt",
         type=DocumentType.txt,
         processing_status="done",
         created_by=1,
+        project_id=p.id,
     )
     session.add(doc)
     session.commit()
@@ -1162,12 +1235,14 @@ def test_update_project_not_found(user_logged_client: TestClient, session: Sessi
 def test_update_document_validation_error(
     user_logged_client: TestClient, session: Session
 ):
-    """Test 422 for invalid project_id (negative, zero) or invalid name."""
+    """Test 422 for invalid project_id (zero) or invalid name."""
+    p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
         name="document.txt",
         type=DocumentType.txt,
         processing_status="done",
         created_by=1,
+        project_id=p.id,
     )
     session.add(doc)
     session.commit()
@@ -1192,11 +1267,13 @@ def test_update_document_validation_error(
 
 def test_update_document_unauthenticated(fastapi_client: TestClient, session: Session):
     """Test 401 when user is not authenticated."""
+    p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
         name="document.txt",
         type=DocumentType.txt,
         processing_status="done",
         created_by=1,
+        project_id=p.id,
     )
     session.add(doc)
     session.commit()
@@ -1209,12 +1286,13 @@ def test_update_document_to_same_project(
     user_logged_client: TestClient, session: Session
 ):
     """Test idempotent update to same project."""
+    p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
         name="document.txt",
         type=DocumentType.txt,
         processing_status="done",
         created_by=1,
-        project_id=1,
+        project_id=p.id,
     )
     project = Project(created_by=1, name="Test Project")
     session.add(doc)
@@ -1239,8 +1317,13 @@ def test_update_document_to_same_project(
 
 def test_download_original_xliff_doc(user_logged_client: TestClient, session: Session):
     """Test downloading original XLIFF document."""
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     response = user_logged_client.get("/document/1/download_original")
     assert response.status_code == 200
@@ -1252,8 +1335,13 @@ def test_download_original_xliff_doc(user_logged_client: TestClient, session: Se
 
 def test_download_original_txt_doc(user_logged_client: TestClient, session: Session):
     """Test downloading original TXT document."""
+    with session as s:
+        ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post("/document/", files={"file": fp})
+        user_logged_client.post(
+            "/document/", files={"file": fp}, data={"project_id": "1"}
+        )
 
     response = user_logged_client.get("/document/1/download_original")
     assert response.status_code == 200
@@ -1272,6 +1360,7 @@ def test_download_original_shows_404_for_unknown_doc(user_logged_client: TestCli
 def test_download_xliff(user_logged_client: TestClient, session: Session):
     """Test downloading document as XLIFF."""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -1291,6 +1380,7 @@ def test_download_xliff(user_logged_client: TestClient, session: Session):
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -1315,6 +1405,7 @@ def test_download_xliff_shows_404_for_unknown_doc(user_logged_client: TestClient
 def test_upload_xliff_success(user_logged_client: TestClient, session: Session):
     """Test successful XLIFF upload with record updates."""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -1349,6 +1440,7 @@ def test_upload_xliff_success(user_logged_client: TestClient, session: Session):
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -1406,6 +1498,7 @@ def test_upload_xliff_with_update_approved(
 ):
     """Test XLIFF upload with update_approved=True to update approved records."""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -1425,6 +1518,7 @@ def test_upload_xliff_with_update_approved(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -1472,6 +1566,7 @@ def test_upload_xliff_history_tracking(
 ):
     """Test that history entries are created for XLIFF upload."""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 id=1,
@@ -1493,6 +1588,7 @@ def test_upload_xliff_history_tracking(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()

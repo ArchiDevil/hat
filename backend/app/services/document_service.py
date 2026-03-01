@@ -93,7 +93,7 @@ class DocumentService:
         )
 
     async def create_document(
-        self, file: UploadFile, user_id: int
+        self, file: UploadFile, user_id: int, project_id: int
     ) -> doc_schema.Document:
         """
         Create a new document from uploaded file.
@@ -101,12 +101,13 @@ class DocumentService:
         Args:
             file: Uploaded file
             user_id: ID of user creating the document
+            project_id: Optional ID of project to assign document to
 
         Returns:
             Created Document object
 
         Raises:
-            EntityNotFound: If file type is unsupported
+            EntityNotFound: If file type is unsupported or project not found
         """
         cutoff_date = datetime.now() - timedelta(days=1)
 
@@ -127,12 +128,20 @@ class DocumentService:
         else:
             raise BusinessLogicError("Unsupported file type")
 
+        # Validate project_id if provided
+        try:
+            pq = ProjectQuery(self.__db)
+            pq._get_project(project_id)
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", project_id)
+
         doc = Document(
             name=name,
             type=doc_type,
             processing_status=models.DocumentStatus.UPLOADED.value,
             upload_time=datetime.now(),
             created_by=user_id,
+            project_id=project_id,
         )
         self.__query.add_document(doc, original_document)
         return doc_schema.Document(
@@ -141,7 +150,7 @@ class DocumentService:
             status=models.DocumentStatus(doc.processing_status),
             created_by=doc.created_by,
             type=doc.type.value,
-            project_id=None,
+            project_id=doc.project_id,
         )
 
     def delete_document(self, doc_id: int) -> models.StatusMessage:
@@ -638,7 +647,7 @@ class DocumentService:
         """
         self._get_document_by_id(doc_id)
         try:
-            if update_data.project_id is not None and update_data.project_id != -1:
+            if update_data.project_id is not None:
                 pq = ProjectQuery(self.__db)
                 # verify project exists
                 pq._get_project(update_data.project_id)

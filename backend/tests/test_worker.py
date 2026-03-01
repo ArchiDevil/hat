@@ -26,6 +26,7 @@ from app.models import (
     DocumentStatus,
     YandexTranslatorSettings,
 )
+from app.projects.models import Project
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 from worker import process_task
@@ -42,6 +43,7 @@ def create_doc(name: str, type_: DocumentType):
         name=name,
         type=type_,
         created_by=1,
+        project_id=1,
         processing_status=DocumentStatus.PENDING.value,
         upload_time=datetime.now(),
     )
@@ -97,6 +99,7 @@ def test_process_task_sets_xliff_records(session: Session):
                     ],
                     created_by=1,
                 ),
+                Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
@@ -222,6 +225,7 @@ def test_process_task_sets_txt_records(session: Session):
                     ],
                     created_by=1,
                 ),
+                Project(name="test", created_by=1),
                 create_doc(name="small.txt", type_=DocumentType.txt),
                 TxtDocument(parent_id=1, original_document=file_data),
                 DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
@@ -359,6 +363,7 @@ def test_process_task_uses_correct_tm_ids(session: Session):
             [
                 TranslationMemory(name="test1", records=tm_records_1, created_by=1),
                 TranslationMemory(name="test2", records=tm_records_2, created_by=1),
+                Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(),
@@ -433,6 +438,7 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
     with session as s:
         s.add_all(
             [
+                Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(
@@ -484,6 +490,7 @@ def test_process_task_uses_correct_glossary_ids(session: Session):
             [
                 Glossary(name="test1", created_by=1, records=glossary_records_1),
                 Glossary(name="test2", created_by=1, records=glossary_records_2),
+                Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(),

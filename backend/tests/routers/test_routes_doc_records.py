@@ -11,6 +11,8 @@ from app.documents.models import (
     DocumentRecord,
     DocumentType,
 )
+from app.projects.query import ProjectQuery
+from app.projects.schema import ProjectCreate
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 
 # pylint: disable=C0116
@@ -18,6 +20,7 @@ from app.translation_memory.models import TranslationMemory, TranslationMemoryRe
 
 def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -32,6 +35,7 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -65,6 +69,7 @@ def test_doc_records_returns_second_page(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source=f"line{i}",
@@ -80,6 +85,7 @@ def test_doc_records_returns_second_page(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -104,6 +110,7 @@ def test_doc_records_returns_empty_for_too_large_page(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source=f"line{i}",
@@ -119,6 +126,7 @@ def test_doc_records_returns_empty_for_too_large_page(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -149,6 +157,7 @@ def test_can_update_doc_record(
     user_logged_client: TestClient, session: Session, arguments: dict[str, str]
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Regional Effects",
@@ -166,6 +175,7 @@ def test_can_update_doc_record(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -193,6 +203,7 @@ def test_record_approving_creates_memory(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Some source", target=""),
         ]
@@ -203,6 +214,7 @@ def test_record_approving_creates_memory(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.add(
@@ -245,6 +257,7 @@ def test_record_approving_updates_memory(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Some source", target=""),
         ]
@@ -255,6 +268,7 @@ def test_record_approving_updates_memory(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         tm_records = [
@@ -314,6 +328,7 @@ def test_returns_404_for_nonexistent_record(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="test_doc.txt",
@@ -321,6 +336,7 @@ def test_returns_404_for_nonexistent_record(
                 records=[],
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -336,6 +352,7 @@ def test_can_update_doc_record_with_repetitions(
 ):
     """Test updating all records with the same source text"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Hello World", target="Здравствуйте Мир"),
@@ -348,6 +365,7 @@ def test_can_update_doc_record_with_repetitions(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -380,6 +398,7 @@ def test_update_repetitions_default_behavior(
 ):
     """Test that update_repetitions defaults to False when not specified"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Hello World", target="Здравствуйте Мир"),
@@ -391,6 +410,7 @@ def test_update_repetitions_default_behavior(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -421,6 +441,7 @@ def test_update_repetitions_default_behavior(
 def test_doc_records_source_filter(user_logged_client: TestClient, session: Session):
     """Test filtering document records by source text"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Goodbye", target="Пока"),
@@ -433,6 +454,7 @@ def test_doc_records_source_filter(user_logged_client: TestClient, session: Sess
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -456,6 +478,7 @@ def test_doc_records_source_filter(user_logged_client: TestClient, session: Sess
 def test_doc_records_target_filter(user_logged_client: TestClient, session: Session):
     """Test filtering document records by target text"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Goodbye", target="Пока"),
@@ -468,6 +491,7 @@ def test_doc_records_target_filter(user_logged_client: TestClient, session: Sess
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -493,6 +517,7 @@ def test_doc_records_target_filter(user_logged_client: TestClient, session: Sess
 def test_doc_records_both_filters(user_logged_client: TestClient, session: Session):
     """Test filtering document records by both source and target text"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Goodbye", target="Пока"),
@@ -505,6 +530,7 @@ def test_doc_records_both_filters(user_logged_client: TestClient, session: Sessi
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -534,6 +560,7 @@ def test_doc_records_no_filter_matches(
 ):
     """Test filtering with no matching results"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Goodbye", target="Пока"),
@@ -545,6 +572,7 @@ def test_doc_records_no_filter_matches(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -566,6 +594,7 @@ def test_doc_records_case_insensitive_filter(
 ):
     """Test that filtering is case insensitive"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="hello universe", target="Привет Вселенная"),
@@ -577,6 +606,7 @@ def test_doc_records_case_insensitive_filter(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -600,6 +630,7 @@ def test_doc_records_filter_with_pagination(
 ):
     """Test that filtering works with pagination"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source=f"Hello {i}", target=f"Привет {i}") for i in range(10)
         ]
@@ -610,6 +641,7 @@ def test_doc_records_filter_with_pagination(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -648,6 +680,7 @@ def test_update_repetitions_only_when_approved(
 ):
     """Test that repetitions are only updated when segment is approved, not just updated"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
             DocumentRecord(source="Hello World", target="Здравствуйте Мир"),
@@ -660,6 +693,7 @@ def test_update_repetitions_only_when_approved(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -710,6 +744,7 @@ def test_update_repetitions_only_when_approved(
 def test_has_comments_field(user_logged_client: TestClient, session: Session):
     """Test that has_comments field correctly shows if document record has comments"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         # Create document records
         records = [
             DocumentRecord(source="Hello World", target="Привет мир"),
@@ -723,6 +758,7 @@ def test_has_comments_field(user_logged_client: TestClient, session: Session):
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -772,6 +808,7 @@ def test_has_comments_with_multiple_comments(
 ):
     """Test that has_comments is True when record has multiple comments"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         # Create document record
         record = DocumentRecord(source="Test", target="Тест")
         s.add(
@@ -781,6 +818,7 @@ def test_has_comments_with_multiple_comments(
                 records=[record],
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()

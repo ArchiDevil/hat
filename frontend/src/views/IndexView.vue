@@ -23,7 +23,10 @@ const docSettingsVisible = ref(false)
 const selectedDocumentId = ref<number | undefined>(undefined)
 
 const addProjectVisible = ref(false)
+
+const addDocumentProjectId = ref<number>()
 const addDocumentVisible = ref(false)
+
 const uploadXliffVisible = ref(false)
 
 onMounted(async () => {
@@ -43,21 +46,14 @@ onMounted(async () => {
             <Button
               icon="pi pi-file-arrow-up"
               size="small"
-              label="Upload XLIFF"
+              label="Update translations"
               severity="secondary"
               @click="uploadXliffVisible = true"
-            />
-            <Button
-              icon="pi pi-file-arrow-up"
-              size="small"
-              label="Upload document"
-              @click="addDocumentVisible = true"
             />
             <Button
               icon="pi pi-plus"
               size="small"
               label="Add new project"
-              severity="secondary"
               @click="addProjectVisible = true"
             />
           </div>
@@ -68,6 +64,12 @@ onMounted(async () => {
               (docId) => {
                 selectedDocumentId = docId
                 docSettingsVisible = true
+              }
+            "
+            @upload-document="
+              (projectId) => {
+                addDocumentProjectId = projectId
+                addDocumentVisible = true
               }
             "
           />
@@ -104,6 +106,9 @@ onMounted(async () => {
   />
 
   <AddProjectModal v-model="addProjectVisible" />
-  <AddDocumentModal v-model="addDocumentVisible" />
+  <AddDocumentModal
+    v-model="addDocumentVisible"
+    :project-id="addDocumentProjectId ?? -1"
+  />
   <UploadXliffModal v-model="uploadXliffVisible" />
 </template>

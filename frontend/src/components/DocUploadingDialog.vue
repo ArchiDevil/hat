@@ -17,17 +17,16 @@ import MachineTranslationOptions, {
   MtType,
 } from './MachineTranslationOptions.vue'
 
-import MultiSelect from 'primevue/multiselect'
-import Select from 'primevue/select'
-import FileUpload, {FileUploadSelectEvent} from 'primevue/fileupload'
+import {FileUpload, FileUploadSelectEvent, MultiSelect, Select} from 'primevue'
 
 const emit = defineEmits<{
   uploaded: []
   processed: [fileId: number]
 }>()
 
-defineProps<{
+const props = defineProps<{
   title: string
+  projectId: number
 }>()
 
 const uploadedFile = ref(null) as Ref<Document | null>
@@ -65,7 +64,10 @@ const createFile = async (event: FileUploadSelectEvent) => {
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    uploadedFile.value = await createDoc({file: selectedFile})
+    uploadedFile.value = await createDoc({
+      file: selectedFile,
+      project_id: props.projectId,
+    })
     uploading.value = false
     status.value = 'Ready for processing'
     emit('uploaded')
@@ -187,7 +189,9 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
         </div>
       </template>
       <template #empty>
-        <span v-if="!status">Choose a file to upload into Unnamed project.</span>
+        <span v-if="!status">
+          Choose a file to upload into the project.
+        </span>
       </template>
     </FileUpload>
   </div>

@@ -2,4 +2,5 @@
 
 export interface Body_create_doc_document__post {
   file: Blob
+  project_id: number
 }

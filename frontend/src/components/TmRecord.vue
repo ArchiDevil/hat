@@ -56,9 +56,11 @@ const deleteFile = async () => {
     <Button
       v-if="isAdmin()"
       class="ml-auto"
-      label="Delete"
+      icon="pi pi-trash"
       severity="danger"
       :disabled="busy"
+      variant="text"
+      rounded
       @click="deleteFile()"
     />
   </div>

@@ -46,10 +46,9 @@ def test_list_projects(user_logged_client: TestClient, session: Session):
     response_json = response.json()
 
     assert response.status_code == status.HTTP_200_OK
-    assert len(response_json) == 3
-    assert response_json[0]["name"] == "Unnamed project"
-    assert response_json[1]["name"] == project_1.name
-    assert response_json[2]["name"] == project_2.name
+    assert len(response_json) == 2
+    assert response_json[0]["name"] == project_1.name
+    assert response_json[1]["name"] == project_2.name
 
 
 def test_retrieve_project(user_logged_client: TestClient, session: Session):
@@ -242,69 +241,3 @@ def test_retrieve_project_project_with_documents_no_records(
     assert project_data["total_records_count"] == 0
     assert project_data["approved_words_count"] == 0
     assert project_data["total_words_count"] == 0
-
-
-def test_retrieve_unnamed_project(user_logged_client: TestClient, session: Session):
-    with session as s:
-        project = Project(created_by=1, name="Test Project")
-        s.add(project)
-        s.flush()
-        project_id = project.id
-
-        doc1 = Document(
-            name="doc.txt",
-            type=DocumentType.txt,
-            processing_status="done",
-            created_by=1,
-            project_id=project_id,
-            records=[
-                DocumentRecord(
-                    source="Hello", target="Привет", approved=True, word_count=10
-                ),
-                DocumentRecord(
-                    source="World", target="Мир", approved=False, word_count=10
-                ),
-                DocumentRecord(
-                    source="Test", target="Тест", approved=True, word_count=20
-                ),
-            ],
-        )
-        doc2 = Document(
-            name="doc.txt",
-            type=DocumentType.txt,
-            processing_status="done",
-            created_by=1,
-            project_id=None,
-            records=[
-                DocumentRecord(
-                    source="Hello", target="Привет", approved=True, word_count=1
-                ),
-                DocumentRecord(
-                    source="World", target="Мир", approved=False, word_count=1
-                ),
-                DocumentRecord(
-                    source="Test", target="Тест", approved=True, word_count=2
-                ),
-            ],
-        )
-
-        s.add(doc1)
-        s.add(doc2)
-        s.commit()
-
-    response = user_logged_client.get("/projects/-1")
-    assert response.status_code == status.HTTP_200_OK
-    response_json = response.json()
-
-    assert response_json["id"] == -1
-    assert response_json["name"] == "Unnamed project"
-    # 2 approved records (Hello, Test)
-    assert response_json["approved_records_count"] == 2
-    # 3 total records (Hello, World, Test)
-    assert response_json["total_records_count"] == 3
-    # 3 approved words (1 + 2)
-    assert response_json["approved_words_count"] == 3
-    # 4 total words (1 + 1 + 2)
-    assert response_json["total_words_count"] == 4
-    assert len(response_json["documents"]) == 1
-    assert response_json["documents"][0]["id"] == 2

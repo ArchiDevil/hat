@@ -3,5 +3,5 @@
 export interface DocumentUpdateResponse {
   id: number
   name: string
-  project_id: number | null
+  project_id: number
 }

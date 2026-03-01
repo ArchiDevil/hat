@@ -7,6 +7,8 @@ from app.documents.models import (
     DocumentType,
     TmMode,
 )
+from app.projects.query import ProjectQuery
+from app.projects.schema import ProjectCreate
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 
 
@@ -15,12 +17,14 @@ def test_search_tm_exact_with_no_linked_memories(
 ):
     """Test exact search returns empty response when document has no linked TMs"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="test_doc.txt",
                 type=DocumentType.txt,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -38,6 +42,7 @@ def test_search_tm_exact_with_linked_memories(
 ):
     """Test exact search finds matches in linked translation memories"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         # Create document
         s.add(
             Document(
@@ -45,6 +50,7 @@ def test_search_tm_exact_with_linked_memories(
                 type=DocumentType.txt,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -99,6 +105,7 @@ def test_search_tm_exact_with_multiple_linked_memories(
 ):
     """Test exact search across multiple linked translation memories"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         # Create document
         s.add(
             Document(
@@ -106,6 +113,7 @@ def test_search_tm_exact_with_multiple_linked_memories(
                 type=DocumentType.txt,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -161,6 +169,7 @@ def test_search_tm_exact_returns_404_for_nonexistent_document(
 def test_search_tm_exact_no_results(user_logged_client: TestClient, session: Session):
     """Test exact search returns no results when no matches found"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         # Create document
         s.add(
             Document(
@@ -168,6 +177,7 @@ def test_search_tm_exact_no_results(user_logged_client: TestClient, session: Ses
                 type=DocumentType.txt,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -200,6 +210,7 @@ def test_search_tm_exact_no_results(user_logged_client: TestClient, session: Ses
 def test_search_tm_limit_20_results(user_logged_client: TestClient, session: Session):
     """Test that search endpoints limit results to 20 records"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         # Create document
         s.add(
             Document(
@@ -207,6 +218,7 @@ def test_search_tm_limit_20_results(user_logged_client: TestClient, session: Ses
                 type=DocumentType.txt,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
