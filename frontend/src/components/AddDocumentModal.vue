@@ -3,6 +3,10 @@ import {Dialog} from 'primevue'
 import {useRouter} from 'vue-router'
 import DocUploadingDialog from './DocUploadingDialog.vue'
 
+defineProps<{
+  projectId: number
+}>()
+
 const visible = defineModel<boolean>({required: true})
 const router = useRouter()
 </script>
@@ -17,6 +21,7 @@ const router = useRouter()
     <template #default>
       <DocUploadingDialog
         title="Select a file to upload:"
+        :project-id="projectId"
         @processed="
           (fileId) => router.push({name: 'document', params: {id: fileId}})
         "

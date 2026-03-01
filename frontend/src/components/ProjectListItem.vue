@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
 import {useQuery, useQueryCache} from '@pinia/colada'
-import {Panel, ProgressBar, ProgressSpinner} from 'primevue'
+import {Button, Panel, ProgressBar, ProgressSpinner} from 'primevue'
 
 import {ProjectResponse} from '../client/schemas/ProjectResponse'
 import {retrieveProject} from '../client/services/ProjectsService'
@@ -15,6 +15,7 @@ const {project} = defineProps<{
 
 defineEmits<{
   openSettings: [number]
+  uploadDocument: [number]
 }>()
 
 const collapsed = ref(true)
@@ -84,6 +85,15 @@ const progressBarTitle = computed(() => {
               key: PROJECT_KEYS.byId(project.id),
             })
         "
+      />
+    </template>
+    <template #icons>
+      <Button
+        icon="pi pi-file-arrow-up"
+        severity="secondary"
+        rounded
+        text
+        @click="$emit('uploadDocument', project.id)"
       />
     </template>
   </Panel>
