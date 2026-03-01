@@ -172,9 +172,10 @@ async def create_doc(
     file: Annotated[UploadFile, File()],
     service: Annotated[DocumentService, Depends(get_service)],
     current_user: Annotated[int, Depends(get_current_user_id)],
+    project_id: Annotated[int, Form()],
 ) -> doc_schema.Document:
     try:
-        return await service.create_document(file, current_user)
+        return await service.create_document(file, current_user, project_id)
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except BusinessLogicError as e:

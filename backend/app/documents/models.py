@@ -77,9 +77,7 @@ class Document(Base):
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"))
     processing_status: Mapped[str] = mapped_column()
     upload_time: Mapped[datetime] = mapped_column(default=utc_time)
-    project_id: Mapped[int | None] = mapped_column(
-        ForeignKey("projects.id"), nullable=True
-    )
+    project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"))
 
     records: Mapped[list["DocumentRecord"]] = relationship(
         back_populates="document",

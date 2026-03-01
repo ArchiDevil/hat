@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.comments.models import Comment
 from app.documents.models import Document, DocumentRecord, DocumentType
+from app.projects.query import ProjectQuery
+from app.projects.schema import ProjectCreate
 
 # pylint: disable=C0116
 
@@ -12,6 +14,7 @@ from app.documents.models import Document, DocumentRecord, DocumentType
 def test_can_get_comments_for_record(user_logged_client: TestClient, session: Session):
     """Test getting all comments for a document record"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         # Create document with records
         records = [
             DocumentRecord(source="Hello World", target="Привет Мир"),
@@ -24,6 +27,7 @@ def test_can_get_comments_for_record(user_logged_client: TestClient, session: Se
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -63,6 +67,7 @@ def test_get_comments_returns_empty_for_no_comments(
 ):
     """Test getting comments for record with no comments"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -71,6 +76,7 @@ def test_get_comments_returns_empty_for_no_comments(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -93,6 +99,7 @@ def test_get_comments_returns_404_for_nonexistent_record(
 def test_can_create_comment(user_logged_client: TestClient, session: Session):
     """Test creating a new comment"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -101,6 +108,7 @@ def test_can_create_comment(user_logged_client: TestClient, session: Session):
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -129,6 +137,7 @@ def test_create_comment_returns_404_for_nonexistent_record(
 def test_create_comment_requires_text(user_logged_client: TestClient, session: Session):
     """Test that creating comment requires text field"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -137,6 +146,7 @@ def test_create_comment_requires_text(user_logged_client: TestClient, session: S
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -150,6 +160,7 @@ def test_create_comment_requires_min_length_text(
 ):
     """Test that creating comment requires minimum length text"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -158,6 +169,7 @@ def test_create_comment_requires_min_length_text(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -171,6 +183,7 @@ def test_create_comment_requires_authentication(
 ):
     """Test that creating comment requires authentication"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -179,6 +192,7 @@ def test_create_comment_requires_authentication(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -191,6 +205,7 @@ def test_create_comment_requires_authentication(
 def test_can_update_own_comment(user_logged_client: TestClient, session: Session):
     """Test that user can update their own comment"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -199,6 +214,7 @@ def test_can_update_own_comment(user_logged_client: TestClient, session: Session
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -223,6 +239,7 @@ def test_can_update_own_comment(user_logged_client: TestClient, session: Session
 def test_cannot_update_others_comment(user_logged_client: TestClient, session: Session):
     """Test that user cannot update another user's comment"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -231,6 +248,7 @@ def test_cannot_update_others_comment(user_logged_client: TestClient, session: S
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -259,6 +277,7 @@ def test_cannot_update_others_comment(user_logged_client: TestClient, session: S
 def test_can_delete_own_comment(user_logged_client: TestClient, session: Session):
     """Test that user can delete their own comment"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -267,6 +286,7 @@ def test_can_delete_own_comment(user_logged_client: TestClient, session: Session
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -294,6 +314,7 @@ def test_can_delete_own_comment(user_logged_client: TestClient, session: Session
 def test_cannot_delete_others_comment(user_logged_client: TestClient, session: Session):
     """Test that user cannot delete another user's comment"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -302,6 +323,7 @@ def test_cannot_delete_others_comment(user_logged_client: TestClient, session: S
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -377,6 +399,7 @@ def test_admin_can_update_any_comment(
 ):
     """Test that admin can update any comment"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -385,6 +408,7 @@ def test_admin_can_update_any_comment(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
 
@@ -411,6 +435,7 @@ def test_admin_can_delete_any_comment(
 ):
     """Test that admin can delete any comment"""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [DocumentRecord(source="Hello World", target="Привет Мир")]
         s.add(
             Document(
@@ -419,6 +444,7 @@ def test_admin_can_delete_any_comment(
                 records=records,
                 processing_status="done",
                 created_by=1,
+                project_id=p.id,
             )
         )
 

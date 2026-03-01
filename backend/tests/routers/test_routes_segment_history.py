@@ -15,10 +15,13 @@ from app.documents.models import (
     DocumentType,
 )
 from app.documents.utils import apply_diff, compute_diff
+from app.projects.query import ProjectQuery
+from app.projects.schema import ProjectCreate
 
 
 def test_get_segment_history_empty(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Test translation"),
         ]
@@ -29,6 +32,7 @@ def test_get_segment_history_empty(user_logged_client: TestClient, session: Sess
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -43,6 +47,7 @@ def test_get_segment_history_with_entries(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Test translation"),
         ]
@@ -53,6 +58,7 @@ def test_get_segment_history_with_entries(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.flush()
@@ -119,6 +125,7 @@ def test_update_record_creates_history(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="test_doc.txt",
@@ -128,6 +135,7 @@ def test_update_record_creates_history(
                 ],
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -159,6 +167,7 @@ def test_update_record_with_repetitions_creates_history(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
             Document(
                 name="test_doc.txt",
@@ -170,6 +179,7 @@ def test_update_record_with_repetitions_creates_history(
                 ],
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -215,6 +225,7 @@ def test_update_same_type_updates_in_place(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Hello World", target="Test translation", approved=False
@@ -227,6 +238,7 @@ def test_update_same_type_updates_in_place(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.flush()
@@ -274,6 +286,7 @@ def test_update_different_type_creates_new_history(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Hello World", target="Test translation", approved=True
@@ -286,6 +299,7 @@ def test_update_different_type_creates_new_history(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.flush()
@@ -330,6 +344,7 @@ def test_history_cascade_delete_on_record_delete(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Test translation"),
         ]
@@ -339,6 +354,7 @@ def test_history_cascade_delete_on_record_delete(
             records=records,
             processing_status="pending",
             created_by=1,
+            project_id=p.id,
         )
         s.add(doc)
         s.flush()
@@ -373,6 +389,7 @@ def test_history_cascade_delete_on_record_delete(
 
 def test_no_history_for_same_text(user_logged_client: TestClient, session: Session):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Same text"),
         ]
@@ -383,6 +400,7 @@ def test_no_history_for_same_text(user_logged_client: TestClient, session: Sessi
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -412,6 +430,7 @@ def test_history_ordering_by_timestamp(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Test translation"),
         ]
@@ -422,6 +441,7 @@ def test_history_ordering_by_timestamp(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.flush()
@@ -476,6 +496,7 @@ def test_merge_diffs_correctly_merges_consecutive_changes(
 ):
     """Test that multiple consecutive changes by the same author are properly merged."""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(
                 source="Hello World", target="Test translation", approved=False
@@ -488,6 +509,7 @@ def test_merge_diffs_correctly_merges_consecutive_changes(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -556,6 +578,7 @@ def test_merge_diffs_with_insert_only_operations(
 ):
     """Test that merging works correctly when only insert operations are involved."""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello", target="Hi", approved=False),
         ]
@@ -566,6 +589,7 @@ def test_merge_diffs_with_insert_only_operations(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()
@@ -612,6 +636,7 @@ def test_merge_diffs_with_multiple_history_records(
 ):
     """Test that multiple consecutive changes by the same author are properly merged."""
     with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
             DocumentRecord(source="Hello World", target="Replacement", approved=False),
         ]
@@ -622,6 +647,7 @@ def test_merge_diffs_with_multiple_history_records(
                 records=records,
                 processing_status="pending",
                 created_by=1,
+                project_id=p.id,
             )
         )
         s.commit()

@@ -212,7 +212,7 @@ class GenericDocsQuery:
         if name is not None:
             document.name = name
         if project_id is not None:
-            document.project_id = project_id if project_id != -1 else None
+            document.project_id = project_id
         self.__db.commit()
         self.__db.refresh(document)
         return document
