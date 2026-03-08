@@ -296,7 +296,7 @@ class ProjectService:
             EntityNotFound: If project or TMs not found
         """
         # Extract tm_ids and modes from the schema
-        tm_ids = [tm.id for tm in tms_update.translation_memories]
+        tm_ids = {tm.id for tm in tms_update.translation_memories}
         # Convert string modes to TmMode enum values
         modes = [TmMode(tm.mode) for tm in tms_update.translation_memories]
 
