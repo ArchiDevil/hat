@@ -18,10 +18,6 @@ from app.base.exceptions import BusinessLogicError, EntityNotFound, Unauthorized
 from app.db import get_db
 from app.documents import schema as doc_schema
 from app.services import DocumentService
-from app.translation_memory.schema import (
-    TranslationMemoryListResponse,
-    TranslationMemoryListSimilarResponse,
-)
 from app.user.depends import get_current_user_id, has_user_role
 
 router = APIRouter(
@@ -67,55 +63,6 @@ def get_doc_records(
 
     try:
         return service.get_document_records(doc_id, page, filters)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.get("/{doc_id}/memories")
-def get_translation_memories(
-    doc_id: int,
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> list[doc_schema.DocTranslationMemory]:
-    try:
-        return service.get_translation_memories(doc_id)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.post("/{doc_id}/memories")
-def set_translation_memories(
-    doc_id: int,
-    settings: doc_schema.DocTranslationMemoryUpdate,
-    service: Annotated[DocumentService, Depends(get_service)],
-) -> models.StatusMessage:
-    try:
-        return service.set_translation_memories(doc_id, settings)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-
-@router.get("/{doc_id}/tm/exact")
-def search_tm_exact(
-    doc_id: int,
-    service: Annotated[DocumentService, Depends(get_service)],
-    source: Annotated[str, Query(description="Source text to search for")],
-) -> TranslationMemoryListResponse:
-    try:
-        return service.search_tm_exact(doc_id, source)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.get("/{doc_id}/tm/similar")
-def search_tm_similar(
-    doc_id: int,
-    service: Annotated[DocumentService, Depends(get_service)],
-    source: Annotated[str, Query(description="Source text to search for")],
-) -> TranslationMemoryListSimilarResponse:
-    try:
-        return service.search_tm_similar(doc_id, source)
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

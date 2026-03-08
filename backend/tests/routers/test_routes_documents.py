@@ -5,13 +5,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.documents.models import (
-    DocMemoryAssociation,
     Document,
     DocumentRecord,
     DocumentRecordHistory,
     DocumentRecordHistoryChangeType,
     DocumentType,
-    TmMode,
     TxtDocument,
     TxtRecord,
     XliffDocument,
@@ -22,7 +20,6 @@ from app.projects.models import Project
 from app.projects.query import ProjectQuery
 from app.projects.schema import ProjectCreate
 from app.schema import DocumentTask
-from app.translation_memory.models import TranslationMemory
 
 # pylint: disable=C0116
 
@@ -530,206 +527,6 @@ def test_download_txt_doc(user_logged_client: TestClient, session: Session):
 def test_download_shows_404_for_unknown_doc(user_logged_client: TestClient):
     response = user_logged_client.get("/document/1/download")
     assert response.status_code == 404
-
-
-def test_returns_linked_tms(user_logged_client: TestClient, session: Session):
-    with session as s:
-        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
-        s.add(
-            Document(
-                name="small.xliff",
-                type=DocumentType.xliff,
-                created_by=1,
-                processing_status="UPLOADED",
-                project_id=p.id,
-            )
-        )
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode=TmMode.read))
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=2, mode=TmMode.read))
-        s.commit()
-
-    response = user_logged_client.get("/document/1/memories")
-    assert response.status_code == 200
-    assert response.json() == [
-        {
-            "document_id": 1,
-            "memory": {"id": 1, "name": "first_doc.tmx", "created_by": 1},
-            "mode": "read",
-        },
-        {
-            "document_id": 1,
-            "memory": {"id": 2, "name": "another_doc.tmx", "created_by": 1},
-            "mode": "read",
-        },
-    ]
-
-
-def test_sets_new_linked_tms(user_logged_client: TestClient, session: Session):
-    with session as s:
-        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
-        s.add(
-            Document(
-                name="small.xliff",
-                type=DocumentType.xliff,
-                created_by=1,
-                processing_status="UPLOADED",
-                project_id=p.id,
-            )
-        )
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
-        s.commit()
-
-    response = user_logged_client.post(
-        "/document/1/memories",
-        json={"memories": [{"id": 1, "mode": "read"}, {"id": 2, "mode": "write"}]},
-    )
-    assert response.status_code == 200
-
-    with session as s:
-        associations = s.query(DocMemoryAssociation).all()
-        assert len(associations) == 2
-
-        assert associations[0].doc_id == 1
-        assert associations[0].tm_id == 1
-        assert associations[0].mode == TmMode.read
-
-        assert associations[1].doc_id == 1
-        assert associations[1].tm_id == 2
-        assert associations[1].mode == TmMode.write
-
-
-def test_new_linked_tms_work_with_duplicated_ids(
-    user_logged_client: TestClient, session: Session
-):
-    with session as s:
-        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
-        s.add(
-            Document(
-                name="small.xliff",
-                type=DocumentType.xliff,
-                created_by=1,
-                processing_status="UPLOADED",
-                project_id=p.id,
-            )
-        )
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
-        s.commit()
-
-    response = user_logged_client.post(
-        "/document/1/memories",
-        json={
-            "memories": [
-                {"id": 1, "mode": "read"},
-                {"id": 2, "mode": "read"},
-                {"id": 2, "mode": "write"},
-            ]
-        },
-    )
-    assert response.status_code == 200
-
-    with session as s:
-        associations = s.query(DocMemoryAssociation).all()
-        assert len(associations) == 3
-
-        assert associations[0].doc_id == 1
-        assert associations[0].tm_id == 1
-        assert associations[0].mode == TmMode.read
-
-        assert associations[1].doc_id == 1
-        assert associations[1].tm_id == 2
-        assert associations[1].mode == TmMode.read
-
-        assert associations[2].doc_id == 1
-        assert associations[2].tm_id == 2
-        assert associations[2].mode == TmMode.write
-
-
-def test_new_linked_tms_replaces_old_ones(
-    user_logged_client: TestClient, session: Session
-):
-    with session as s:
-        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
-        s.add(
-            Document(
-                name="small.xliff",
-                type=DocumentType.xliff,
-                created_by=1,
-                processing_status="UPLOADED",
-                project_id=p.id,
-            )
-        )
-        s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
-        s.add(TranslationMemory(name="another_doc.tmx", created_by=1))
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"))
-        s.commit()
-
-    response = user_logged_client.post(
-        "/document/1/memories",
-        json={"memories": [{"id": 2, "mode": "write"}]},
-    )
-    assert response.status_code == 200
-
-    with session as s:
-        associations = s.query(DocMemoryAssociation).all()
-        assert len(associations) == 1
-
-        assert associations[0].doc_id == 1
-        assert associations[0].tm_id == 2
-        assert associations[0].mode == TmMode.write
-
-
-def test_set_linked_tms_fail_if_not_exists(
-    user_logged_client: TestClient, session: Session
-):
-    with session as s:
-        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
-        s.add(
-            Document(
-                name="small.xliff",
-                type=DocumentType.xliff,
-                created_by=1,
-                processing_status="UPLOADED",
-                project_id=p.id,
-            )
-        )
-        s.commit()
-
-    response = user_logged_client.post(
-        "/document/1/memories",
-        json={"memories": [{"id": 42, "mode": "read"}]},
-    )
-    assert response.status_code == 404
-
-
-def test_set_linked_tms_fail_with_multiple_writes(
-    user_logged_client: TestClient, session: Session
-):
-    with session as s:
-        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
-        s.add_all(
-            [
-                Document(
-                    name="small.xliff",
-                    type=DocumentType.xliff,
-                    created_by=1,
-                    processing_status="UPLOADED",
-                    project_id=p.id,
-                ),
-                TranslationMemory(name="first_doc.tmx", created_by=1),
-                TranslationMemory(name="another_doc.tmx", created_by=1),
-            ]
-        )
-        s.commit()
-
-    response = user_logged_client.post(
-        "/document/1/memories",
-        json={"memories": [{"id": 1, "mode": "write"}, {"id": 2, "mode": "write"}]},
-    )
-    assert response.status_code == 400
 
 
 def test_get_doc_records_with_repetitions(

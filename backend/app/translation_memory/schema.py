@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.base.schema import Identified
 
@@ -12,6 +12,8 @@ class MemorySubstitution(BaseModel):
 class TranslationMemory(Identified):
     name: str
     created_by: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TranslationMemoryWithRecordsCount(TranslationMemory):

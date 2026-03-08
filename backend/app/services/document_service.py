@@ -16,7 +16,6 @@ from app.documents.models import (
     DocumentRecord,
     DocumentRecordHistoryChangeType,
     DocumentType,
-    TmMode,
     XliffRecord,
 )
 from app.documents.query import (
@@ -34,11 +33,6 @@ from app.formats.xliff import (
 from app.glossary.query import GlossaryQuery
 from app.projects.query import NotFoundProjectExc, ProjectQuery
 from app.translation_memory.query import TranslationMemoryQuery
-from app.translation_memory.schema import (
-    TranslationMemory,
-    TranslationMemoryListResponse,
-    TranslationMemoryListSimilarResponse,
-)
 from app.utils import encode_to_latin_1
 
 
@@ -379,148 +373,6 @@ class DocumentService:
             records=record_list,
             page=page,
             total_records=total_records,
-        )
-
-    def get_translation_memories(
-        self, doc_id: int
-    ) -> list[doc_schema.DocTranslationMemory]:
-        """
-        Get translation memories associated with a document.
-
-        Args:
-            doc_id: Document ID
-
-        Returns:
-            List of DocTranslationMemory objects
-
-        Raises:
-            EntityNotFound: If document not found
-        """
-        doc = self._get_document_by_id(doc_id)
-        return [
-            doc_schema.DocTranslationMemory(
-                document_id=doc.id,
-                memory=TranslationMemory(
-                    id=association.memory.id,
-                    name=association.memory.name,
-                    created_by=association.memory.created_by,
-                ),
-                mode=association.mode,
-            )
-            for association in self._get_document_by_id(doc_id).memory_associations
-        ]
-
-    def set_translation_memories(
-        self, doc_id: int, settings: doc_schema.DocTranslationMemoryUpdate
-    ) -> models.StatusMessage:
-        """
-        Set translation memories for a document.
-
-        Args:
-            doc_id: Document ID
-            settings: Translation memory settings
-
-        Returns:
-            StatusMessage indicating success
-
-        Raises:
-            EntityNotFound: If document or memory not found, or invalid settings
-        """
-        # check writes count
-        write_count = 0
-        for memory in settings.memories:
-            write_count += memory.mode == TmMode.write
-
-        if write_count > 1:
-            raise BusinessLogicError(
-                "Only one translation memory can be set to write mode"
-            )
-
-        doc = self._get_document_by_id(doc_id)
-        memory_ids = {memory.id for memory in settings.memories}
-        memories = list(self.__tm_query.get_memories_by_id(memory_ids))
-        if len(memory_ids) != len(memories):
-            raise EntityNotFound("Not all memories were found")
-
-        # Create list of (memory, mode) tuples
-        memory_modes = []
-        for setting in settings.memories:
-            memory = next((m for m in memories if m.id == setting.id), None)
-            if memory:
-                memory_modes.append((memory, setting.mode))
-
-        self.__query.set_document_memories(doc, memory_modes)
-        return models.StatusMessage(message="Memory list updated")
-
-    def search_tm_exact(
-        self, doc_id: int, source: str
-    ) -> TranslationMemoryListResponse:
-        """
-        Search translation memories for exact match.
-
-        Args:
-            doc_id: Document ID
-            source: Source text to search for
-
-        Returns:
-            TranslationMemoryListResponse object
-
-        Raises:
-            EntityNotFound: If document not found
-        """
-        doc = self._get_document_by_id(doc_id)
-        tm_ids = [tm.id for tm in doc.memories]
-
-        if not tm_ids:
-            return TranslationMemoryListResponse(records=[], page=0, total_records=0)
-
-        records, count = self.__tm_query.get_memory_records_paged(
-            memory_ids=tm_ids,
-            page=0,
-            page_records=20,
-            query=source,
-        )
-
-        return TranslationMemoryListResponse(
-            records=records,
-            page=0,
-            total_records=count,
-        )
-
-    def search_tm_similar(
-        self, doc_id: int, source: str
-    ) -> TranslationMemoryListSimilarResponse:
-        """
-        Search translation memories for similar matches.
-
-        Args:
-            doc_id: Document ID
-            source: Source text to search for
-
-        Returns:
-            TranslationMemoryListSimilarResponse object
-
-        Raises:
-            EntityNotFound: If document not found
-        """
-        doc = self._get_document_by_id(doc_id)
-        tm_ids = [tm.id for tm in doc.memories]
-
-        if not tm_ids:
-            return TranslationMemoryListSimilarResponse(
-                records=[], page=0, total_records=0
-            )
-
-        records = self.__tm_query.get_memory_records_paged_similar(
-            memory_ids=tm_ids,
-            page_records=20,
-            query=source,
-        )
-
-        return TranslationMemoryListSimilarResponse(
-            records=records,
-            page=0,
-            total_records=len(records),
         )
 
     def _get_document_by_id(self, doc_id: int) -> Document:

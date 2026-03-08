@@ -65,7 +65,7 @@ class RecordService:
 
             # TM tracking
             if data.approved and not shallow:
-                for memory in record.document.memory_associations:
+                for memory in record.document.project.tm_associations:
                     if memory.mode == TmMode.write:
                         self.__tm_query.add_or_update_record(
                             memory.tm_id, record.source, record.target
@@ -241,7 +241,9 @@ class RecordService:
         """
         original_segment = self._get_record_by_id(record_id)
 
-        tm_ids = [tm.id for tm in original_segment.document.memories]
+        tm_ids = [
+            tm.id for tm in original_segment.document.project.translation_memories
+        ]
         return (
             self.__tm_query.get_substitutions(original_segment.source, tm_ids)
             if tm_ids

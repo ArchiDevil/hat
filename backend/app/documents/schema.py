@@ -19,7 +19,7 @@ class Document(Identified):
     status: DocumentStatus
     created_by: int
     type: Literal["xliff", "txt"]
-    project_id: int | None
+    project_id: int
 
 
 class DocumentWithRecordsCount(Document):

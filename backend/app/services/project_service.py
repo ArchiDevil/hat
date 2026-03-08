@@ -2,7 +2,8 @@
 
 from sqlalchemy.orm import Session
 
-from app.base.exceptions import EntityNotFound
+from app.base.exceptions import BusinessLogicError, EntityNotFound
+from app.documents.models import TmMode
 from app.documents.schema import DocumentWithRecordsCount
 from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
 from app.glossary.schema import GlossaryResponse
@@ -14,7 +15,16 @@ from app.projects.schema import (
     ProjectCreate,
     ProjectGlossary,
     ProjectResponse,
+    ProjectTm,
+    ProjectTmUpdate,
+    ProjectTranslationMemory,
     ProjectUpdate,
+)
+from app.translation_memory.query import TranslationMemoryQuery
+from app.translation_memory.schema import (
+    TranslationMemory,
+    TranslationMemoryListResponse,
+    TranslationMemoryListSimilarResponse,
 )
 
 
@@ -24,6 +34,7 @@ class ProjectService:
     def __init__(self, db: Session):
         self.__query = ProjectQuery(db)
         self.__glossary_query = GlossaryQuery(db)
+        self.__tm_query = TranslationMemoryQuery(db)
 
     def list_projects(self, user_id: int) -> list[ProjectResponse]:
         """
@@ -239,3 +250,154 @@ class ProjectService:
 
         self.__query.set_project_glossaries(project, glossaries)
         return StatusMessage(message="Glossary list updated")
+
+    def get_translation_memories(self, project_id: int) -> ProjectTranslationMemory:
+        """
+        Get translation memories for a project.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            ProjectTranslationMemory object with project_id and translation_memories
+
+        Raises:
+            EntityNotFound: If project not found
+        """
+        try:
+            project = self.__query._get_project(project_id)
+            return ProjectTranslationMemory(
+                id=project.id,
+                translation_memories=[
+                    ProjectTm(
+                        memory=TranslationMemory.model_validate(x.memory),
+                        mode=x.mode,
+                    )
+                    for x in project.tm_associations
+                ],
+            )
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", project_id)
+
+    def set_translation_memories(
+        self, project_id: int, tms_update: ProjectTmUpdate
+    ) -> StatusMessage:
+        """
+        Set translation memories for a project.
+
+        Args:
+            project_id: Project ID
+            tms_update: ProjectTmUpdate schema with translation memories and modes
+
+        Returns:
+            StatusMessage indicating success
+
+        Raises:
+            EntityNotFound: If project or TMs not found
+        """
+        # Extract tm_ids and modes from the schema
+        tm_ids = [tm.id for tm in tms_update.translation_memories]
+        # Convert string modes to TmMode enum values
+        modes = [TmMode(tm.mode) for tm in tms_update.translation_memories]
+
+        # check writes count
+        write_count = 0
+        for mode in modes:
+            write_count += mode == TmMode.write
+
+        if write_count > 1:
+            raise BusinessLogicError(
+                "Only one translation memory can be set to write mode",
+            )
+
+        try:
+            project = self.__query._get_project(project_id)
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", project_id)
+
+        if not tm_ids:
+            tms = []
+        else:
+            tms = list(self.__tm_query.get_memories_by_id(tm_ids))
+            if len(tm_ids) != len(tms):
+                raise EntityNotFound("Not all translation memories were found")
+
+        # Create list of (tm, mode) tuples
+        tm_modes = list(zip(tms, modes))
+        self.__query.set_project_translation_memories(project, tm_modes)
+        return StatusMessage(message="Translation memory list updated")
+
+    def search_tm(self, project_id: int, query: str) -> TranslationMemoryListResponse:
+        """
+        Search translation memories in a project.
+
+        Args:
+            project_id: Project ID
+            query: Search query string
+
+        Returns:
+            TranslationMemoryListResponse with search results
+
+        Raises:
+            EntityNotFound: If project not found
+        """
+        try:
+            self.__query._get_project(project_id)
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", project_id)
+
+        # Get TMs from project
+        tms_data = self.get_translation_memories(project_id)
+        tm_ids = [item.memory.id for item in tms_data.translation_memories]
+
+        if not tm_ids:
+            return TranslationMemoryListResponse(records=[], page=0, total_records=0)
+
+        records, count = self.__tm_query.get_memory_records_paged(
+            memory_ids=tm_ids,
+            page=0,
+            page_records=20,
+            query=query,
+        )
+
+        return TranslationMemoryListResponse(
+            records=records, page=0, total_records=count
+        )
+
+    def search_tm_similar(
+        self, project_id: int, query: str
+    ) -> TranslationMemoryListSimilarResponse:
+        """
+        Search similar translation memories in a project.
+
+        Args:
+            project_id: Project ID
+            query: Search query string
+
+        Returns:
+            TranslationMemoryListSimilarResponse with similar search results
+
+        Raises:
+            EntityNotFound: If project not found
+        """
+        try:
+            self.__query._get_project(project_id)
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", project_id)
+
+        # Get TMs from project
+        tms_data = self.get_translation_memories(project_id)
+        tm_ids = [item.memory.id for item in tms_data.translation_memories]
+
+        if not tm_ids:
+            return TranslationMemoryListSimilarResponse(
+                records=[], page=0, total_records=0
+            )
+
+        records = self.__tm_query.get_memory_records_paged_similar(
+            memory_ids=tm_ids, page_records=20, query=query
+        )
+
+        return TranslationMemoryListSimilarResponse(
+            records=records, page=0, total_records=len(records)
+        )
