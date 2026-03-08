@@ -2,7 +2,7 @@
 
 import {GlossaryResponse} from './GlossaryResponse'
 
-export interface DocGlossary {
-  document_id: number
-  glossary: GlossaryResponse
+export interface ProjectGlossary {
+  id: number
+  glossaries: GlossaryResponse[]
 }

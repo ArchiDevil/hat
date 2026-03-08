@@ -7,6 +7,13 @@ import {ProjectCreate} from '../schemas/ProjectCreate'
 import {DetailedProjectResponse} from '../schemas/DetailedProjectResponse'
 import {ProjectUpdate} from '../schemas/ProjectUpdate'
 import {StatusMessage} from '../schemas/StatusMessage'
+import {ProjectGlossary} from '../schemas/ProjectGlossary'
+import {ProjectGlossaryUpdate} from '../schemas/ProjectGlossaryUpdate'
+import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
+import {ProjectTranslationMemory} from '../schemas/ProjectTranslationMemory'
+import {ProjectTmUpdate} from '../schemas/ProjectTmUpdate'
+import {TranslationMemoryListResponse} from '../schemas/TranslationMemoryListResponse'
+import {TranslationMemoryListSimilarResponse} from '../schemas/TranslationMemoryListSimilarResponse'
 
 export const listProjects = async (): Promise<ProjectResponse[]> => {
   return await api.get<ProjectResponse[]>(`/projects/`)
@@ -22,4 +29,25 @@ export const updateProject = async (project_id: number, content: ProjectUpdate):
 }
 export const deleteProject = async (project_id: number): Promise<StatusMessage> => {
   return await api.delete<StatusMessage>(`/projects/${project_id}`)
+}
+export const getProjectGlossaries = async (project_id: number): Promise<ProjectGlossary> => {
+  return await api.get<ProjectGlossary>(`/projects/${project_id}/glossaries`)
+}
+export const setProjectGlossaries = async (project_id: number, content: ProjectGlossaryUpdate): Promise<StatusMessage> => {
+  return await api.post<StatusMessage>(`/projects/${project_id}/glossaries`, content)
+}
+export const projectGlossarySearch = async (project_id: number, query: string): Promise<GlossaryRecordSchema[]> => {
+  return await api.get<GlossaryRecordSchema[]>(`/projects/${project_id}/glossary_search`, {query: {query}})
+}
+export const getProjectTranslationMemories = async (project_id: number): Promise<ProjectTranslationMemory> => {
+  return await api.get<ProjectTranslationMemory>(`/projects/${project_id}/translation_memories`)
+}
+export const setProjectTranslationMemories = async (project_id: number, content: ProjectTmUpdate): Promise<StatusMessage> => {
+  return await api.post<StatusMessage>(`/projects/${project_id}/translation_memories`, content)
+}
+export const projectTmSearch = async (project_id: number, query: string): Promise<TranslationMemoryListResponse> => {
+  return await api.get<TranslationMemoryListResponse>(`/projects/${project_id}/tm_search`, {query: {query}})
+}
+export const projectTmSearchSimilar = async (project_id: number, query: string): Promise<TranslationMemoryListSimilarResponse> => {
+  return await api.get<TranslationMemoryListSimilarResponse>(`/projects/${project_id}/tm_search_similar`, {query: {query}})
 }

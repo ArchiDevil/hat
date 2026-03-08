@@ -2,7 +2,7 @@
 
 import {TmMode} from './TmMode'
 
-export interface TranslationMemoryWithMode {
+export interface ProjectTmUpdateMode {
   id: number
   mode: TmMode
 }
