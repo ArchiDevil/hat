@@ -6,9 +6,10 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
-from app.documents.models import DocGlossaryAssociation, Document
+from app.projects.models import ProjectGlossaryAssociation
 
 if TYPE_CHECKING:
+    from app.projects.models import Project
     from app.schema import User
 
 
@@ -44,13 +45,13 @@ class Glossary(Base):
     )
     created_by_user: Mapped["User"] = relationship(back_populates="glossaries")
 
-    document_associations: Mapped[list["DocGlossaryAssociation"]] = relationship(
+    project_associations: Mapped[list["ProjectGlossaryAssociation"]] = relationship(
         back_populates="glossary", cascade="all, delete-orphan"
     )
-    documents: AssociationProxy[list["Document"]] = association_proxy(
-        "glossary_associations",
-        "document",
-        creator=lambda document: DocGlossaryAssociation(document=document),
+    projects: AssociationProxy[list["Project"]] = association_proxy(
+        "project_associations",
+        "project",
+        creator=lambda project: ProjectGlossaryAssociation(project=project),
     )
 
 

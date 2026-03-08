@@ -31,8 +31,7 @@ from app.formats.xliff import (
     XliffSegment,
     extract_xliff_content,
 )
-from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
-from app.glossary.schema import GlossaryRecordSchema, GlossaryResponse
+from app.glossary.query import GlossaryQuery
 from app.projects.query import NotFoundProjectExc, ProjectQuery
 from app.translation_memory.query import TranslationMemoryQuery
 from app.translation_memory.schema import (
@@ -382,61 +381,6 @@ class DocumentService:
             total_records=total_records,
         )
 
-    def get_glossaries(self, doc_id: int) -> list[doc_schema.DocGlossary]:
-        """
-        Get glossaries associated with a document.
-
-        Args:
-            doc_id: Document ID
-
-        Returns:
-            List of DocGlossary objects
-
-        Raises:
-            EntityNotFound: If document not found
-        """
-        doc = self._get_document_by_id(doc_id)
-        return [
-            doc_schema.DocGlossary(
-                document_id=doc.id,
-                glossary=GlossaryResponse.model_validate(x.glossary),
-            )
-            for x in doc.glossary_associations
-        ]
-
-    def set_glossaries(
-        self, doc_id: int, settings: doc_schema.DocGlossaryUpdate
-    ) -> models.StatusMessage:
-        """
-        Set glossaries for a document.
-
-        Args:
-            doc_id: Document ID
-            settings: Glossary settings
-
-        Returns:
-            StatusMessage indicating success
-
-        Raises:
-            EntityNotFound: If document or glossary not found
-        """
-        doc = self._get_document_by_id(doc_id)
-        glossary_ids = {g.id for g in settings.glossaries}
-        try:
-            if not glossary_ids:
-                glossaries = []
-            else:
-                glossaries = list(
-                    self.__glossary_query.get_glossaries(list(glossary_ids))
-                )
-        except NotFoundGlossaryExc:
-            raise EntityNotFound("Glossary not found")
-
-        if len(glossary_ids) != len(glossaries):
-            raise EntityNotFound("Not all glossaries were found")
-        self.__query.set_document_glossaries(doc, glossaries)
-        return models.StatusMessage(message="Glossary list updated")
-
     def get_translation_memories(
         self, doc_id: int
     ) -> list[doc_schema.DocTranslationMemory]:
@@ -577,36 +521,6 @@ class DocumentService:
             records=records,
             page=0,
             total_records=len(records),
-        )
-
-    def doc_glossary_search(
-        self, doc_id: int, query: str
-    ) -> list[GlossaryRecordSchema]:
-        """
-        Search glossaries for a phrase within a document.
-
-        Args:
-            doc_id: Document ID
-            query: Search query
-
-        Returns:
-            List of GlossaryRecordSchema objects
-
-        Raises:
-            EntityNotFound: If document not found
-        """
-        doc = self._get_document_by_id(doc_id)
-        glossary_ids = [gl.id for gl in doc.glossaries]
-
-        return (
-            [
-                GlossaryRecordSchema.model_validate(record)
-                for record in self.__glossary_query.get_glossary_records_for_phrase(
-                    query, glossary_ids
-                )
-            ]
-            if glossary_ids
-            else []
         )
 
     def _get_document_by_id(self, doc_id: int) -> Document:

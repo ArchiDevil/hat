@@ -262,7 +262,8 @@ class RecordService:
             EntityNotFound: If record not found
         """
         original_segment = self._get_record_by_id(record_id)
-        glossary_ids = [gl.id for gl in original_segment.document.glossaries]
+        glossary_ids = [gl.id for gl in original_segment.document.project.glossaries]
+
         return (
             [
                 GlossaryRecordSchema.model_validate(record)

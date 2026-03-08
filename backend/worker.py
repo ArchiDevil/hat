@@ -146,7 +146,7 @@ def process_document(
     session: Session,
 ) -> bool:
     tm_ids = [x.id for x in doc.memories]
-    glossary_ids = [x.id for x in doc.glossaries]
+    glossary_ids = [x.id for x in doc.project.glossaries]
 
     start_time = time.time()
     segments = extract_segments(doc)

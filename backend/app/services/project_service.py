@@ -1,16 +1,18 @@
 """Project service for project management operations."""
 
-
 from sqlalchemy.orm import Session
 
 from app.base.exceptions import EntityNotFound
 from app.documents.schema import DocumentWithRecordsCount
+from app.glossary.query import GlossaryQuery, NotFoundGlossaryExc
+from app.glossary.schema import GlossaryResponse
 from app.models import DocumentStatus, StatusMessage
 from app.projects.models import Project
 from app.projects.query import NotFoundProjectExc, ProjectQuery
 from app.projects.schema import (
     DetailedProjectResponse,
     ProjectCreate,
+    ProjectGlossary,
     ProjectResponse,
     ProjectUpdate,
 )
@@ -21,6 +23,7 @@ class ProjectService:
 
     def __init__(self, db: Session):
         self.__query = ProjectQuery(db)
+        self.__glossary_query = GlossaryQuery(db)
 
     def list_projects(self, user_id: int) -> list[ProjectResponse]:
         """
@@ -177,3 +180,62 @@ class ProjectService:
         """
         # Currently not implemented, left for the future
         pass
+
+    def get_glossaries(self, project_id: int) -> ProjectGlossary:
+        """
+        Get glossaries for a project.
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            List of dictionaries with project_id and glossary
+
+        Raises:
+            EntityNotFound: If project not found
+        """
+        try:
+            project = self.__query._get_project(project_id)
+            return ProjectGlossary(
+                id=project.id,
+                glossaries=[
+                    GlossaryResponse.model_validate(x.glossary)
+                    for x in project.glossary_associations
+                ],
+            )
+
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", project_id)
+
+    def set_glossaries(self, project_id: int, glossary_ids: list[int]) -> StatusMessage:
+        """
+        Set glossaries for a project.
+
+        Args:
+            project_id: Project ID
+            glossary_ids: List of glossary IDs to associate with the project
+
+        Returns:
+            StatusMessage indicating success
+
+        Raises:
+            EntityNotFound: If project or glossaries not found
+        """
+        try:
+            project = self.__query._get_project(project_id)
+        except NotFoundProjectExc:
+            raise EntityNotFound("Project", project_id)
+
+        if not glossary_ids:
+            glossaries = []
+        else:
+            try:
+                glossaries = self.__glossary_query.get_glossaries(glossary_ids)
+            except NotFoundGlossaryExc:
+                raise EntityNotFound("Glossary not found")
+
+        if len(glossary_ids) != len(glossaries):
+            raise EntityNotFound("Not all glossaries were found")
+
+        self.__query.set_project_glossaries(project, glossaries)
+        return StatusMessage(message="Glossary list updated")

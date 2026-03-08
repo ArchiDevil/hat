@@ -4,9 +4,10 @@ from typing import Sequence
 from sqlalchemy import case, func, select, update
 from sqlalchemy.orm import Session
 
+from app import Glossary
 from app.base.exceptions import BaseQueryException
 from app.documents.models import Document, DocumentRecord
-from app.projects.models import Project
+from app.projects.models import Project, ProjectGlossaryAssociation
 from app.projects.schema import ProjectCreate, ProjectUpdate
 
 
@@ -105,3 +106,20 @@ class ProjectQuery:
         )
 
         return self.__db.execute(stmt).all()
+
+    def set_project_glossaries(
+        self, project: Project, glossaries: list[Glossary]
+    ) -> None:
+        """
+        Set glossaries for a project.
+
+        Args:
+            project: Project object
+            glossaries: List of Glossary objects to associate with the project
+        """
+        associations = [
+            ProjectGlossaryAssociation(project=project, glossary=glossary)
+            for glossary in glossaries
+        ]
+        project.glossary_associations = associations
+        self.__db.commit()

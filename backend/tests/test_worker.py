@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.documents.models import (
-    DocGlossaryAssociation,
     DocMemoryAssociation,
     Document,
     DocumentRecordHistoryChangeType,
@@ -26,7 +25,7 @@ from app.models import (
     DocumentStatus,
     YandexTranslatorSettings,
 )
-from app.projects.models import Project
+from app.projects.models import Project, ProjectGlossaryAssociation
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 from worker import process_task
@@ -103,7 +102,7 @@ def test_process_task_sets_xliff_records(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
-                DocGlossaryAssociation(document_id=1, glossary_id=1),
+                ProjectGlossaryAssociation(project_id=1, glossary_id=1),
             ]
         )
 
@@ -494,7 +493,7 @@ def test_process_task_uses_correct_glossary_ids(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(),
-                DocGlossaryAssociation(document_id=1, glossary_id=2),
+                ProjectGlossaryAssociation(project_id=1, glossary_id=2),
             ]
         )
         s.commit()
