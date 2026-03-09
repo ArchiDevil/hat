@@ -350,8 +350,9 @@ const percentage = computed(() =>
   <DocumentSkeleton v-else />
 
   <TmSearchModal
+    v-if="document"
     v-model="showTmSearchModal"
-    :document-id="documentId"
+    :project-id="document.project_id"
   />
 
   <RecordCommentModal
@@ -361,8 +362,9 @@ const percentage = computed(() =>
   />
 
   <AddTermModal
+    v-if="document"
     v-model="showAddTermModal"
-    :document-id="documentId"
+    :project-id="document.project_id"
   />
 
   <SegmentHistoryModal

@@ -15,6 +15,7 @@ import ProjectList from '../components/ProjectList.vue'
 import AddProjectModal from '../components/AddProjectModal.vue'
 import AddDocumentModal from '../components/AddDocumentModal.vue'
 import UploadXliffModal from '../components/UploadXliffModal.vue'
+import ProjectSettingsModal from '../components/ProjectSettingsModal.vue'
 
 const tmStore = useTmStore()
 const glossaryStore = useGlossaryStore()
@@ -23,6 +24,9 @@ const docSettingsVisible = ref(false)
 const selectedDocumentId = ref<number | undefined>(undefined)
 
 const addProjectVisible = ref(false)
+
+const projectSettingsVisible = ref(false)
+const projectSettingsId = ref<number>()
 
 const addDocumentProjectId = ref<number>()
 const addDocumentVisible = ref(false)
@@ -60,10 +64,16 @@ onMounted(async () => {
         </template>
         <template #default>
           <ProjectList
-            @open-settings="
+            @open-doc-settings="
               (docId) => {
                 selectedDocumentId = docId
                 docSettingsVisible = true
+              }
+            "
+            @open-settings="
+              (projId) => {
+                projectSettingsId = projId
+                projectSettingsVisible = true
               }
             "
             @upload-document="
@@ -99,6 +109,10 @@ onMounted(async () => {
     </div>
   </div>
 
+  <AddDocumentModal
+    v-model="addDocumentVisible"
+    :project-id="addDocumentProjectId ?? -1"
+  />
   <DocSettingsModal
     v-if="selectedDocumentId"
     v-model="docSettingsVisible"
@@ -106,9 +120,11 @@ onMounted(async () => {
   />
 
   <AddProjectModal v-model="addProjectVisible" />
-  <AddDocumentModal
-    v-model="addDocumentVisible"
-    :project-id="addDocumentProjectId ?? -1"
+  <ProjectSettingsModal
+    v-if="projectSettingsId"
+    v-model="projectSettingsVisible"
+    :project-id="projectSettingsId"
   />
+
   <UploadXliffModal v-model="uploadXliffVisible" />
 </template>

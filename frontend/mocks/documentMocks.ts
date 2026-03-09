@@ -1,12 +1,10 @@
 import {http, HttpResponse} from 'msw'
 import {faker, fakerRU} from '@faker-js/faker'
 
-import {glossaries} from './glossaryMocks'
 import {AwaitedReturnType} from './utils'
 import {
   getDoc,
   getDocRecords,
-  getGlossaries,
 } from '../src/client/services/DocumentService'
 import {
   getComments,
@@ -259,22 +257,6 @@ export const documentMocks = [
         return HttpResponse.json<AwaitedReturnType<typeof getDocRecords>>(
           recordsData
         )
-      } else {
-        return new HttpResponse(null, {status: 404})
-      }
-    }
-  ),
-  http.get<{id: string}>(
-    'http://localhost:8000/document/:id/glossaries',
-    ({params}) => {
-      const doc = docs.find((doc) => doc.id === Number(params.id))
-      if (doc !== undefined) {
-        return HttpResponse.json<AwaitedReturnType<typeof getGlossaries>>([
-          {
-            document_id: doc.id,
-            glossary: glossaries[0],
-          },
-        ])
       } else {
         return new HttpResponse(null, {status: 404})
       }

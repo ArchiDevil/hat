@@ -10,16 +10,16 @@ import InputText from 'primevue/inputtext'
 
 import DocSegment from './DocSegment.vue'
 import {debounce} from '../utilities/utils'
-import {
-  searchTmExact,
-  searchTmSimilar,
-} from '../client/services/DocumentService'
 import {TranslationMemoryListSimilarResponse} from '../client/schemas/TranslationMemoryListSimilarResponse'
 import {TranslationMemoryListResponse} from '../client/schemas/TranslationMemoryListResponse'
 import {TranslationMemoryRecordWithSimilarity} from '../client/schemas/TranslationMemoryRecordWithSimilarity'
+import {
+  projectTmSearch,
+  projectTmSearchSimilar,
+} from '../client/services/ProjectsService'
 
 const props = defineProps<{
-  documentId: number
+  projectId: number
 }>()
 
 const modalVisible = defineModel<boolean>()
@@ -47,7 +47,7 @@ watch(toggleSimilar, () => {
 const {data: searchResults, isLoading} = useQuery({
   key: () => [
     'tm-search',
-    props.documentId,
+    props.projectId,
     debouncedSearch.value,
     toggleSimilar.value,
   ],
@@ -60,9 +60,9 @@ const {data: searchResults, isLoading} = useQuery({
     }
 
     if (toggleSimilar.value) {
-      return await searchTmSimilar(props.documentId, search)
+      return await projectTmSearchSimilar(props.projectId, search)
     } else {
-      return await searchTmExact(props.documentId, search)
+      return await projectTmSearch(props.projectId, search)
     }
   },
   enabled: () =>
@@ -131,7 +131,11 @@ const header = computed(() => {
       <div class="grid grid-cols-[auto_auto_1fr_1fr] gap-1">
         <DocSegment
           v-for="record in searchResults?.records"
-          :id="!toggleSimilar ? record.id : (record as TranslationMemoryRecordWithSimilarity).similarity"
+          :id="
+            !toggleSimilar
+              ? record.id
+              : (record as TranslationMemoryRecordWithSimilarity).similarity
+          "
           :key="record.id"
           :source="record.source"
           :target="record.target"
