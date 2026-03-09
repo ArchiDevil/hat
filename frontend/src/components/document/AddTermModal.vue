@@ -15,12 +15,12 @@ import {
   createGlossaryRecord,
   listRecords,
 } from '../../client/services/GlossaryService'
-import {getGlossaries} from '../../client/services/DocumentService'
 import {GlossaryResponse} from '../../client/schemas/GlossaryResponse'
 import {debounce} from '../../utilities/utils'
+import {getProjectGlossaries} from '../../client/services/ProjectsService'
 
-const {documentId} = defineProps<{
-  documentId: number
+const {projectId} = defineProps<{
+  projectId: number
 }>()
 
 const model = defineModel<boolean>()
@@ -40,9 +40,9 @@ const comment = ref('')
 
 const selectedGlossary = ref<GlossaryResponse>()
 const {data: glossaries, isLoading: isGlossariesLoading} = useQuery({
-  key: () => ['doc-glossaries', documentId],
+  key: () => ['project-glossaries', projectId],
   query: async () => {
-    return (await getGlossaries(documentId)).map((r) => r.glossary)
+    return (await getProjectGlossaries(projectId)).glossaries
   },
   enabled: () => model.value === true,
   placeholderData: <T>(prevData: T) => prevData,
