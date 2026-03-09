@@ -296,7 +296,7 @@ class ProjectService:
             EntityNotFound: If project or TMs not found
         """
         # Extract tm_ids and modes from the schema
-        tm_ids = {tm.id for tm in tms_update.translation_memories}
+        tm_ids = [tm.id for tm in tms_update.translation_memories]
         # Convert string modes to TmMode enum values
         modes = [TmMode(tm.mode) for tm in tms_update.translation_memories]
 
@@ -318,12 +318,18 @@ class ProjectService:
         if not tm_ids:
             tms = []
         else:
-            tms = list(self.__tm_query.get_memories_by_id(tm_ids))
-            if len(tm_ids) != len(tms):
+            mems = set(tm_ids)
+            tms = list(self.__tm_query.get_memories_by_id(mems))
+            if len(mems) != len(tms):
                 raise EntityNotFound("Not all translation memories were found")
 
-        # Create list of (tm, mode) tuples
-        tm_modes = list(zip(tms, modes))
+        # Create list of (memory, mode) tuples
+        tm_modes = []
+        for setting in tms_update.translation_memories:
+            memory = next((m for m in tms if m.id == setting.id), None)
+            if memory:
+                tm_modes.append((memory, setting.mode))
+
         self.__query.set_project_translation_memories(project, tm_modes)
         return StatusMessage(message="Translation memory list updated")
 

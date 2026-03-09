@@ -693,12 +693,10 @@ def test_set_project_translation_memories_multiple(
 
         tm1 = TranslationMemory(name="test_tm1.tmx", created_by=1)
         tm2 = TranslationMemory(name="test_tm2.tmx", created_by=1)
-        tm3 = TranslationMemory(name="test_tm3.tmx", created_by=1)
-        s.add_all([tm1, tm2, tm3])
+        s.add_all([tm1, tm2])
         s.commit()
         tm1_id = tm1.id
         tm2_id = tm2.id
-        tm3_id = tm3.id
 
     response = user_logged_client.post(
         f"/projects/{project_id}/translation_memories",
@@ -706,7 +704,7 @@ def test_set_project_translation_memories_multiple(
             "translation_memories": [
                 {"id": tm1_id, "mode": "read"},
                 {"id": tm2_id, "mode": "read"},
-                {"id": tm3_id, "mode": "write"},
+                {"id": tm1_id, "mode": "write"},
             ]
         },
     )
