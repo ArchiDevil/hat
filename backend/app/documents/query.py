@@ -8,17 +8,12 @@ from app.base.exceptions import BaseQueryException
 from app.comments.models import Comment
 from app.documents.models import DocumentRecordHistory, DocumentRecordHistoryChangeType
 from app.documents.schema import DocumentRecordFilter
-from app.glossary.models import Glossary
 from app.models import DocumentStatus
-from app.translation_memory.models import TranslationMemory
 
 from .models import (
-    DocGlossaryAssociation,
-    DocMemoryAssociation,
     Document,
     DocumentRecord,
     DocumentType,
-    TmMode,
     TxtDocument,
     XliffDocument,
 )
@@ -228,24 +223,6 @@ class GenericDocsQuery:
             .scalars()
             .all()
         )
-
-    def set_document_memories(
-        self, document: Document, memories: list[tuple[TranslationMemory, TmMode]]
-    ):
-        associations = [
-            DocMemoryAssociation(document=document, memory=memory[0], mode=memory[1])
-            for memory in memories
-        ]
-        document.memory_associations = associations
-        self.__db.commit()
-
-    def set_document_glossaries(self, document: Document, glossaries: list[Glossary]):
-        associations = [
-            DocGlossaryAssociation(document=document, glossary=glossary)
-            for glossary in glossaries
-        ]
-        document.glossary_associations = associations
-        self.__db.commit()
 
 
 class DocumentRecordHistoryQuery:

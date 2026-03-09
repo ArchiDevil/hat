@@ -1,23 +1,14 @@
 <script setup lang="ts">
-import {Ref, ref, computed, onMounted} from 'vue'
+import {Ref, ref, computed} from 'vue'
 import {MandeError} from 'mande'
+import {FileUpload, FileUploadSelectEvent, Select} from 'primevue'
 
-import {
-  createDoc,
-  processDoc,
-  setGlossaries,
-  setTranslationMemories,
-} from '../client/services/DocumentService'
+import {createDoc, processDoc} from '../client/services/DocumentService'
 import {Document} from '../client/schemas/Document'
-
-import {useTmStore} from '../stores/tm'
-import {useGlossaryStore} from '../stores/glossary'
 
 import MachineTranslationOptions, {
   MtType,
 } from './MachineTranslationOptions.vue'
-
-import {FileUpload, FileUploadSelectEvent, MultiSelect, Select} from 'primevue'
 
 const emit = defineEmits<{
   uploaded: []
@@ -28,10 +19,6 @@ const props = defineProps<{
   title: string
   projectId: number
 }>()
-
-const uploadedFile = ref(null) as Ref<Document | null>
-const uploading = ref(false)
-const status = ref('')
 
 const mtOptions = ref({
   enabled: false,
@@ -47,11 +34,11 @@ const mtOptions = ref({
     api_key: '',
   },
 })
-const similarityThreshold = ref<number>(1.0)
 
+const uploadedFile = ref(null) as Ref<Document | null>
 const processingAvailable = computed(() => uploadedFile.value != null)
-const tmStore = useTmStore()
-const glossaryStore = useGlossaryStore()
+const uploading = ref(false)
+const status = ref('')
 
 const createFile = async (event: FileUploadSelectEvent) => {
   status.value = ''
@@ -77,6 +64,8 @@ const createFile = async (event: FileUploadSelectEvent) => {
   }
 }
 
+const similarityThreshold = ref<number>(1.0)
+
 const startProcessing = async () => {
   if (!processingAvailable.value) {
     return
@@ -87,16 +76,6 @@ const startProcessing = async () => {
   try {
     uploading.value = true
     status.value = 'Processing...'
-    await setTranslationMemories(uploadedFile.value!.id, {
-      memories: selectedTms.value.map((tm) => {
-        return {id: tm.id, mode: 'read'}
-      }),
-    })
-    await setGlossaries(uploadedFile.value!.id, {
-      glossaries: selectedGlossaries.value.map((g) => {
-        return {id: g.id}
-      }),
-    })
     const mtSettings = mtOptions.value
     await processDoc(uploadedFile.value!.id, {
       machine_translation_settings: mtSettings.enabled
@@ -114,17 +93,6 @@ const startProcessing = async () => {
     status.value = `${(error as MandeError).message} :(`
   }
 }
-
-onMounted(async () => {
-  await tmStore.fetchMemories()
-  selectedTms.value = tmStore.memories
-
-  await glossaryStore.fetchGlossaries()
-  selectedGlossaries.value = glossaryStore.glossaries
-})
-
-const selectedTms = ref<typeof tmStore.memories>([])
-const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
 </script>
 
 <template>
@@ -143,18 +111,6 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
             Processing options
           </p>
           <div class="flex flex-col gap-2 mb-4 max-w-96 mt-2">
-            <label>TMX files to use:</label>
-            <MultiSelect
-              v-model="selectedTms"
-              class="w-96"
-              placeholder="Select TMX files to use"
-              :options="tmStore.memories"
-              option-label="name"
-              filter
-              filter-placeholder="Search TMX files..."
-            />
-          </div>
-          <div class="flex flex-col gap-2 mb-4 max-w-96">
             <label>Substitution similary threshold:</label>
             <Select
               v-model="similarityThreshold"
@@ -168,18 +124,6 @@ const selectedGlossaries = ref<typeof glossaryStore.glossaries>([])
               ]"
               option-label="name"
               option-value="value"
-            />
-          </div>
-          <div class="flex flex-col gap-2 mb-4 max-w-96">
-            <label>Glossaries to use:</label>
-            <MultiSelect
-              v-model="selectedGlossaries"
-              class="w-96"
-              placeholder="Select glossaries to use"
-              :options="useGlossaryStore().glossaries"
-              option-label="name"
-              filter
-              filter-placeholder="Search glossaries..."
             />
           </div>
           <MachineTranslationOptions v-model="mtOptions" />

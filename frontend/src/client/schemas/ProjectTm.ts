@@ -3,8 +3,7 @@
 import {TranslationMemory} from './TranslationMemory'
 import {TmMode} from './TmMode'
 
-export interface DocTranslationMemory {
-  document_id: number
+export interface ProjectTm {
   memory: TranslationMemory
   mode: TmMode
 }

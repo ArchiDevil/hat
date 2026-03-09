@@ -6,6 +6,7 @@ import {useProjects} from '../queries/projects'
 const {data: projects, status: projectsStatus} = useProjects()
 
 defineEmits<{
+  openDocSettings: [number]
   openSettings: [number]
   uploadDocument: [number]
 }>()
@@ -19,7 +20,8 @@ defineEmits<{
       v-else
       :key="project.name"
       :project="project"
-      @open-settings="(docId) => $emit('openSettings', docId)"
+      @open-doc-settings="(docId) => $emit('openDocSettings', docId)"
+      @open-settings="(projId) => $emit('openSettings', projId)"
       @upload-document="(projectId) => $emit('uploadDocument', projectId)"
     />
   </div>

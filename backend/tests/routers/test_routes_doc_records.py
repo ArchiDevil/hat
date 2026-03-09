@@ -6,11 +6,11 @@ from sqlalchemy.orm import Session
 
 from app.comments.models import Comment
 from app.documents.models import (
-    DocMemoryAssociation,
     Document,
     DocumentRecord,
     DocumentType,
 )
+from app.projects.models import ProjectTmAssociation
 from app.projects.query import ProjectQuery
 from app.projects.schema import ProjectCreate
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
@@ -225,7 +225,7 @@ def test_record_approving_creates_memory(
         )
         s.commit()
 
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode="write"))
+        s.add(ProjectTmAssociation(project_id=p.id, tm_id=1, mode="write"))
         s.commit()
 
     response = user_logged_client.put(
@@ -282,7 +282,7 @@ def test_record_approving_updates_memory(
         s.add(TranslationMemory(name="test_mem", created_by=1, records=tm_records))
         s.commit()
 
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=1, mode="write"))
+        s.add(ProjectTmAssociation(project_id=p.id, tm_id=1, mode="write"))
         s.commit()
 
     response = user_logged_client.put(

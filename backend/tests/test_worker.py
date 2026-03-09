@@ -7,8 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.documents.models import (
-    DocGlossaryAssociation,
-    DocMemoryAssociation,
     Document,
     DocumentRecordHistoryChangeType,
     DocumentType,
@@ -26,7 +24,11 @@ from app.models import (
     DocumentStatus,
     YandexTranslatorSettings,
 )
-from app.projects.models import Project
+from app.projects.models import (
+    Project,
+    ProjectGlossaryAssociation,
+    ProjectTmAssociation,
+)
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 from worker import process_task
@@ -102,8 +104,8 @@ def test_process_task_sets_xliff_records(session: Session):
                 Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
-                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
-                DocGlossaryAssociation(document_id=1, glossary_id=1),
+                ProjectTmAssociation(project_id=1, tm_id=1, mode="read"),
+                ProjectGlossaryAssociation(project_id=1, glossary_id=1),
             ]
         )
 
@@ -228,7 +230,7 @@ def test_process_task_sets_txt_records(session: Session):
                 Project(name="test", created_by=1),
                 create_doc(name="small.txt", type_=DocumentType.txt),
                 TxtDocument(parent_id=1, original_document=file_data),
-                DocMemoryAssociation(doc_id=1, tm_id=1, mode="read"),
+                ProjectTmAssociation(project_id=1, tm_id=1, mode="read"),
             ]
         )
 
@@ -367,7 +369,7 @@ def test_process_task_uses_correct_tm_ids(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(),
-                DocMemoryAssociation(doc_id=1, tm_id=2, mode="read"),
+                ProjectTmAssociation(project_id=1, tm_id=2, mode="read"),
             ]
         )
         s.commit()
@@ -494,7 +496,7 @@ def test_process_task_uses_correct_glossary_ids(session: Session):
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
                 create_task(),
-                DocGlossaryAssociation(document_id=1, glossary_id=2),
+                ProjectGlossaryAssociation(project_id=1, glossary_id=2),
             ]
         )
         s.commit()

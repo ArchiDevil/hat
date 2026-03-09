@@ -3,18 +3,15 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, PrimaryKeyConstraint
-from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
 if TYPE_CHECKING:
     from app.comments.models import Comment
-    from app.glossary.models import Glossary
     from app.models import User
     from app.projects.models import Project
-    from app.translation_memory.models import TranslationMemory
 
 
 def utc_time():
@@ -34,33 +31,6 @@ class DocumentRecordHistoryChangeType(Enum):
 class TmMode(Enum):
     read = "read"
     write = "write"
-
-
-class DocMemoryAssociation(Base):
-    __tablename__ = "document_to_translation_memory"
-
-    doc_id: Mapped[int] = mapped_column(ForeignKey("document.id"), primary_key=True)
-    tm_id: Mapped[int] = mapped_column(
-        ForeignKey("translation_memory.id"), primary_key=True
-    )
-    mode: Mapped[TmMode] = mapped_column(type_=SqlEnum(TmMode), primary_key=True)
-
-    document: Mapped["Document"] = relationship(back_populates="memory_associations")
-    memory: Mapped["TranslationMemory"] = relationship(
-        back_populates="document_associations"
-    )
-    PrimaryKeyConstraint(doc_id, tm_id, mode)
-
-
-class DocGlossaryAssociation(Base):
-    __tablename__ = "glossary_to_document"
-
-    document_id: Mapped[int] = mapped_column(ForeignKey("document.id"))
-    glossary_id: Mapped[int] = mapped_column(ForeignKey("glossary.id"))
-
-    document: Mapped["Document"] = relationship(back_populates="glossary_associations")
-    glossary: Mapped["Glossary"] = relationship(back_populates="document_associations")
-    PrimaryKeyConstraint(document_id, glossary_id)
 
 
 class DocumentType(Enum):
@@ -91,26 +61,6 @@ class Document(Base):
     )
     txt: Mapped["TxtDocument"] = relationship(
         back_populates="parent", cascade="all, delete-orphan"
-    )
-
-    memory_associations: Mapped[list[DocMemoryAssociation]] = relationship(
-        back_populates="document",
-        cascade="all, delete-orphan",
-    )
-    memories: AssociationProxy[list["TranslationMemory"]] = association_proxy(
-        "memory_associations",
-        "memory",
-        creator=lambda memory: DocMemoryAssociation(memory=memory, mode="read"),
-    )
-
-    glossary_associations: Mapped[list[DocGlossaryAssociation]] = relationship(
-        back_populates="document",
-        cascade="all, delete-orphan",
-    )
-    glossaries: AssociationProxy[list["Glossary"]] = association_proxy(
-        "glossary_associations",
-        "glossary",
-        creator=lambda glossary: DocGlossaryAssociation(glossary=glossary),
     )
 
 

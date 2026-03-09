@@ -2,11 +2,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.documents.models import (
-    DocMemoryAssociation,
     Document,
     DocumentType,
-    TmMode,
 )
+from app.projects.models import ProjectTmAssociation
 from app.projects.query import ProjectQuery
 from app.projects.schema import ProjectCreate
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
@@ -15,7 +14,7 @@ from app.translation_memory.models import TranslationMemory, TranslationMemoryRe
 def test_search_tm_exact_with_no_linked_memories(
     user_logged_client: TestClient, session: Session
 ):
-    """Test exact search returns empty response when document has no linked TMs"""
+    """Test exact search returns empty response when project has no linked TMs"""
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
@@ -28,8 +27,9 @@ def test_search_tm_exact_with_no_linked_memories(
             )
         )
         s.commit()
+        project_id = p.id
 
-    response = user_logged_client.get("/document/1/tm/exact?source=Hello")
+    response = user_logged_client.get(f"/projects/{project_id}/tm_search?query=Hello")
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["records"] == []
@@ -80,12 +80,13 @@ def test_search_tm_exact_with_linked_memories(
             ]
         )
 
-        # Link TM to document
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=tm.id, mode=TmMode.read))
+        # Link TM to project
+        s.add(ProjectTmAssociation(project_id=p.id, tm_id=tm.id, mode="read"))
         s.commit()
+        project_id = p.id
 
     # Test exact search for "Hello"
-    response = user_logged_client.get("/document/1/tm/exact?source=Hello")
+    response = user_logged_client.get(f"/projects/{project_id}/tm_search?query=Hello")
     assert response.status_code == 200
     response_json = response.json()
     assert (
@@ -94,7 +95,7 @@ def test_search_tm_exact_with_linked_memories(
     assert response_json["page"] == 0
     assert response_json["total_records"] == 2
 
-    # Check the returned records
+    # Check returned records
     sources = [record["source"] for record in response_json["records"]]
     assert "Hello World" in sources
     assert "Hello Again" in sources
@@ -144,13 +145,14 @@ def test_search_tm_exact_with_multiple_linked_memories(
             ]
         )
 
-        # Link both TMs to document
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=tm1.id, mode=TmMode.read))
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=tm2.id, mode=TmMode.read))
+        # Link both TMs to project
+        s.add(ProjectTmAssociation(project_id=p.id, tm_id=tm1.id, mode="read"))
+        s.add(ProjectTmAssociation(project_id=p.id, tm_id=tm2.id, mode="read"))
         s.commit()
+        project_id = p.id
 
     # Test exact search for "Hello"
-    response = user_logged_client.get("/document/1/tm/exact?source=Hello")
+    response = user_logged_client.get(f"/projects/{project_id}/tm_search?query=Hello")
     assert response.status_code == 200
     response_json = response.json()
     assert len(response_json["records"]) == 2  # Should find from both TMs
@@ -158,11 +160,11 @@ def test_search_tm_exact_with_multiple_linked_memories(
     assert response_json["total_records"] == 2
 
 
-def test_search_tm_exact_returns_404_for_nonexistent_document(
+def test_search_tm_exact_returns_404_for_nonexistent_project(
     user_logged_client: TestClient,
 ):
-    """Test exact search returns 404 for non-existent document"""
-    response = user_logged_client.get("/document/999/tm/exact?source=Hello")
+    """Test exact search returns 404 for non-existent project"""
+    response = user_logged_client.get("/projects/999/tm_search?query=Hello")
     assert response.status_code == 404
 
 
@@ -194,12 +196,13 @@ def test_search_tm_exact_no_results(user_logged_client: TestClient, session: Ses
             )
         )
 
-        # Link TM to document
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=tm.id, mode=TmMode.read))
+        # Link TM to project
+        s.add(ProjectTmAssociation(project_id=p.id, tm_id=tm.id, mode="read"))
         s.commit()
+        project_id = p.id
 
     # Test exact search for "Hello" (should not find anything)
-    response = user_logged_client.get("/document/1/tm/exact?source=Hello")
+    response = user_logged_client.get(f"/projects/{project_id}/tm_search?query=Hello")
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["records"] == []
@@ -239,12 +242,13 @@ def test_search_tm_limit_20_results(user_logged_client: TestClient, session: Ses
             ]
         )
 
-        # Link TM to document
-        s.add(DocMemoryAssociation(doc_id=1, tm_id=tm.id, mode=TmMode.read))
+        # Link TM to project
+        s.add(ProjectTmAssociation(project_id=p.id, tm_id=tm.id, mode="read"))
         s.commit()
+        project_id = p.id
 
     # Test exact search - should only return 20 results
-    response = user_logged_client.get("/document/1/tm/exact?source=Hello")
+    response = user_logged_client.get(f"/projects/{project_id}/tm_search?query=Hello")
     assert response.status_code == 200
     response_json = response.json()
     assert len(response_json["records"]) == 20  # Limited to 20

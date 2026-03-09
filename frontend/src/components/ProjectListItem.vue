@@ -14,6 +14,7 @@ const {project} = defineProps<{
 }>()
 
 defineEmits<{
+  openDocSettings: [number]
   openSettings: [number]
   uploadDocument: [number]
 }>()
@@ -78,7 +79,7 @@ const progressBarTitle = computed(() => {
       <DocumentList
         v-else
         :documents="detailedInfo!.documents"
-        @open-settings="(docId) => $emit('openSettings', docId)"
+        @open-settings="(docId) => $emit('openDocSettings', docId)"
         @delete="
           () =>
             queryCache.invalidateQueries({
@@ -94,6 +95,13 @@ const progressBarTitle = computed(() => {
         rounded
         text
         @click="$emit('uploadDocument', project.id)"
+      />
+      <Button
+        icon="pi pi-cog"
+        severity="secondary"
+        rounded
+        text
+        @click="$emit('openSettings', project.id)"
       />
     </template>
   </Panel>

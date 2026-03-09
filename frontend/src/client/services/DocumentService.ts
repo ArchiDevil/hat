@@ -7,13 +7,6 @@ import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentUpdateResponse} from '../schemas/DocumentUpdateResponse'
 import {DocumentUpdate} from '../schemas/DocumentUpdate'
 import {DocumentRecordListResponse} from '../schemas/DocumentRecordListResponse'
-import {GlossaryRecordSchema} from '../schemas/GlossaryRecordSchema'
-import {DocTranslationMemory} from '../schemas/DocTranslationMemory'
-import {DocTranslationMemoryUpdate} from '../schemas/DocTranslationMemoryUpdate'
-import {TranslationMemoryListResponse} from '../schemas/TranslationMemoryListResponse'
-import {TranslationMemoryListSimilarResponse} from '../schemas/TranslationMemoryListSimilarResponse'
-import {DocGlossary} from '../schemas/DocGlossary'
-import {DocGlossaryUpdate} from '../schemas/DocGlossaryUpdate'
 import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
@@ -30,27 +23,6 @@ export const updateDocument = async (doc_id: number, content: DocumentUpdate): P
 }
 export const getDocRecords = async (doc_id: number, page?: number | null, source?: string | null, target?: string | null): Promise<DocumentRecordListResponse> => {
   return await api.get<DocumentRecordListResponse>(`/document/${doc_id}/records`, {query: {page, source, target}})
-}
-export const docGlossarySearch = async (doc_id: number, query: string): Promise<GlossaryRecordSchema[]> => {
-  return await api.get<GlossaryRecordSchema[]>(`/document/${doc_id}/glossary_search`, {query: {query}})
-}
-export const getTranslationMemories = async (doc_id: number): Promise<DocTranslationMemory[]> => {
-  return await api.get<DocTranslationMemory[]>(`/document/${doc_id}/memories`)
-}
-export const setTranslationMemories = async (doc_id: number, content: DocTranslationMemoryUpdate): Promise<StatusMessage> => {
-  return await api.post<StatusMessage>(`/document/${doc_id}/memories`, content)
-}
-export const searchTmExact = async (doc_id: number, source: string): Promise<TranslationMemoryListResponse> => {
-  return await api.get<TranslationMemoryListResponse>(`/document/${doc_id}/tm/exact`, {query: {source}})
-}
-export const searchTmSimilar = async (doc_id: number, source: string): Promise<TranslationMemoryListSimilarResponse> => {
-  return await api.get<TranslationMemoryListSimilarResponse>(`/document/${doc_id}/tm/similar`, {query: {source}})
-}
-export const getGlossaries = async (doc_id: number): Promise<DocGlossary[]> => {
-  return await api.get<DocGlossary[]>(`/document/${doc_id}/glossaries`)
-}
-export const setGlossaries = async (doc_id: number, content: DocGlossaryUpdate): Promise<StatusMessage> => {
-  return await api.post<StatusMessage>(`/document/${doc_id}/glossaries`, content)
 }
 export const createDoc = async (data: Body_create_doc_document__post): Promise<Document> => {
   const formData = new FormData()

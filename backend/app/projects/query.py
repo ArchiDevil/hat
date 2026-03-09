@@ -4,10 +4,16 @@ from typing import Sequence
 from sqlalchemy import case, func, select, update
 from sqlalchemy.orm import Session
 
+from app import Glossary
 from app.base.exceptions import BaseQueryException
-from app.documents.models import Document, DocumentRecord
-from app.projects.models import Project
+from app.documents.models import Document, DocumentRecord, TmMode
+from app.projects.models import (
+    Project,
+    ProjectGlossaryAssociation,
+    ProjectTmAssociation,
+)
 from app.projects.schema import ProjectCreate, ProjectUpdate
+from app.translation_memory.models import TranslationMemory
 
 
 class NotFoundProjectExc(BaseQueryException):
@@ -105,3 +111,37 @@ class ProjectQuery:
         )
 
         return self.__db.execute(stmt).all()
+
+    def set_project_glossaries(
+        self, project: Project, glossaries: list[Glossary]
+    ) -> None:
+        """
+        Set glossaries for a project.
+
+        Args:
+            project: Project object
+            glossaries: List of Glossary objects to associate with the project
+        """
+        associations = [
+            ProjectGlossaryAssociation(project=project, glossary=glossary)
+            for glossary in glossaries
+        ]
+        project.glossary_associations = associations
+        self.__db.commit()
+
+    def set_project_translation_memories(
+        self, project: Project, tm_modes: list[tuple[TranslationMemory, TmMode]]
+    ) -> None:
+        """
+        Set translation memories for a project with modes.
+
+        Args:
+            project: Project object
+            tm_modes: List of (TranslationMemory, TmMode) tuples
+        """
+        associations = [
+            ProjectTmAssociation(project=project, memory=tm[0], mode=tm[1])
+            for tm in tm_modes
+        ]
+        project.tm_associations = associations
+        self.__db.commit()

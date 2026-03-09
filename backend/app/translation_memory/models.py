@@ -6,9 +6,9 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
-from app.documents.models import DocMemoryAssociation, Document
 
 if TYPE_CHECKING:
+    from app.projects.models import Project, ProjectTmAssociation
     from app.schema import User
 
 
@@ -30,13 +30,13 @@ class TranslationMemory(Base):
     )
     user: Mapped["User"] = relationship(back_populates="tms")
 
-    document_associations: Mapped[list["DocMemoryAssociation"]] = relationship(
+    project_associations: Mapped[list["ProjectTmAssociation"]] = relationship(
         back_populates="memory", cascade="all, delete-orphan"
     )
-    document: AssociationProxy[list["Document"]] = association_proxy(
-        "document_associations",
-        "document",
-        creator=lambda document: DocMemoryAssociation(document=document, mode="read"),
+    projects: AssociationProxy[list["Project"]] = association_proxy(
+        "project_associations",
+        "project",
+        creator=lambda project: ProjectTmAssociation(project=project, mode="read"),
     )
 
 
