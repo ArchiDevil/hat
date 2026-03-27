@@ -8,6 +8,7 @@ from app.routers import (
     glossary,
     projects,
     records,
+    registration_tokens,
     translation_memory,
     user,
     users,
@@ -24,6 +25,7 @@ ROUTERS = (
     users,
     glossary,
     projects,
+    registration_tokens,
 )
 
 

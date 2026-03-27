@@ -11,6 +11,7 @@ from app.documents.models import (
 )
 from app.glossary.models import Glossary, GlossaryRecord
 from app.projects.models import Project
+from app.registration_token.models import RegistrationToken
 from app.schema import (
     DocumentTask,
     User,
@@ -34,4 +35,5 @@ __all__ = [
     "TxtDocument",
     "TxtRecord",
     "Project",
+    "RegistrationToken",
 ]
