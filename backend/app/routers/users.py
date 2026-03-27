@@ -29,7 +29,7 @@ def get_users(
 def create_user(
     data: models.UserToCreate, service: Annotated[UserService, Depends(get_service)]
 ) -> models.User:
-    return service.create_user(data)
+    return service.create_user(data, registration_token=None)
 
 
 @router.post("/{user_id}")

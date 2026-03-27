@@ -3,10 +3,12 @@ import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
 
 const IndexView = () => import('./views/IndexView.vue')
 const LoginView = () => import('./views/LoginView.vue')
+const SignupView = () => import('./views/SignupView.vue')
 const TmView = () => import('./views/TmView.vue')
 const GlossaryView = () => import('./views/GlossaryView.vue')
 const DocView = () => import('./views/DocView.vue')
 const UsersView = () => import('./views/UsersView.vue')
+const TokensView = () => import('./views/TokensView.vue')
 
 import {useUserStore} from './stores/user'
 
@@ -17,7 +19,9 @@ export const getRouter = () => {
     {path: '/document/:id', name: 'document', component: DocView},
     {path: '/glossary/:id', name: 'glossary', component: GlossaryView},
     {path: '/users/', name: 'users', component: UsersView},
+    {path: '/tokens/', name: 'tokens', component: TokensView},
     {path: '/login/', name: 'login', component: LoginView},
+    {path: '/signup/', name: 'signup', component: SignupView},
   ]
 
   const router = createRouter({
@@ -28,7 +32,7 @@ export const getRouter = () => {
   router.beforeEach(async (to) => {
     const store = useUserStore()
 
-    if (to.name === 'login') {
+    if (to.name === 'login' || to.name === 'signup') {
       if (store.currentUser) {
         // redirect to home page if user is logged in
         return {name: 'home'}

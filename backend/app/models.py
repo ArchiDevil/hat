@@ -47,9 +47,17 @@ class StatusMessage(BaseModel):
     message: str
 
 
-class UserFields(BaseModel):
-    username: str
+class BaseUserFields(BaseModel):
     email: EmailStr
+    username: str
+
+
+class SignupFields(BaseUserFields):
+    registration_token: str
+    password: str
+
+
+class UserFields(BaseUserFields):
     role: UserRole
     disabled: bool
 
