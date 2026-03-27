@@ -3,7 +3,9 @@
 from sqlalchemy.orm import Session
 
 from app import models, schema
-from app.base.exceptions import EntityNotFound
+from app.base.exceptions import BusinessLogicError, EntityNotFound
+from app.registration_token.models import RegistrationToken
+from app.registration_token.query import RegistrationTokenQuery
 from app.security import hash_password
 
 
@@ -57,7 +59,9 @@ class UserService:
             for user in users
         ]
 
-    def create_user(self, data: models.UserToCreate) -> models.User:
+    def create_user(
+        self, data: models.UserToCreate, registration_token: str | None
+    ) -> models.User:
         """
         Create a new user.
 
@@ -67,12 +71,23 @@ class UserService:
         Returns:
             Created User object
         """
+
+        token: RegistrationToken | None = None
+        if registration_token is not None:
+            query = RegistrationTokenQuery(self.__db)
+            token = query.get_by_token(registration_token)
+            if not token:
+                raise BusinessLogicError("Incorrect token provided")
+
         fields = data.model_dump()
         fields["role"] = fields["role"].value
         fields["password"] = hash_password(fields["password"])
         new_user = schema.User(**fields)
         self.__db.add(new_user)
+        if token:
+            self.__db.delete(token)
         self.__db.commit()
+
         return models.User(
             id=new_user.id,
             username=new_user.username,
