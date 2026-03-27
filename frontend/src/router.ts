@@ -8,6 +8,7 @@ const TmView = () => import('./views/TmView.vue')
 const GlossaryView = () => import('./views/GlossaryView.vue')
 const DocView = () => import('./views/DocView.vue')
 const UsersView = () => import('./views/UsersView.vue')
+const TokensView = () => import('./views/TokensView.vue')
 
 import {useUserStore} from './stores/user'
 
@@ -18,6 +19,7 @@ export const getRouter = () => {
     {path: '/document/:id', name: 'document', component: DocView},
     {path: '/glossary/:id', name: 'glossary', component: GlossaryView},
     {path: '/users/', name: 'users', component: UsersView},
+    {path: '/tokens/', name: 'tokens', component: TokensView},
     {path: '/login/', name: 'login', component: LoginView},
     {path: '/signup/', name: 'signup', component: SignupView},
   ]

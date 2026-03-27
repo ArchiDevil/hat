@@ -30,6 +30,12 @@ const logout = async () => {
         name="users"
         title="Users"
       />
+      <RoutingLink
+        v-if="useUserStore().currentUser?.role === 'admin'"
+        class="mx-2 uppercase font-semibold"
+        name="tokens"
+        title="Tokens"
+      />
       <a
         href="#"
         class="mx-2 uppercase font-semibold underline hover:decoration-2"
