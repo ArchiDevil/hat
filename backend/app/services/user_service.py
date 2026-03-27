@@ -82,6 +82,12 @@ class UserService:
         fields = data.model_dump()
         fields["role"] = fields["role"].value
         fields["password"] = hash_password(fields["password"])
+
+        # Check if user with this email already exists
+        existing_user = self.__db.query(schema.User).filter_by(email=data.email).first()
+        if existing_user:
+            raise BusinessLogicError("User with this email already exists")
+
         new_user = schema.User(**fields)
         self.__db.add(new_user)
         if token:

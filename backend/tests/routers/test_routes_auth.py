@@ -342,3 +342,50 @@ def test_signup_new_user_can_login_after_registration(
     assert login_response.status_code == 200
     assert login_response.json() == {"message": "Logged in"}
     assert login_response.cookies["session"]
+
+
+def test_signup_returns_403_for_existing_email(
+    fastapi_client: TestClient, session: Session
+):
+    """Test that signup returns 403 when email already exists."""
+    # Create an existing user
+    with session as s:
+        existing_user = schema.User(
+            username="existinguser",
+            password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
+            email="existing@test.com",
+            role=models.UserRole.USER.value,
+            disabled=False,
+        )
+        s.add(existing_user)
+
+        # Create admin and registration token
+        admin = schema.User(
+            username="admin",
+            password="$pbkdf2-sha256$29000$R4gxRkjpnXNOqXXundP6Xw$pzr2kyXZjurvt6sUv7NF4dQhpHdv9RBtlGbOStnFyUM",
+            email="admin@test.com",
+            role=models.UserRole.ADMIN.value,
+            disabled=False,
+        )
+        s.add(admin)
+        s.commit()
+        s.refresh(admin)
+
+        token = RegistrationToken(token="duplicate-email-token", created_by=admin.id)
+        s.add(token)
+        s.commit()
+
+    # Try to signup with the same email
+    response = fastapi_client.post(
+        "/auth/signup",
+        json={
+            "email": "existing@test.com",
+            "username": "newuser",
+            "password": "securepassword123",
+            "registration_token": "duplicate-email-token",
+        },
+    )
+
+    # Should return 403 with appropriate error message
+    assert response.status_code == 403
+    assert "already exists" in response.json()["detail"]
