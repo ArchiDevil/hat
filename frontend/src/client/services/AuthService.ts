@@ -4,10 +4,15 @@ import {getApiBase, api} from '../defaults'
 
 import {StatusMessage} from '../schemas/StatusMessage'
 import {AuthFields} from '../schemas/AuthFields'
+import {User} from '../schemas/User'
+import {SignupFields} from '../schemas/SignupFields'
 
 export const login = async (content: AuthFields): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/auth/login`, content)
 }
 export const logout = async (): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/auth/logout`)
+}
+export const signup = async (content: SignupFields): Promise<User> => {
+  return await api.post<User>(`/auth/signup`, content)
 }

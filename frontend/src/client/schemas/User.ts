@@ -3,8 +3,8 @@
 import {UserRole} from './UserRole'
 
 export interface User {
-  username: string
   email: string
+  username: string
   role: UserRole
   disabled: boolean
   id: number
