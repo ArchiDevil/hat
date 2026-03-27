@@ -1,19 +1,25 @@
 @import 'primeicons/primeicons.css';
+@import 'tailwindcss';
+@import 'tailwindcss-primeui';
 
-@layer tailwind-base, primevue, tailwind-utilities;
-
-@layer tailwind-base {
-  @tailwind base;
-}
-
-@layer tailwind-utilities {
-  @tailwind components;
-  @tailwind utilities;
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
 }
 
 @font-face {
   font-family: 'Inter';
   src: url('../assets/Inter.woff2') format('woff');
+}
+
+@theme {
+  --font-ui: 'Inter', sans-serif;
+
+  --text-sm: 0.75rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
 }
 
 html {

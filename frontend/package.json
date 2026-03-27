@@ -36,7 +36,7 @@
     "jsdom": "^28.1.0",
     "msw": "^2.12.10",
     "postcss": "^8.5.8",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.1.17",
     "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.7",
@@ -47,6 +47,7 @@
   "dependencies": {
     "@pinia/colada": "^1.0.0",
     "@primeuix/themes": "2.0.3",
+    "@tailwindcss/vite": "^4.1.17",
     "dayjs": "^1.11.19",
     "mande": "^2.0.9",
     "pinia": "^3.0.4",
