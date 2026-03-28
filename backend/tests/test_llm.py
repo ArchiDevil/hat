@@ -54,8 +54,8 @@ def test_generate_prompt_ctx_middle_offset():
     lines = [(f"line{i}", []) for i in range(10)]
 
     result = llm.generate_prompt_ctx(lines, 5, 3)
-    expected_lines = ["<seg>line2</seg>", "<seg>line3</seg>", "<seg>line4</seg>"]
-    assert result == "<context>" + "\n".join(expected_lines) + "</context>"
+    expected_lines = ["line2", "line3", "line4"]
+    assert result == "<context>\n" + "\n".join(expected_lines) + "\n</context>"
 
 
 def test_generate_prompt_ctx_beginning():
@@ -63,8 +63,8 @@ def test_generate_prompt_ctx_beginning():
     lines = [(f"line{i}", []) for i in range(10)]
 
     result = llm.generate_prompt_ctx(lines, 1, 3)
-    expected_lines = ["<seg>line0</seg>"]
-    assert result == "<context>" + "\n".join(expected_lines) + "</context>"
+    expected_lines = ["line0"]
+    assert result == "<context>\n" + "\n".join(expected_lines) + "\n</context>"
 
 
 def test_generate_prompt_ctx_empty():
@@ -72,7 +72,7 @@ def test_generate_prompt_ctx_empty():
     lines = [(f"line{i}", []) for i in range(10)]
 
     result = llm.generate_prompt_ctx(lines, 0, 3)
-    assert result == "<context></context>"
+    assert result == "<context>\n\n</context>"
 
 
 def test_generate_prompt_glossary():
@@ -99,7 +99,7 @@ def test_generate_prompt_glossary_empty():
 
     result = llm.generate_prompt_glossary(lines)
 
-    assert result == "<glossary></glossary>"
+    assert result == "<glossary>\n\n</glossary>"
 
 
 def test_generate_prompt_task():
@@ -143,12 +143,12 @@ def test_generate_prompt_ctx_negative_offset():
 
     # With negative offset, start becomes 0, so it includes all available lines
     expected_lines = [
-        "<seg>line0</seg>",
-        "<seg>line1</seg>",
-        "<seg>line2</seg>",
-        "<seg>line3</seg>",
+        "line0",
+        "line1",
+        "line2",
+        "line3",
     ]
-    assert result == "<context>" + "\n".join(expected_lines) + "</context>"
+    assert result == "<context>\n" + "\n".join(expected_lines) + "\n</context>"
 
 
 def test_generate_prompt_ctx_large_context():
@@ -158,8 +158,8 @@ def test_generate_prompt_ctx_large_context():
     result = llm.generate_prompt_ctx(lines, 2, 10)
 
     # Should only include available lines before offset
-    expected_lines = ["<seg>line0</seg>", "<seg>line1</seg>"]
-    assert result == "<context>" + "\n".join(expected_lines) + "</context>"
+    expected_lines = ["line0", "line1"]
+    assert result == "<context>\n" + "\n".join(expected_lines) + "\n</context>"
 
 
 def test_parse_lines_success():

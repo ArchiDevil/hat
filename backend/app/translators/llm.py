@@ -23,8 +23,8 @@ def generate_prompt_ctx(
     lines: list[LineWithGlossaries], offset: int, ctx_size: int
 ) -> str:
     start = max(offset - ctx_size, 0)
-    ctx_lines = [f"<seg>{line[0]}</seg>" for line in lines[start:offset]]
-    return f"<context>{'\n'.join(ctx_lines)}</context>"
+    ctx_lines = [f"{line[0]}" for line in lines[start:offset]]
+    return f"<context>\n{'\n'.join(ctx_lines)}\n</context>"
 
 
 def generate_prompt_glossary(lines: list[LineWithGlossaries]) -> str:
@@ -35,7 +35,7 @@ def generate_prompt_glossary(lines: list[LineWithGlossaries]) -> str:
                 f"<term><orig>{original}</orig><trans>{translation}</trans></term>"
             )
 
-    return f"<glossary>{'\n'.join(terms.values())}</glossary>"
+    return f"<glossary>\n{'\n'.join(terms.values())}\n</glossary>"
 
 
 def generate_prompt_task(lines: list[LineWithGlossaries]) -> str:
