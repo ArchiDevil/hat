@@ -96,7 +96,7 @@ const showHistory = () => {
     {{ id }}
   </div>
   <div
-    class="border rounded-border border-surface p-2 bg-white h-full h-min-11"
+    class="border rounded-border border-surface p-2 bg-white h-full h-min-11 wrap-break-word"
     :class="{'bg-surface-200': disabled ?? false}"
   >
     {{ source }}
