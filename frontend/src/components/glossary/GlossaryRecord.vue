@@ -7,6 +7,7 @@ import Button from 'primevue/button'
 import RoutingLink from '../RoutingLink.vue'
 import EditGlossaryDialog from './EditGlossaryDialog.vue'
 import {getDownloadGlossaryCsvLink} from '../../client/services/GlossaryService'
+import {isAdmin} from '../../utilities/auth'
 
 defineEmits<{
   update: []
@@ -34,11 +35,13 @@ const downloadLink = computed(() => getDownloadGlossaryCsvLink(file.id))
       </RoutingLink>
     </div>
     <Button
+      v-if="isAdmin()"
       label="Edit"
       severity="secondary"
       @click="editDialogVisible = true"
     />
     <a
+      v-if="isAdmin()"
       :href="downloadLink"
       class="underline hover:decoration-2"
     >

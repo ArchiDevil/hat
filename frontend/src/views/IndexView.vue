@@ -16,6 +16,7 @@ import AddProjectModal from '../components/AddProjectModal.vue'
 import AddDocumentModal from '../components/AddDocumentModal.vue'
 import UploadXliffModal from '../components/UploadXliffModal.vue'
 import ProjectSettingsModal from '../components/ProjectSettingsModal.vue'
+import {isAdmin} from '../utilities/auth'
 
 const tmStore = useTmStore()
 const glossaryStore = useGlossaryStore()
@@ -46,7 +47,10 @@ onMounted(async () => {
     <div class="flex flex-col gap-4">
       <Panel header="Projects">
         <template #icons>
-          <div class="flex flex-row gap-4">
+          <div
+            v-if="isAdmin()"
+            class="flex flex-row gap-4"
+          >
             <Button
               icon="pi pi-file-arrow-up"
               size="small"
@@ -87,7 +91,10 @@ onMounted(async () => {
       </Panel>
 
       <Panel header="Glossaries">
-        <GlossaryUploadingDialog @uploaded="glossaryStore.fetchGlossaries()" />
+        <GlossaryUploadingDialog
+          v-if="isAdmin()"
+          @uploaded="glossaryStore.fetchGlossaries()"
+        />
         <GlossaryRecord
           v-for="file in glossaryStore.glossaries"
           :key="file.id"
@@ -97,7 +104,10 @@ onMounted(async () => {
       </Panel>
 
       <Panel header="Translation Memories">
-        <TmxUploadingDialog @uploaded="tmStore.fetchMemories()" />
+        <TmxUploadingDialog
+          v-if="isAdmin()"
+          @uploaded="tmStore.fetchMemories()"
+        />
         <TmRecord
           v-for="file in tmStore.memories"
           :key="file.id"

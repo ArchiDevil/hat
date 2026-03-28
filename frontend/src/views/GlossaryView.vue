@@ -19,6 +19,7 @@ import {GlossaryRecordSchema} from '../client/schemas/GlossaryRecordSchema'
 import EditTermDialog from '../components/glossary/EditTermDialog.vue'
 import {useCurrentGlossaryStore} from '../stores/current_glossary'
 import {debounce} from '../utilities/utils'
+import {isAdmin} from '../utilities/auth'
 
 const store = useCurrentGlossaryStore()
 const {glossary, records} = storeToRefs(store)
@@ -135,7 +136,10 @@ const currentRecordId = ref<number>(-1)
           header="Comment"
         />
         <Column
-          :field="(record: GlossaryRecordSchema) => new Date(record.updated_at).toLocaleString()"
+          :field="
+            (record: GlossaryRecordSchema) =>
+              new Date(record.updated_at).toLocaleString()
+          "
           header="Last update"
           header-style="width: 14rem;"
         />
@@ -147,6 +151,7 @@ const currentRecordId = ref<number>(-1)
         <Column header-style="width: 3rem">
           <template #body="{data}">
             <Button
+              v-if="isAdmin()"
               icon="pi pi-pencil"
               aria-label="Edit"
               size="small"

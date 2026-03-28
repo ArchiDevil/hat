@@ -87,6 +87,7 @@ const deleteFile = async () => {
       {{ status }}
     </span>
     <Button
+      v-if="isAdmin()"
       icon="pi pi-cog"
       severity="secondary"
       :disabled="busy"

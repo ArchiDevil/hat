@@ -24,6 +24,7 @@ import {
   getDownloadXliffLink,
 } from '../client/services/DocumentService'
 import {updateDocRecord} from '../client/services/RecordsService'
+import {isAdmin} from '../utilities/auth'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow
@@ -240,10 +241,11 @@ const percentage = computed(() =>
     <div class="bg-surface-0 border-b border-surface">
       <div class="flex flex-row gap-2 items-center ml-4 mt-4 mb-1">
         <Button
+          as="a"
+          href="/"
           icon="pi pi-home"
           severity="secondary"
           size="small"
-          @click="router.push('/')"
         />
 
         <h2 class="text-xl font-bold">
@@ -258,16 +260,19 @@ const percentage = computed(() =>
         {{ document?.total_word_count }} words
         <span class="text-gray-500">({{ percentage.toFixed(2) }}%)</span>
         <Link
+          v-if="isAdmin()"
           :href="downloadLink"
           class="inline-block"
           title="Download current file"
         />
         <Link
+          v-if="isAdmin()"
           :href="originalLink"
           class="inline-block"
           title="Download original file"
         />
         <Link
+          v-if="isAdmin()"
           :href="xliffLink"
           class="inline-block"
           title="Download XLIFF file"

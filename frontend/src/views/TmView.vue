@@ -21,6 +21,7 @@ import PageTitle from '../components/PageTitle.vue'
 import PageNav from '../components/PageNav.vue'
 import Link from '../components/NavLink.vue'
 import {debounce} from '../utilities/utils'
+import {isAdmin} from '../utilities/auth'
 import {TranslationMemoryListSimilarResponse} from '../client/schemas/TranslationMemoryListSimilarResponse'
 import {TranslationMemoryListResponse} from '../client/schemas/TranslationMemoryListResponse'
 import {TranslationMemoryRecordWithSimilarity} from '../client/schemas/TranslationMemoryRecordWithSimilarity'
@@ -110,7 +111,7 @@ const docName = computed(
     <PageTitle :title="docName" />
     <div class="mb-4 flex flex-col">
       <Link
-        v-if="downloadLink"
+        v-if="downloadLink && isAdmin()"
         :href="downloadLink"
         class="inline"
         title="Download TMX"
