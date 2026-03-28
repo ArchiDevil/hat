@@ -8,6 +8,7 @@ import {retrieveProject} from '../client/services/ProjectsService'
 
 import DocumentList from './DocumentList.vue'
 import {PROJECT_KEYS} from '../queries/projects'
+import {isAdmin} from '../utilities/auth'
 
 const {project} = defineProps<{
   project: ProjectResponse
@@ -90,6 +91,7 @@ const progressBarTitle = computed(() => {
     </template>
     <template #icons>
       <Button
+        v-if="isAdmin()"
         icon="pi pi-file-arrow-up"
         severity="secondary"
         rounded
@@ -97,6 +99,7 @@ const progressBarTitle = computed(() => {
         @click="$emit('uploadDocument', project.id)"
       />
       <Button
+        v-if="isAdmin()"
         icon="pi pi-cog"
         severity="secondary"
         rounded

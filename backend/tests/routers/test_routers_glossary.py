@@ -13,7 +13,7 @@ from app.glossary.schema import (
 from main import app
 
 
-def test_post_glossary_load_file(user_logged_client: TestClient, session: Session):
+def test_post_glossary_load_file(admin_logged_client: TestClient, session: Session):
     """POST /glossary/load_file/"""
 
     file = open("tests/fixtures/small_glossary.xlsx", "rb")
@@ -21,7 +21,7 @@ def test_post_glossary_load_file(user_logged_client: TestClient, session: Sessio
 
     expected_json_resp = {"glossary_id": 1}
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         url=path,
         files={"file": ("small_glossary.xlsx", file)},
         params={"glossary_name": "Glossary name"},
@@ -36,8 +36,8 @@ def test_post_glossary_load_file(user_logged_client: TestClient, session: Sessio
 
     assert glossary.processing_status == "DONE"
 
-    assert record_1.created_by == 1
-    assert record_2.created_by == 1
+    assert record_1.created_by == 2
+    assert record_2.created_by == 2
 
     assert record_1.comment == "Названия книг"
     assert record_2.comment is None
@@ -132,7 +132,7 @@ def test_get_glossary_retrieve_with_records(
     assert response_json["records_count"] == 140
 
 
-def test_update_glossary(user_logged_client: TestClient, session: Session):
+def test_update_glossary(admin_logged_client: TestClient, session: Session):
     """PUT /glossary/{glossary_id}/"""
 
     expected_name = "New glossary name"
@@ -143,7 +143,7 @@ def test_update_glossary(user_logged_client: TestClient, session: Session):
     old_time = glossary_1.updated_at
     path = app.url_path_for("update_glossary", **{"glossary_id": glossary_1.id})
 
-    response = user_logged_client.put(url=path, json={"name": expected_name})
+    response = admin_logged_client.put(url=path, json={"name": expected_name})
     response_json = response.json()
 
     assert response_json["name"] == expected_name
@@ -250,7 +250,7 @@ def test_list_glossary_records_search(user_logged_client: TestClient, session: S
     assert resp_records == {"total_rows": 0, "records": []}
 
 
-def test_update_glossary_record(user_logged_client: TestClient, session: Session):
+def test_update_glossary_record(admin_logged_client: TestClient, session: Session):
     """PUT /glossary/records/{record_id}/"""
     expected_user_id = 1
     repo = GlossaryQuery(session)
@@ -272,7 +272,7 @@ def test_update_glossary_record(user_logged_client: TestClient, session: Session
     dumped_record = GlossaryRecordUpdate.model_validate(record)
 
     path = app.url_path_for("update_glossary_record", **{"record_id": record.id})
-    response = user_logged_client.put(url=path, json=dumped_record.model_dump())
+    response = admin_logged_client.put(url=path, json=dumped_record.model_dump())
     response_json = response.json()
 
     assert response_json["created_by_user"]["id"] == expected_user_id
@@ -283,13 +283,13 @@ def test_update_glossary_record(user_logged_client: TestClient, session: Session
     assert response_json["updated_at"] != old_time.isoformat()
 
 
-def test_create_glossary(user_logged_client: TestClient, session: Session):
+def test_create_glossary(admin_logged_client: TestClient, session: Session):
     """POST /glossary/"""
     expected_glossary_name = "Glossary name 1"
     path = app.url_path_for("create_glossary")
     dumped_glossary = GlossarySchema(name=expected_glossary_name)
 
-    response = user_logged_client.post(url=path, json=dumped_glossary.model_dump())
+    response = admin_logged_client.post(url=path, json=dumped_glossary.model_dump())
     response_json = response.json()
 
     assert (
@@ -298,20 +298,22 @@ def test_create_glossary(user_logged_client: TestClient, session: Session):
     )
 
 
-def test_delete_glossary(user_logged_client: TestClient, session: Session):
+def test_delete_glossary(admin_logged_client: TestClient, session: Session):
     """DELETE /glossary/{glossary_id}/"""
     glossary = GlossaryQuery(session).create_glossary(
         user_id=1, glossary=GlossarySchema(name="Glossary name")
     )
     path = app.url_path_for("delete_glossary", **{"glossary_id": glossary.id})
 
-    response = user_logged_client.delete(url=path)
+    response = admin_logged_client.delete(url=path)
     response_json = response.json()
 
     assert response_json == {"message": "Deleted"}
 
 
-def test_delete_glossary_with_records(user_logged_client: TestClient, session: Session):
+def test_delete_glossary_with_records(
+    admin_logged_client: TestClient, session: Session
+):
     """DELETE /glossary/{glossary_id}/"""
     query = GlossaryQuery(session)
     glossary = query.create_glossary(
@@ -327,7 +329,7 @@ def test_delete_glossary_with_records(user_logged_client: TestClient, session: S
 
     path = app.url_path_for("delete_glossary", **{"glossary_id": glossary.id})
 
-    response = user_logged_client.delete(url=path)
+    response = admin_logged_client.delete(url=path)
     response_json = response.json()
 
     assert response_json == {"message": "Deleted"}
@@ -336,7 +338,7 @@ def test_delete_glossary_with_records(user_logged_client: TestClient, session: S
         query.get_glossary_record_by_id(record_id)
 
 
-def test_delete_glossary_record(user_logged_client: TestClient, session: Session):
+def test_delete_glossary_record(admin_logged_client: TestClient, session: Session):
     """DELETE /glossary/records/{record_id}/"""
     repo = GlossaryQuery(session)
     glossary = repo.create_glossary(
@@ -354,7 +356,7 @@ def test_delete_glossary_record(user_logged_client: TestClient, session: Session
     )
     path = app.url_path_for("delete_glossary_record", **{"record_id": record.id})
 
-    response = user_logged_client.delete(url=path)
+    response = admin_logged_client.delete(url=path)
     response_json = response.json()
 
     assert response_json == {"message": "Deleted"}
@@ -394,19 +396,19 @@ def test_get_glossary_returns_404_for_nonexistent_glossary(
 
 
 def test_update_glossary_returns_404_for_nonexistent_glossary(
-    user_logged_client: TestClient,
+    admin_logged_client: TestClient,
 ):
     """PUT /glossary/{glossary_id}/ - 404 for non-existent glossary"""
-    response = user_logged_client.put("/glossary/999", json={"name": "Updated name"})
+    response = admin_logged_client.put("/glossary/999", json={"name": "Updated name"})
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Glossary with id 999 not found"
 
 
 def test_delete_glossary_returns_404_for_nonexistent_glossary(
-    user_logged_client: TestClient,
+    admin_logged_client: TestClient,
 ):
     """DELETE /glossary/{glossary_id}/ - 404 for non-existent glossary"""
-    response = user_logged_client.delete("/glossary/999")
+    response = admin_logged_client.delete("/glossary/999")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Glossary with id 999 not found"
 
@@ -435,7 +437,7 @@ def test_create_glossary_record_returns_404_for_nonexistent_glossary(
 
 
 def test_update_glossary_record_returns_404_for_nonexistent_record(
-    user_logged_client: TestClient,
+    admin_logged_client: TestClient,
 ):
     """PUT /glossary/records/{record_id}/ - 404 for non-existent record"""
     record_data = {
@@ -443,21 +445,21 @@ def test_update_glossary_record_returns_404_for_nonexistent_record(
         "source": "Updated source",
         "target": "Updated target",
     }
-    response = user_logged_client.put("/glossary/records/999", json=record_data)
+    response = admin_logged_client.put("/glossary/records/999", json=record_data)
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Glossary record with id 999 not found"
 
 
 def test_delete_glossary_record_returns_404_for_nonexistent_record(
-    user_logged_client: TestClient,
+    admin_logged_client: TestClient,
 ):
     """DELETE /glossary/records/{record_id}/ - 404 for non-existent record"""
-    response = user_logged_client.delete("/glossary/records/999")
+    response = admin_logged_client.delete("/glossary/records/999")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Glossary record with id 999 not found"
 
 
-def test_download_glossary_csv(user_logged_client: TestClient, session: Session):
+def test_download_glossary_csv(admin_logged_client: TestClient, session: Session):
     """GET /glossary/{glossary_id}/download"""
     repo = GlossaryQuery(session)
     glossary = repo.create_glossary(
@@ -476,7 +478,7 @@ def test_download_glossary_csv(user_logged_client: TestClient, session: Session)
         repo.create_glossary_record(user_id=1, record=rec, glossary_id=glossary.id)
 
     path = app.url_path_for("download_glossary_csv", **{"glossary_id": glossary.id})
-    response = user_logged_client.get(path)
+    response = admin_logged_client.get(path)
 
     assert response.status_code == status.HTTP_200_OK
     assert response.headers["content-type"] == "text/csv; charset=utf-8"
@@ -489,7 +491,7 @@ def test_download_glossary_csv(user_logged_client: TestClient, session: Session)
     assert '"Hello, world","Привет, мир",With comma' in csv_content
 
 
-def test_download_glossary_csv_empty(user_logged_client: TestClient, session: Session):
+def test_download_glossary_csv_empty(admin_logged_client: TestClient, session: Session):
     """GET /glossary/{glossary_id}/download - empty glossary"""
     repo = GlossaryQuery(session)
     glossary = repo.create_glossary(
@@ -497,7 +499,7 @@ def test_download_glossary_csv_empty(user_logged_client: TestClient, session: Se
     )
 
     path = app.url_path_for("download_glossary_csv", **{"glossary_id": glossary.id})
-    response = user_logged_client.get(path)
+    response = admin_logged_client.get(path)
 
     assert response.status_code == status.HTTP_200_OK
     assert "Empty Glossary.csv" in response.headers["content-disposition"]
@@ -505,7 +507,7 @@ def test_download_glossary_csv_empty(user_logged_client: TestClient, session: Se
 
 
 def test_download_glossary_csv_filename_sanitization(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """GET /glossary/{glossary_id}/download - filename sanitization"""
     repo = GlossaryQuery(session)
@@ -514,7 +516,7 @@ def test_download_glossary_csv_filename_sanitization(
     )
 
     path = app.url_path_for("download_glossary_csv", **{"glossary_id": glossary.id})
-    response = user_logged_client.get(path)
+    response = admin_logged_client.get(path)
 
     assert response.status_code == status.HTTP_200_OK
     # Special characters should be removed, spaces replaced with underscores
@@ -523,8 +525,8 @@ def test_download_glossary_csv_filename_sanitization(
     )
 
 
-def test_download_glossary_csv_404(user_logged_client: TestClient):
+def test_download_glossary_csv_404(admin_logged_client: TestClient):
     """GET /glossary/{glossary_id}/download - 404 for non-existent glossary"""
-    response = user_logged_client.get("/glossary/999/download")
+    response = admin_logged_client.get("/glossary/999/download")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Glossary with id 999 not found"

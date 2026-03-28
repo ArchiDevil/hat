@@ -17,26 +17,24 @@ from app.translation_memory.models import TranslationMemory
 from main import app
 
 
-def test_create_project(user_logged_client: TestClient, session: Session):
+def test_create_project(admin_logged_client: TestClient, session: Session):
     expected_name = "Test Project"
     path = app.url_path_for("create_project")
 
-    response = user_logged_client.post(url=path, json={"name": expected_name})
+    response = admin_logged_client.post(url=path, json={"name": expected_name})
     response_json = response.json()
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response_json["name"] == expected_name
-    assert response_json["created_by"] == 1
+    assert response_json["created_by"] == 2
     assert "id" in response_json
     assert "created_at" in response_json
     assert "updated_at" in response_json
 
 
-def test_create_project_validation_error(user_logged_client: TestClient):
+def test_create_project_validation_error(admin_logged_client: TestClient):
     path = app.url_path_for("create_project")
-
-    response = user_logged_client.post(url=path, json={"name": ""})
-
+    response = admin_logged_client.post(url=path, json={"name": ""})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
@@ -91,7 +89,7 @@ def test_retrieve_project_not_found(user_logged_client: TestClient):
     assert response.json()["detail"] == "Project with id 999 not found"
 
 
-def test_update_project(user_logged_client: TestClient, session: Session):
+def test_update_project(admin_logged_client: TestClient, session: Session):
     project = ProjectQuery(session).create_project(
         user_id=1, data=ProjectCreate(name="Original Name")
     )
@@ -99,7 +97,7 @@ def test_update_project(user_logged_client: TestClient, session: Session):
     old_time = project.updated_at
     path = app.url_path_for("update_project", **{"project_id": project.id})
 
-    response = user_logged_client.put(url=path, json={"name": expected_name})
+    response = admin_logged_client.put(url=path, json={"name": expected_name})
     response_json = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -118,20 +116,20 @@ def test_update_project_unauthorized(fastapi_client: TestClient, session: Sessio
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_update_project_not_found(user_logged_client: TestClient):
-    response = user_logged_client.put("/projects/999", json={"name": "Updated Name"})
+def test_update_project_not_found(admin_logged_client: TestClient):
+    response = admin_logged_client.put("/projects/999", json={"name": "Updated Name"})
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Project with id 999 not found"
 
 
-def test_delete_project(user_logged_client: TestClient, session: Session):
+def test_delete_project(admin_logged_client: TestClient, session: Session):
     project = ProjectQuery(session).create_project(
         user_id=1, data=ProjectCreate(name="Test Project")
     )
     path = app.url_path_for("delete_project", **{"project_id": project.id})
 
-    response = user_logged_client.delete(url=path)
+    response = admin_logged_client.delete(url=path)
     response_json = response.json()
 
     assert response.status_code == status.HTTP_200_OK
@@ -149,8 +147,8 @@ def test_delete_project_unauthorized(fastapi_client: TestClient, session: Sessio
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_delete_project_not_found(user_logged_client: TestClient):
-    response = user_logged_client.delete("/projects/999")
+def test_delete_project_not_found(admin_logged_client: TestClient):
+    response = admin_logged_client.delete("/projects/999")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Project with id 999 not found"
@@ -302,7 +300,7 @@ def test_get_project_glossaries_not_found(user_logged_client: TestClient):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_set_project_glossaries(user_logged_client: TestClient, session: Session):
+def test_set_project_glossaries(admin_logged_client: TestClient, session: Session):
     """Test setting glossaries for a project."""
     with session as s:
         project = Project(created_by=1, name="Test Project")
@@ -319,7 +317,7 @@ def test_set_project_glossaries(user_logged_client: TestClient, session: Session
         s.commit()
         glossary_id = glossary.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/glossaries",
         json={"glossaries": [glossary_id]},
     )
@@ -334,7 +332,7 @@ def test_set_project_glossaries(user_logged_client: TestClient, session: Session
 
 
 def test_set_project_glossaries_multiple(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test setting multiple glossaries for a project."""
     with session as s:
@@ -358,7 +356,7 @@ def test_set_project_glossaries_multiple(
         glossary1_id = glossary1.id
         glossary2_id = glossary2.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/glossaries",
         json={"glossaries": [glossary1_id, glossary2_id]},
     )
@@ -370,7 +368,7 @@ def test_set_project_glossaries_multiple(
 
 
 def test_set_project_glossaries_replaces_existing(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test that setting glossaries replaces existing ones."""
     with session as s:
@@ -401,7 +399,7 @@ def test_set_project_glossaries_replaces_existing(
         s.commit()
 
     # Replace with different glossary
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/glossaries",
         json={"glossaries": [glossary2_id]},
     )
@@ -414,7 +412,7 @@ def test_set_project_glossaries_replaces_existing(
 
 
 def test_set_project_glossaries_project_not_found(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test setting glossaries for a non-existent project."""
     with session as s:
@@ -427,7 +425,7 @@ def test_set_project_glossaries_project_not_found(
         s.commit()
         glossary_id = glossary.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         "/projects/999/glossaries",
         json={"glossaries": [glossary_id]},
     )
@@ -435,7 +433,7 @@ def test_set_project_glossaries_project_not_found(
 
 
 def test_set_project_glossaries_glossary_not_found(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test setting non-existent glossaries for a project."""
     with session as s:
@@ -444,7 +442,7 @@ def test_set_project_glossaries_glossary_not_found(
         s.commit()
         project_id = project.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/glossaries",
         json={"glossaries": [999]},
     )
@@ -642,7 +640,7 @@ def test_get_project_translation_memories_not_found(user_logged_client: TestClie
 
 
 def test_set_project_translation_memories(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test setting translation memories for a project."""
     with session as s:
@@ -658,7 +656,7 @@ def test_set_project_translation_memories(
         tm1_id = tm1.id
         tm2_id = tm2.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/translation_memories",
         json={
             "translation_memories": [
@@ -682,7 +680,7 @@ def test_set_project_translation_memories(
 
 
 def test_set_project_translation_memories_multiple(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test setting multiple translation memories for a project."""
     with session as s:
@@ -698,7 +696,7 @@ def test_set_project_translation_memories_multiple(
         tm1_id = tm1.id
         tm2_id = tm2.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/translation_memories",
         json={
             "translation_memories": [
@@ -716,7 +714,7 @@ def test_set_project_translation_memories_multiple(
 
 
 def test_set_project_translation_memories_replaces_existing(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test that setting translation memories replaces existing ones."""
     with session as s:
@@ -737,7 +735,7 @@ def test_set_project_translation_memories_replaces_existing(
         s.commit()
 
     # Replace with different TM
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/translation_memories",
         json={"translation_memories": [{"id": tm2_id, "mode": "write"}]},
     )
@@ -751,7 +749,7 @@ def test_set_project_translation_memories_replaces_existing(
 
 
 def test_set_project_translation_memories_project_not_found(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test setting translation memories for a non-existent project."""
     with session as s:
@@ -760,7 +758,7 @@ def test_set_project_translation_memories_project_not_found(
         s.commit()
         tm_id = tm.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         "/projects/999/translation_memories",
         json={"translation_memories": [{"id": tm_id, "mode": "read"}]},
     )
@@ -768,7 +766,7 @@ def test_set_project_translation_memories_project_not_found(
 
 
 def test_set_project_translation_memories_tm_not_found(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test setting non-existent translation memories for a project."""
     with session as s:
@@ -777,7 +775,7 @@ def test_set_project_translation_memories_tm_not_found(
         s.commit()
         project_id = project.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/translation_memories",
         json={"translation_memories": [{"id": 999, "mode": "read"}]},
     )
@@ -785,7 +783,7 @@ def test_set_project_translation_memories_tm_not_found(
 
 
 def test_set_project_translation_memories_multiple_writes(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test that setting multiple write mode TMs returns an error."""
     with session as s:
@@ -801,7 +799,7 @@ def test_set_project_translation_memories_multiple_writes(
         tm1_id = tm1.id
         tm2_id = tm2.id
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         f"/projects/{project_id}/translation_memories",
         json={
             "translation_memories": [

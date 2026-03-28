@@ -22,7 +22,7 @@ from app.translation_memory.schema import (
     TranslationMemoryListResponse,
     TranslationMemoryListSimilarResponse,
 )
-from app.user.depends import get_current_user_id, has_user_role
+from app.user.depends import get_current_user_id, has_user_role, has_admin_role
 
 router = APIRouter(
     prefix="/projects", tags=["projects"], dependencies=[Depends(has_user_role)]
@@ -84,6 +84,7 @@ def retrieve_project(
     description="Create project",
     response_model=ProjectResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(has_admin_role)],
 )
 def create_project(
     project: ProjectCreate,
@@ -107,6 +108,7 @@ def create_project(
             },
         },
     },
+    dependencies=[Depends(has_admin_role)],
 )
 def update_project(
     project_id: int,
@@ -142,6 +144,7 @@ def update_project(
             },
         },
     },
+    dependencies=[Depends(has_admin_role)],
 )
 def delete_project(
     project_id: int,
@@ -206,6 +209,7 @@ def get_project_glossaries(
             },
         },
     },
+    dependencies=[Depends(has_admin_role)],
 )
 def set_project_glossaries(
     project_id: int,
@@ -307,6 +311,7 @@ def get_project_translation_memories(
             },
         },
     },
+    dependencies=[Depends(has_admin_role)],
 )
 def set_project_translation_memories(
     project_id: int,
