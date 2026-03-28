@@ -187,12 +187,12 @@ def test_returns_404_when_tm_file_not_found(user_logged_client: TestClient):
     assert response.status_code == 404
 
 
-def test_can_delete_tm_doc(user_logged_client: TestClient, session: Session):
+def test_can_delete_tm_doc(admin_logged_client: TestClient, session: Session):
     with session as s:
         s.add(TranslationMemory(name="first_doc.tmx", created_by=1))
         s.commit()
 
-    response = user_logged_client.delete("/translation_memory/1")
+    response = admin_logged_client.delete("/translation_memory/1")
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
 
@@ -201,14 +201,14 @@ def test_can_delete_tm_doc(user_logged_client: TestClient, session: Session):
         assert doc is None
 
 
-def test_returns_404_when_deleting_nonexistent_tm_doc(user_logged_client: TestClient):
-    response = user_logged_client.delete("/translation_memory/10")
+def test_returns_404_when_deleting_nonexistent_tm_doc(admin_logged_client: TestClient):
+    response = admin_logged_client.delete("/translation_memory/10")
     assert response.status_code == 404
 
 
-def test_can_upload_tm(user_logged_client: TestClient, session: Session):
+def test_can_upload_tm(admin_logged_client: TestClient, session: Session):
     with open("tests/fixtures/small.tmx", "rb") as f:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/translation_memory/upload",
             files={"file": f},
         )
@@ -218,20 +218,20 @@ def test_can_upload_tm(user_logged_client: TestClient, session: Session):
         doc = s.query(TranslationMemory).filter_by(id=1).first()
         assert doc
         assert doc.name == "small.tmx"
-        assert doc.created_by == 1
+        assert doc.created_by == 2
         assert len(doc.records) == 1
         assert "Handbook" in doc.records[0].source
         assert doc.records[0].creation_date == datetime(2022, 7, 3, 7, 59, 19)
         assert doc.records[0].change_date == datetime(2022, 7, 3, 7, 59, 20)
 
 
-def test_shows_422_when_no_file_uploaded(user_logged_client: TestClient):
-    response = user_logged_client.post("/translation_memory/upload")
+def test_shows_422_when_no_file_uploaded(admin_logged_client: TestClient):
+    response = admin_logged_client.post("/translation_memory/upload")
     assert response.status_code == 422
 
 
-def test_can_create_tm(user_logged_client: TestClient, session: Session):
-    response = user_logged_client.post(
+def test_can_create_tm(admin_logged_client: TestClient, session: Session):
+    response = admin_logged_client.post(
         "/translation_memory",
         json={"name": "test"},
     )
@@ -242,11 +242,11 @@ def test_can_create_tm(user_logged_client: TestClient, session: Session):
         tm = s.query(TranslationMemory).filter_by(id=response.json()["id"]).first()
         assert tm
         assert tm.name == "test"
-        assert tm.created_by == 1
+        assert tm.created_by == 2
         assert len(tm.records) == 0
 
 
-def test_can_download_document(user_logged_client: TestClient, session: Session):
+def test_can_download_document(admin_logged_client: TestClient, session: Session):
     tm_records = [
         TranslationMemoryRecord(source="Regional Effects", target="Translation"),
         TranslationMemoryRecord(source="User Interface", target="UI"),
@@ -255,7 +255,7 @@ def test_can_download_document(user_logged_client: TestClient, session: Session)
         s.add(TranslationMemory(name="test_doc.tmx", records=tm_records, created_by=1))
         s.commit()
 
-    response = user_logged_client.get("/translation_memory/1/download")
+    response = admin_logged_client.get("/translation_memory/1/download")
     assert response.status_code == 200
     data = response.read().decode("utf-8")
     assert "Regional Effects" in data
@@ -264,6 +264,6 @@ def test_can_download_document(user_logged_client: TestClient, session: Session)
     assert "UI" in data
 
 
-def test_download_returns_404_for_non_existing_tm(user_logged_client: TestClient):
-    response = user_logged_client.get("/translation_memory/999/download")
+def test_download_returns_404_for_non_existing_tm(admin_logged_client: TestClient):
+    response = admin_logged_client.get("/translation_memory/999/download")
     assert response.status_code == 404

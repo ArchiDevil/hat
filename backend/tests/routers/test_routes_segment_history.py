@@ -341,7 +341,7 @@ def test_update_different_type_creates_new_history(
 
 
 def test_history_cascade_delete_on_record_delete(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
@@ -378,7 +378,7 @@ def test_history_cascade_delete_on_record_delete(
         s.commit()
 
     # Delete document
-    response = user_logged_client.delete("/document/1")
+    response = admin_logged_client.delete("/document/1")
     assert response.status_code == 200
 
     # Check that history was cascade deleted

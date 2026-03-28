@@ -72,7 +72,7 @@ def test_returns_404_when_doc_not_found(user_logged_client: TestClient):
     assert response.status_code == 404
 
 
-def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
+def test_can_delete_xliff_doc(admin_logged_client: TestClient, session: Session):
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
@@ -92,7 +92,7 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
         )
         s.commit()
 
-    response = user_logged_client.delete("/document/1")
+    response = admin_logged_client.delete("/document/1")
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
 
@@ -101,7 +101,7 @@ def test_can_delete_xliff_doc(user_logged_client: TestClient, session: Session):
         assert s.query(XliffDocument).count() == 0
 
 
-def test_can_delete_txt_doc(user_logged_client: TestClient, session: Session):
+def test_can_delete_txt_doc(admin_logged_client: TestClient, session: Session):
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
@@ -121,7 +121,7 @@ def test_can_delete_txt_doc(user_logged_client: TestClient, session: Session):
         )
         s.commit()
 
-    response = user_logged_client.delete("/document/1")
+    response = admin_logged_client.delete("/document/1")
     assert response.status_code == 200
     assert response.json() == {"message": "Deleted"}
 
@@ -131,18 +131,18 @@ def test_can_delete_txt_doc(user_logged_client: TestClient, session: Session):
 
 
 def test_returns_404_when_deleting_nonexistent_doc(
-    user_logged_client: TestClient,
+    admin_logged_client: TestClient,
 ):
-    response = user_logged_client.delete("/document/1")
+    response = admin_logged_client.delete("/document/1")
     assert response.status_code == 404
 
 
-def test_upload_xliff(user_logged_client: TestClient, session: Session):
+def test_upload_xliff(admin_logged_client: TestClient, session: Session):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
     assert response.status_code == 200
@@ -153,7 +153,7 @@ def test_upload_xliff(user_logged_client: TestClient, session: Session):
         assert generic_doc.name == "small.xliff"
         assert generic_doc.type == DocumentType.xliff
         assert generic_doc.processing_status == "uploaded"
-        assert generic_doc.user.id == 1
+        assert generic_doc.user.id == 2
         assert not generic_doc.records
 
         xliff_doc = s.query(XliffDocument).filter_by(id=1).first()
@@ -163,12 +163,12 @@ def test_upload_xliff(user_logged_client: TestClient, session: Session):
         assert not xliff_doc.records
 
 
-def test_upload_txt(user_logged_client: TestClient, session: Session):
+def test_upload_txt(admin_logged_client: TestClient, session: Session):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
     assert response.status_code == 200
@@ -178,7 +178,7 @@ def test_upload_txt(user_logged_client: TestClient, session: Session):
         assert generic_doc is not None
         assert generic_doc.name == "small.txt"
         assert generic_doc.type == DocumentType.txt
-        assert generic_doc.created_by == 1
+        assert generic_doc.created_by == 2
         assert generic_doc.processing_status == "uploaded"
         assert not generic_doc.records
 
@@ -190,25 +190,25 @@ def test_upload_txt(user_logged_client: TestClient, session: Session):
         )
 
 
-def test_upload_no_file(user_logged_client: TestClient):
-    response = user_logged_client.post("/document/", files={})
+def test_upload_no_file(admin_logged_client: TestClient):
+    response = admin_logged_client.post("/document/", files={})
     assert response.status_code == 422
 
 
 def test_upload_fails_with_unknown_type(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.tmx", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
     assert response.status_code == 400
 
 
-def test_upload_removes_old_files(user_logged_client: TestClient, session: Session):
+def test_upload_removes_old_files(admin_logged_client: TestClient, session: Session):
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         s.add(
@@ -224,7 +224,7 @@ def test_upload_removes_old_files(user_logged_client: TestClient, session: Sessi
         s.commit()
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
     assert response.status_code == 200
@@ -234,7 +234,7 @@ def test_upload_removes_old_files(user_logged_client: TestClient, session: Sessi
 
 
 def test_upload_removes_only_uploaded_documents(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
@@ -261,7 +261,7 @@ def test_upload_removes_only_uploaded_documents(
         s.commit()
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
     assert response.status_code == 200
@@ -272,17 +272,17 @@ def test_upload_removes_only_uploaded_documents(
 
 
 def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         "/document/1/process",
         json={
             "machine_translation_settings": None,
@@ -297,17 +297,17 @@ def test_process_sets_document_in_pending_stage_and_creates_task_xliff(
 
 
 def test_process_sets_document_in_pending_stage_and_creates_task_txt(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         "/document/1/process",
         json={
             "machine_translation_settings": None,
@@ -322,17 +322,17 @@ def test_process_sets_document_in_pending_stage_and_creates_task_txt(
 
 
 def test_process_creates_task_for_xliff(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         "/document/1/process",
         json={
             "machine_translation_settings": None,
@@ -355,16 +355,16 @@ def test_process_creates_task_for_xliff(
         }
 
 
-def test_process_creates_task_for_txt(user_logged_client: TestClient, session: Session):
+def test_process_creates_task_for_txt(admin_logged_client: TestClient, session: Session):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         "/document/1/process",
         json={
             "machine_translation_settings": None,
@@ -388,9 +388,9 @@ def test_process_creates_task_for_txt(user_logged_client: TestClient, session: S
 
 
 def test_returns_404_when_processing_nonexistent_doc(
-    user_logged_client: TestClient,
+    admin_logged_client: TestClient,
 ):
-    response = user_logged_client.post(
+    response = admin_logged_client.post(
         "/document/1/process",
         json={
             "machine_translation_settings": None,
@@ -399,12 +399,12 @@ def test_returns_404_when_processing_nonexistent_doc(
     assert response.status_code == 404
 
 
-def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
+def test_download_xliff_doc(admin_logged_client: TestClient, session: Session):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
@@ -452,7 +452,7 @@ def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
         s.add_all(records)
         s.commit()
 
-    response = user_logged_client.get("/document/1/download")
+    response = admin_logged_client.get("/document/1/download")
     assert response.status_code == 200
 
     data = response.read().decode("utf-8")
@@ -464,12 +464,12 @@ def test_download_xliff_doc(user_logged_client: TestClient, session: Session):
     assert "final" in data
 
 
-def test_download_txt_doc(user_logged_client: TestClient, session: Session):
+def test_download_txt_doc(admin_logged_client: TestClient, session: Session):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
@@ -515,7 +515,7 @@ def test_download_txt_doc(user_logged_client: TestClient, session: Session):
         s.add_all(txt_records)
         s.commit()
 
-    response = user_logged_client.get("/document/1/download")
+    response = admin_logged_client.get("/document/1/download")
     assert response.status_code == 200
 
     data = response.read().decode("utf-8")
@@ -524,8 +524,8 @@ def test_download_txt_doc(user_logged_client: TestClient, session: Session):
     assert "Он использует блок характеристик" in data
 
 
-def test_download_shows_404_for_unknown_doc(user_logged_client: TestClient):
-    response = user_logged_client.get("/document/1/download")
+def test_download_shows_404_for_unknown_doc(admin_logged_client: TestClient):
+    response = admin_logged_client.get("/document/1/download")
     assert response.status_code == 404
 
 
@@ -572,7 +572,7 @@ def test_get_doc_records_with_repetitions(
     assert record_counts["Test"] == 1
 
 
-def test_update_document_name_only(user_logged_client: TestClient, session: Session):
+def test_update_document_name_only(admin_logged_client: TestClient, session: Session):
     """Test successful update of document name only."""
     p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
@@ -585,7 +585,7 @@ def test_update_document_name_only(user_logged_client: TestClient, session: Sess
     session.add(doc)
     session.commit()
 
-    response = user_logged_client.put(
+    response = admin_logged_client.put(
         f"/document/{doc.id}", json={"name": "updated.txt"}
     )
     assert response.status_code == 200
@@ -601,7 +601,7 @@ def test_update_document_name_only(user_logged_client: TestClient, session: Sess
         assert updated_doc.project_id == 1
 
 
-def test_update_document_project_only(user_logged_client: TestClient, session: Session):
+def test_update_document_project_only(admin_logged_client: TestClient, session: Session):
     """Test successful update of document project_id only."""
     p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
@@ -617,7 +617,7 @@ def test_update_document_project_only(user_logged_client: TestClient, session: S
     session.commit()
     project_id = project.id  # Save id before session expires
 
-    response = user_logged_client.put(
+    response = admin_logged_client.put(
         f"/document/{doc.id}", json={"project_id": project_id}
     )
     assert response.status_code == 200
@@ -633,7 +633,7 @@ def test_update_document_project_only(user_logged_client: TestClient, session: S
 
 
 def test_update_document_name_and_project(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test successful update of both name and project_id."""
     p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
@@ -650,7 +650,7 @@ def test_update_document_name_and_project(
     session.commit()
     project_id = project.id  # Save id before session expires
 
-    response = user_logged_client.put(
+    response = admin_logged_client.put(
         f"/document/{doc.id}", json={"name": "updated.txt", "project_id": project_id}
     )
     assert response.status_code == 200
@@ -666,14 +666,14 @@ def test_update_document_name_and_project(
         assert updated_doc.project_id == project_id
 
 
-def test_update_document_not_found(user_logged_client: TestClient):
+def test_update_document_not_found(admin_logged_client: TestClient):
     """Test 404 when document doesn't exist."""
-    response = user_logged_client.put("/document/999", json={"name": "updated.txt"})
+    response = admin_logged_client.put("/document/999", json={"name": "updated.txt"})
     assert response.status_code == 404
     assert "Document not found" in response.json()["detail"]
 
 
-def test_update_project_not_found(user_logged_client: TestClient, session: Session):
+def test_update_project_not_found(admin_logged_client: TestClient, session: Session):
     """Test 404 when project doesn't exist."""
     p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
@@ -686,13 +686,13 @@ def test_update_project_not_found(user_logged_client: TestClient, session: Sessi
     session.add(doc)
     session.commit()
 
-    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": 999})
+    response = admin_logged_client.put(f"/document/{doc.id}", json={"project_id": 999})
     assert response.status_code == 404
     assert "Project with id 999 not found" in response.json()["detail"]
 
 
 def test_update_document_validation_error(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test 422 for invalid project_id (zero) or invalid name."""
     p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
@@ -707,20 +707,20 @@ def test_update_document_validation_error(
     session.commit()
 
     # Test invalid project_id (negative)
-    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": -25})
+    response = admin_logged_client.put(f"/document/{doc.id}", json={"project_id": -25})
     assert response.status_code == 404
 
     # Test invalid project_id (zero)
-    response = user_logged_client.put(f"/document/{doc.id}", json={"project_id": 0})
+    response = admin_logged_client.put(f"/document/{doc.id}", json={"project_id": 0})
     assert response.status_code == 404
 
     # Test invalid name (empty)
-    response = user_logged_client.put(f"/document/{doc.id}", json={"name": ""})
+    response = admin_logged_client.put(f"/document/{doc.id}", json={"name": ""})
     assert response.status_code == 422
 
     # Test invalid name (too long - over 255 characters)
     long_name = "a" * 256
-    response = user_logged_client.put(f"/document/{doc.id}", json={"name": long_name})
+    response = admin_logged_client.put(f"/document/{doc.id}", json={"name": long_name})
     assert response.status_code == 422
 
 
@@ -742,7 +742,7 @@ def test_update_document_unauthenticated(fastapi_client: TestClient, session: Se
 
 
 def test_update_document_to_same_project(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test idempotent update to same project."""
     p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
@@ -759,7 +759,7 @@ def test_update_document_to_same_project(
     session.commit()
     project_id = project.id  # Save id before session expires
 
-    response = user_logged_client.put(
+    response = admin_logged_client.put(
         f"/document/{doc.id}", json={"project_id": project_id}
     )
     assert response.status_code == 200
@@ -774,17 +774,17 @@ def test_update_document_to_same_project(
         assert updated_doc.project_id == project_id
 
 
-def test_download_original_xliff_doc(user_logged_client: TestClient, session: Session):
+def test_download_original_xliff_doc(admin_logged_client: TestClient, session: Session):
     """Test downloading original XLIFF document."""
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.xliff", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
-    response = user_logged_client.get("/document/1/download_original")
+    response = admin_logged_client.get("/document/1/download_original")
     assert response.status_code == 200
 
     data = response.read().decode("utf-8")
@@ -792,17 +792,17 @@ def test_download_original_xliff_doc(user_logged_client: TestClient, session: Se
     assert "Regional Effects" in data
 
 
-def test_download_original_txt_doc(user_logged_client: TestClient, session: Session):
+def test_download_original_txt_doc(admin_logged_client: TestClient, session: Session):
     """Test downloading original TXT document."""
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
     with open("tests/fixtures/small.txt", "rb") as fp:
-        user_logged_client.post(
+        admin_logged_client.post(
             "/document/", files={"file": fp}, data={"project_id": "1"}
         )
 
-    response = user_logged_client.get("/document/1/download_original")
+    response = admin_logged_client.get("/document/1/download_original")
     assert response.status_code == 200
 
     data = response.read().decode("utf-8")
@@ -810,13 +810,13 @@ def test_download_original_txt_doc(user_logged_client: TestClient, session: Sess
     assert "The sloth is named Razak" in data
 
 
-def test_download_original_shows_404_for_unknown_doc(user_logged_client: TestClient):
+def test_download_original_shows_404_for_unknown_doc(admin_logged_client: TestClient):
     """Test 404 when downloading original for non-existent document."""
-    response = user_logged_client.get("/document/1/download_original")
+    response = admin_logged_client.get("/document/1/download_original")
     assert response.status_code == 404
 
 
-def test_download_xliff(user_logged_client: TestClient, session: Session):
+def test_download_xliff(admin_logged_client: TestClient, session: Session):
     """Test downloading document as XLIFF."""
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
@@ -844,7 +844,7 @@ def test_download_xliff(user_logged_client: TestClient, session: Session):
         )
         s.commit()
 
-    response = user_logged_client.get("/document/1/download_xliff")
+    response = admin_logged_client.get("/document/1/download_xliff")
     assert response.status_code == 200
 
     data = response.read().decode("utf-8")
@@ -855,13 +855,13 @@ def test_download_xliff(user_logged_client: TestClient, session: Session):
     assert "Пользовательский интерфейс" in data
 
 
-def test_download_xliff_shows_404_for_unknown_doc(user_logged_client: TestClient):
+def test_download_xliff_shows_404_for_unknown_doc(admin_logged_client: TestClient):
     """Test 404 when downloading XLIFF for non-existent document."""
-    response = user_logged_client.get("/document/1/download_xliff")
+    response = admin_logged_client.get("/document/1/download_xliff")
     assert response.status_code == 404
 
 
-def test_upload_xliff_success(user_logged_client: TestClient, session: Session):
+def test_upload_xliff_success(admin_logged_client: TestClient, session: Session):
     """Test successful XLIFF upload with record updates."""
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
@@ -905,7 +905,7 @@ def test_upload_xliff_success(user_logged_client: TestClient, session: Session):
         s.commit()
 
     with open("tests/fixtures/upload_test.xliff", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/upload_xliff", files={"file": fp}, data={}
         )
     assert response.status_code == 200
@@ -953,7 +953,7 @@ def test_upload_xliff_success(user_logged_client: TestClient, session: Session):
 
 
 def test_upload_xliff_with_update_approved(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test XLIFF upload with update_approved=True to update approved records."""
     with session as s:
@@ -983,7 +983,7 @@ def test_upload_xliff_with_update_approved(
         s.commit()
 
     with open("tests/fixtures/upload_test.xliff", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/upload_xliff",
             files={"file": fp},
             data={"update_approved": "true"},
@@ -1002,26 +1002,26 @@ def test_upload_xliff_with_update_approved(
         assert regional_effects.approved is False  # it is False in XLIFF
 
 
-def test_upload_xliff_document_not_found(user_logged_client: TestClient):
+def test_upload_xliff_document_not_found(admin_logged_client: TestClient):
     """Test XLIFF upload with non-existent document ID."""
     with open("tests/fixtures/upload_test.xliff", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/upload_xliff", files={"file": fp}, data={}
         )
     assert response.status_code == 404
     assert "Document not found" in response.json()["detail"]
 
 
-def test_upload_xliff_invalid_format(user_logged_client: TestClient):
+def test_upload_xliff_invalid_format(admin_logged_client: TestClient):
     """Test XLIFF upload with invalid XLIFF format."""
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = user_logged_client.post("/document/upload_xliff", files={"file": fp})
+        response = admin_logged_client.post("/document/upload_xliff", files={"file": fp})
     assert response.status_code == 400
     assert "Invalid XLIFF format" in response.json()["detail"]
 
 
 def test_upload_xliff_history_tracking(
-    user_logged_client: TestClient, session: Session
+    admin_logged_client: TestClient, session: Session
 ):
     """Test that history entries are created for XLIFF upload."""
     with session as s:
@@ -1053,7 +1053,7 @@ def test_upload_xliff_history_tracking(
         s.commit()
 
     with open("tests/fixtures/upload_test.xliff", "rb") as fp:
-        response = user_logged_client.post(
+        response = admin_logged_client.post(
             "/document/upload_xliff", files={"file": fp}, data={}
         )
     assert response.status_code == 200
@@ -1069,7 +1069,7 @@ def test_upload_xliff_history_tracking(
             h.change_type == DocumentRecordHistoryChangeType.translation_update
             for h in history_entries
         )
-        assert all(h.author_id == 1 for h in history_entries)
+        assert all(h.author_id == 2 for h in history_entries)
 
 
 def test_upload_xliff_unauthenticated(fastapi_client: TestClient):
