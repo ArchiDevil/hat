@@ -2,13 +2,16 @@
 import {computed, ref, watch} from 'vue'
 import {useQuery} from '@pinia/colada'
 
-import Dialog from 'primevue/dialog'
-import ToggleButton from 'primevue/togglebutton'
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
+import {
+  Column,
+  DataTable,
+  Dialog,
+  ToggleButton,
+  IconField,
+  InputIcon,
+  InputText,
+} from 'primevue'
 
-import DocSegment from './DocSegment.vue'
 import {debounce} from '../utilities/utils'
 import {TranslationMemoryListSimilarResponse} from '../client/schemas/TranslationMemoryListSimilarResponse'
 import {TranslationMemoryListResponse} from '../client/schemas/TranslationMemoryListResponse'
@@ -128,19 +131,31 @@ const header = computed(() => {
       v-else-if="hasResults"
       class="max-h-96 overflow-y-auto"
     >
-      <div class="grid grid-cols-[auto_auto_1fr_1fr] gap-1">
-        <DocSegment
-          v-for="record in searchResults?.records"
-          :key="record.id"
-          :row-number="
-            !toggleSimilar
-              ? record.id
-              : (record as TranslationMemoryRecordWithSimilarity).similarity
+      <DataTable
+        :value="searchResults?.records"
+        size="small"
+      >
+        <Column
+          :field="
+            (record: TranslationMemoryRecordWithSimilarity) =>
+              toggleSimilar
+                ? record.similarity.toPrecision(2)
+                : record.id.toString()
           "
-          :source="record.source"
-          :target="record.target"
+          :header="toggleSimilar ? 'Similarity' : 'ID'"
+          header-style="10%"
         />
-      </div>
+        <Column
+          field="source"
+          header="Source"
+          header-style="width: 45%"
+        />
+        <Column
+          field="target"
+          header="Target"
+          header-style="width: 45%"
+        />
+      </DataTable>
     </div>
 
     <div

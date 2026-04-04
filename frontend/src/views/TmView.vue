@@ -10,13 +10,16 @@ import {
   getMemoryRecordsSimilar,
 } from '../client/services/TmsService'
 
-import ToggleButton from 'primevue/togglebutton'
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
-import Paginator from 'primevue/paginator'
+import {
+  Column,
+  DataTable,
+  ToggleButton,
+  IconField,
+  InputIcon,
+  InputText,
+  Paginator,
+} from 'primevue'
 
-import DocSegment from '../components/DocSegment.vue'
 import PageTitle from '../components/PageTitle.vue'
 import PageNav from '../components/PageNav.vue'
 import Link from '../components/NavLink.vue'
@@ -140,17 +143,38 @@ const docName = computed(
       :first="page * 100"
       @page="(event) => updatePage(event.page)"
     />
-    <div
+    <DataTable
       v-if="recordsData"
-      class="grid grid-cols-[auto_auto_1fr_1fr] gap-1"
+      :value="recordsData.records"
+      size="small"
     >
-      <DocSegment
-        v-for="record in recordsData.records"
-        :key="record.id"
-        :row-number="!toggleSimilar ? record.id : Number((record as TranslationMemoryRecordWithSimilarity).similarity.toPrecision(2))"
-        :source="record.source"
-        :target="record.target"
+      <Column
+        :field="
+          (record: TranslationMemoryRecordWithSimilarity) =>
+            toggleSimilar
+              ? record.similarity.toPrecision(2)
+              : record.id.toString()
+        "
+        :header="toggleSimilar ? 'Similarity' : 'ID'"
+        header-style="10%"
       />
-    </div>
+      <Column
+        field="source"
+        header="Source"
+        header-style="width: 45%"
+      />
+      <Column
+        field="target"
+        header="Target"
+        header-style="width: 45%"
+      />
+    </DataTable>
+    <Paginator
+      v-if="recordsData && recordsData?.records.length"
+      :rows="100"
+      :total-records="recordsData.total_records"
+      :first="page * 100"
+      @page="(event) => updatePage(event.page)"
+    />
   </div>
 </template>
