@@ -12,7 +12,7 @@ export const useProjects = defineQuery(() => {
     query: async () => {
       return await listProjects()
     },
-    placeholderData: <T>(prevData: T) => prevData,
+    placeholderData: (prevData) => prevData,
   })
   return data
 })

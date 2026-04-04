@@ -48,7 +48,7 @@ const {
 } = useQuery({
   key: () => ['document', documentId.value],
   query: () => getDoc(documentId.value),
-  placeholderData: <T,>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 watch(document, (newVal) => {
@@ -114,7 +114,7 @@ const {data: recordsData, refetch: refetchRecords} = useQuery({
   },
   // be cautious as incorrect changes here will trigger a lot of updates
   enabled: () => documentReady.value,
-  placeholderData: <T,>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const recordsCount = computed(() => recordsData.value?.total_records)

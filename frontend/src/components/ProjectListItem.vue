@@ -28,7 +28,7 @@ const {data: detailedInfo, status} = useQuery({
     return await retrieveProject(project.id)
   },
   enabled: () => collapsed.value === false,
-  placeholderData: <T,>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const queryCache = useQueryCache()

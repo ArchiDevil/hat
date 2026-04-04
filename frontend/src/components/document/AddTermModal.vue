@@ -45,7 +45,7 @@ const {data: glossaries, isLoading: isGlossariesLoading} = useQuery({
     return (await getProjectGlossaries(projectId)).glossaries
   },
   enabled: () => model.value === true,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const clearData = () => {
@@ -83,7 +83,7 @@ const {data: foundTerms} = useQuery({
       .records,
   enabled: () =>
     debouncedSearch.value.length > 2 && selectedGlossary.value !== undefined,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const creationDisabled = computed(

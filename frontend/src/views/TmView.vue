@@ -36,7 +36,7 @@ const documentId = computed(() => Number(route.params.id))
 const {data: document} = useQuery({
   key: () => ['tm', documentId.value],
   query: () => getMemory(documentId.value),
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const page = computed(() => {
@@ -85,7 +85,7 @@ const {data: recordsData} = useQuery({
     }
   },
   enabled: () => document.value !== undefined,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
   staleTime: 600 * 1000,
 })
 

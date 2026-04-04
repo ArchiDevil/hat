@@ -56,7 +56,7 @@ const {data: foundTerms} = useQuery({
   query: async () =>
     (await listRecords(glossaryId, 0, debouncedSearch.value)).records,
   enabled: () => debouncedSearch.value.length > 2,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 </script>
 

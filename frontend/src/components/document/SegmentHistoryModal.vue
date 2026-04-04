@@ -55,7 +55,7 @@ const {data: history, status: historyStatus} = useQuery({
   key: () => ['history', props.recordId],
   query: async () => (await getSegmentHistory(props.recordId)).history,
   enabled: () => props.show,
-  placeholderData: <T,>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const formatTimestamp = (timestamp: string) => {

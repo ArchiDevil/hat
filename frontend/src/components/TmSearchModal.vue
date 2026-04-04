@@ -67,7 +67,7 @@ const {data: searchResults, isLoading} = useQuery({
   },
   enabled: () =>
     (modalVisible.value ?? false) && debouncedSearch.value.trim().length > 0,
-  placeholderData: <T>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const hasResults = computed(() => {

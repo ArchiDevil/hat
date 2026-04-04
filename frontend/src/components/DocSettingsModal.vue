@@ -32,7 +32,7 @@ const {data: document} = useQuery({
     return await getDoc(documentId)
   },
   enabled: () => modalVisible.value == true,
-  placeholderData: <T,>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
 })
 
 const {data: projects} = useProjects()

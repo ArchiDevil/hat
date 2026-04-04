@@ -60,7 +60,7 @@ const {data: substitutions} = useQuery({
     return [...memorySubs, ...glossarySubs]
   },
   enabled: () => currentSegmentId !== undefined,
-  placeholderData: <T,>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
   staleTime: 30 * 1000,
 })
 

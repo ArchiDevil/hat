@@ -11,7 +11,7 @@ export const useTranslationMemories = defineQuery(() => {
     query: async () => {
       return await getMemories()
     },
-    placeholderData: <T>(prevData: T) => prevData,
+    placeholderData: (prevData) => prevData,
   })
   return data
 })

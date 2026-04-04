@@ -30,7 +30,7 @@ const {data, isLoading} = useQuery({
     return await getComments(props.recordId)
   },
   enabled: () => props.recordId !== -1,
-  placeholderData: <T,>(prevData: T) => prevData,
+  placeholderData: (prevData) => prevData,
   staleTime: 60 * 1000,
 })
 
