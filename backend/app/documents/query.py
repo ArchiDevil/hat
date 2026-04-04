@@ -129,7 +129,7 @@ class GenericDocsQuery:
         page: int,
         page_records=100,
         filters: DocumentRecordFilter | None = None,
-    ) -> Iterable[Row[tuple[DocumentRecord, int, bool]]]:
+    ) -> Iterable[Row[tuple[int, str, str, bool, int, int, bool]]]:
         # Subquery to count repetitions for each source text within the document
         repetitions_subquery = (
             select(
@@ -151,26 +151,38 @@ class GenericDocsQuery:
             .subquery()
         )
 
+        # The base query with row numbers
+        base_subquery = (
+            select(
+                DocumentRecord.id,
+                DocumentRecord.source,
+                DocumentRecord.target,
+                DocumentRecord.approved,
+                func.row_number().over(order_by=DocumentRecord.id).label("row_number"),
+            )
+            .filter(DocumentRecord.document_id == doc.id)
+            .subquery()
+        )
+
         # Build the base query
         query = (
             select(
-                DocumentRecord,
+                *base_subquery.c._all_columns,
                 func.coalesce(repetitions_subquery.c.repetitions_count, 0).label(
                     "repetitions_count"
                 ),
-                case(
-                    (func.coalesce(comments_subquery.c.comments_count, 0) > 0, True),
-                    else_=False,
-                ).label("has_comments"),
+                (func.coalesce(comments_subquery.c.comments_count, 0) > 0).label(
+                    "has_comments"
+                ),
             )
-            .filter(DocumentRecord.document_id == doc.id)
+            .select_from(base_subquery)
             .outerjoin(
                 repetitions_subquery,
-                DocumentRecord.source == repetitions_subquery.c.source,
+                base_subquery.c.source == repetitions_subquery.c.source,
             )
             .outerjoin(
                 comments_subquery,
-                DocumentRecord.id == comments_subquery.c.record_id,
+                base_subquery.c.id == comments_subquery.c.record_id,
             )
         )
 
@@ -180,22 +192,24 @@ class GenericDocsQuery:
 
             if filters.source_filter:
                 filter_conditions.append(
-                    DocumentRecord.source.ilike(f"%{filters.source_filter}%")
+                    base_subquery.c.source.ilike(f"%{filters.source_filter}%")
                 )
 
             if filters.target_filter:
                 filter_conditions.append(
-                    DocumentRecord.target.ilike(f"%{filters.target_filter}%")
+                    base_subquery.c.target.ilike(f"%{filters.target_filter}%")
                 )
 
             if filter_conditions:
                 query = query.filter(and_(*filter_conditions))
 
-        return self.__db.execute(
-            query.order_by(DocumentRecord.id)
+        query = (
+            query.order_by(base_subquery.c.id)
             .offset(page_records * page)
             .limit(page_records)
-        ).all()
+        )
+
+        return self.__db.execute(query).all()
 
     def update_document(
         self, doc_id: int, name: str | None, project_id: int | None

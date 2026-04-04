@@ -131,12 +131,12 @@ const header = computed(() => {
       <div class="grid grid-cols-[auto_auto_1fr_1fr] gap-1">
         <DocSegment
           v-for="record in searchResults?.records"
-          :id="
+          :key="record.id"
+          :row-number="
             !toggleSimilar
               ? record.id
               : (record as TranslationMemoryRecordWithSimilarity).similarity
           "
-          :key="record.id"
           :source="record.source"
           :target="record.target"
         />

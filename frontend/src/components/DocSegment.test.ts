@@ -3,10 +3,10 @@ import {describe, it, expect} from 'vitest'
 import DocSegment from './DocSegment.vue'
 
 describe('DocSegment', () => {
-  it('renders segment ID correctly', () => {
+  it('renders segment number correctly', () => {
     const wrapper = mount(DocSegment, {
       props: {
-        id: 123,
+        rowNumber: 123,
         source: 'Test source',
         target: 'Test target',
         editable: true,
@@ -19,7 +19,7 @@ describe('DocSegment', () => {
   it('shows repetition dot when repetitionsCount > 1 and editable', () => {
     const wrapper = mount(DocSegment, {
       props: {
-        id: 123,
+        rowNumber: 1,
         source: 'Test source',
         target: 'Test target',
         editable: true,
@@ -35,7 +35,7 @@ describe('DocSegment', () => {
   it('does not show repetition dot when repetitionsCount = 1', () => {
     const wrapper = mount(DocSegment, {
       props: {
-        id: 123,
+        rowNumber: 1,
         source: 'Test source',
         target: 'Test target',
         editable: true,
@@ -50,7 +50,7 @@ describe('DocSegment', () => {
   it('does not show repetition dot when not editable', () => {
     const wrapper = mount(DocSegment, {
       props: {
-        id: 123,
+        rowNumber: 1,
         source: 'Test source',
         target: 'Test target',
         editable: false,
@@ -65,7 +65,7 @@ describe('DocSegment', () => {
   it('does not show repetition dot when repetitionsCount is undefined', () => {
     const wrapper = mount(DocSegment, {
       props: {
-        id: 123,
+        rowNumber: 1,
         source: 'Test source',
         target: 'Test target',
         editable: true,
