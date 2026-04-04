@@ -14,7 +14,11 @@ export const useUserStore = defineStore('user', {
   actions: {
     async fetchCurrentUser() {
       this.currentUser = await getCurrentUser()
-      window.umami.identify(this.currentUser.email)
+
+      // it might be not loaded yet
+      const umami = window.umami
+      umami?.identify(this.currentUser.email)
+
       this.lastTimeRequested = new Date()
     },
     async logout() {

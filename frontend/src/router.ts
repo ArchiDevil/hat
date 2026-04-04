@@ -48,6 +48,7 @@ export const getRouter = () => {
       try {
         await store.fetchCurrentUser()
       } catch (e) {
+        console.error(e)
         const err = e as MandeError
         if (err.response.status == 401) {
           await router.push({
