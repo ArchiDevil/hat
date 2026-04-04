@@ -53,6 +53,7 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "approved": False,
             "repetitions_count": 1,
             "has_comments": False,
+            "row_number": 1,
         },
         {
             "id": 2,
@@ -61,6 +62,7 @@ def test_can_get_doc_records(user_logged_client: TestClient, session: Session):
             "approved": True,
             "repetitions_count": 1,
             "has_comments": False,
+            "row_number": 2,
         },
     ]
 
@@ -103,7 +105,78 @@ def test_doc_records_returns_second_page(
         "approved": False,
         "repetitions_count": 1,
         "has_comments": False,
+        "row_number": 101,
     }
+
+
+def test_doc_records_correct_row_records_for_multiple_docs(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        s.add_all(
+            [
+                Document(
+                    name="test_doc.txt",
+                    type=DocumentType.txt,
+                    records=[
+                        DocumentRecord(
+                            source="Regional Effects",
+                            target="Translation",
+                        ),
+                        DocumentRecord(
+                            source="User Interface", target="UI", approved=True
+                        ),
+                    ],
+                    processing_status="pending",
+                    created_by=1,
+                    project_id=p.id,
+                ),
+                Document(
+                    name="test_doc2.txt",
+                    type=DocumentType.txt,
+                    records=[
+                        DocumentRecord(
+                            source="Regional Effects",
+                            target="Translation",
+                        ),
+                        DocumentRecord(
+                            source="User Interface", target="UI", approved=True
+                        ),
+                    ],
+                    processing_status="pending",
+                    created_by=1,
+                    project_id=p.id,
+                ),
+            ]
+        )
+        s.commit()
+
+    response = user_logged_client.get("/document/2/records")
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["page"] == 0
+    assert response_data["total_records"] == 2
+    assert response_data["records"] == [
+        {
+            "id": 3,
+            "source": "Regional Effects",
+            "target": "Translation",
+            "approved": False,
+            "repetitions_count": 1,
+            "has_comments": False,
+            "row_number": 1,
+        },
+        {
+            "id": 4,
+            "source": "User Interface",
+            "target": "UI",
+            "approved": True,
+            "repetitions_count": 1,
+            "has_comments": False,
+            "row_number": 2,
+        },
+    ]
 
 
 def test_doc_records_returns_empty_for_too_large_page(
@@ -468,11 +541,11 @@ def test_doc_records_source_filter(user_logged_client: TestClient, session: Sess
     records_response = response_data["records"]
     assert len(records_response) == 2
 
-    # Should return records with "Hello World" and "Hello Universe"
-    sources = [record["source"] for record in records_response]
-    assert "Hello World" in sources
-    assert "Hello Universe" in sources
-    assert "Goodbye" not in sources
+    assert records_response[0]["source"] == "Hello World"
+    assert records_response[1]["source"] == "Hello Universe"
+
+    assert records_response[0]["row_number"] == 1
+    assert records_response[1]["row_number"] == 3
 
 
 def test_doc_records_target_filter(user_logged_client: TestClient, session: Session):

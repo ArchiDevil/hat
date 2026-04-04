@@ -357,20 +357,10 @@ class DocumentService:
         total_records = self.__query.get_document_records_count_filtered(doc, filters)
         records = self.__query.get_document_records_paged(doc, page, filters=filters)
 
-        record_list = [
-            doc_schema.DocumentRecord(
-                id=record.id,
-                source=record.source,
-                target=record.target,
-                approved=record.approved,
-                repetitions_count=repetitions_count,
-                has_comments=has_comments,
-            )
-            for record, repetitions_count, has_comments in records
-        ]
-
         return doc_schema.DocumentRecordListResponse(
-            records=record_list,
+            records=[
+                doc_schema.DocumentRecord.model_validate(record) for record in records
+            ],
             page=page,
             total_records=total_records,
         )

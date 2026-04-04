@@ -35,6 +35,9 @@ class DocumentRecord(Identified):
     approved: bool
     repetitions_count: int
     has_comments: bool
+    row_number: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DocumentRecordListResponse(BaseModel):
