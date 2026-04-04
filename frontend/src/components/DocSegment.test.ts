@@ -3,10 +3,10 @@ import {describe, it, expect} from 'vitest'
 import DocSegment from './DocSegment.vue'
 
 describe('DocSegment', () => {
-  it('renders segment ID correctly', () => {
+  it('renders segment number correctly', () => {
     const wrapper = mount(DocSegment, {
       props: {
-        rowNumber: 1,
+        rowNumber: 123,
         source: 'Test source',
         target: 'Test target',
         editable: true,
