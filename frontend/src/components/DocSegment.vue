@@ -6,7 +6,7 @@ import Button from 'primevue/button'
 import {cleanableDebounce} from '../utilities/utils'
 
 const props = defineProps<{
-  id: number
+  rowNumber: number
   source: string
   target: string
   focused?: boolean
@@ -93,7 +93,7 @@ const showHistory = () => {
     @click="enableRepeat"
   />
   <div class="p-2 text-end relative">
-    {{ id }}
+    {{ rowNumber }}
   </div>
   <div
     class="border rounded-border border-surface p-2 bg-white h-full h-min-11 wrap-break-word"

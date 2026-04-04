@@ -316,8 +316,8 @@ const percentage = computed(() =>
           >
             <DocSegment
               v-for="(record, idx) in recordsData?.records"
-              :id="record.id"
               :key="record.id"
+              :row-number="record.row_number"
               editable
               :source="record.source"
               :target="record.target"
