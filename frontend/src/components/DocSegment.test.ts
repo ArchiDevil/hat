@@ -9,7 +9,6 @@ describe('DocSegment', () => {
         rowNumber: 123,
         source: 'Test source',
         target: 'Test target',
-        editable: true,
       },
     })
 
@@ -22,7 +21,6 @@ describe('DocSegment', () => {
         rowNumber: 1,
         source: 'Test source',
         target: 'Test target',
-        editable: true,
         repetitionsCount: 3,
       },
     })
@@ -38,23 +36,7 @@ describe('DocSegment', () => {
         rowNumber: 1,
         source: 'Test source',
         target: 'Test target',
-        editable: true,
         repetitionsCount: 1,
-      },
-    })
-
-    const dot = wrapper.find('.pi')
-    expect(dot.classes()).toContain('opacity-0')
-  })
-
-  it('does not show repetition dot when not editable', () => {
-    const wrapper = mount(DocSegment, {
-      props: {
-        rowNumber: 1,
-        source: 'Test source',
-        target: 'Test target',
-        editable: false,
-        repetitionsCount: 3,
       },
     })
 
@@ -68,7 +50,6 @@ describe('DocSegment', () => {
         rowNumber: 1,
         source: 'Test source',
         target: 'Test target',
-        editable: true,
       },
     })
 
