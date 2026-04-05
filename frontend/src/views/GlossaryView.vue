@@ -1,51 +1,68 @@
 <script setup lang="ts">
-import {computed, onMounted, ref, watch} from 'vue'
-import {storeToRefs} from 'pinia'
+import {computed, ref, watch} from 'vue'
+import {useQuery, useQueryCache} from '@pinia/colada'
 import {useRoute, useRouter} from 'vue-router'
 
-import Paginator from 'primevue/paginator'
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import IconField from 'primevue/iconfield'
-import InputIcon from 'primevue/inputicon'
-import InputText from 'primevue/inputtext'
+import {
+  Button,
+  Column,
+  DataTable,
+  IconField,
+  InputIcon,
+  InputText,
+  Paginator,
+} from 'primevue'
 
 import AddTermDialog from '../components/glossary/AddTermDialog.vue'
+import EditTermDialog from '../components/glossary/EditTermDialog.vue'
 import PageTitle from '../components/PageTitle.vue'
 import PageNav from '../components/PageNav.vue'
 
 import {GlossaryRecordSchema} from '../client/schemas/GlossaryRecordSchema'
-import EditTermDialog from '../components/glossary/EditTermDialog.vue'
-import {useCurrentGlossaryStore} from '../stores/current_glossary'
 import {debounce} from '../utilities/utils'
 import {isAdmin} from '../utilities/auth'
-
-const store = useCurrentGlossaryStore()
-const {glossary, records} = storeToRefs(store)
+import {GLOSSARY_KEYS} from '../queries/glossaries'
+import {listRecords, retrieveGlossary} from '../client/services/GlossaryService'
 
 const route = useRoute()
-const glossaryId = computed(() => Number(route.params.id))
-
-const loadGlossary = async () => {
-  await store.loadGlossary(glossaryId.value)
-  await store.loadRecords(page.value, search.value.trim())
-}
-
-watch(glossaryId, async () => {
-  await loadGlossary()
-})
-
-onMounted(() => loadGlossary())
-
-const docName = computed(
-  () =>
-    `${glossary.value?.name} (ID: ${glossaryId.value}): ${glossary.value?.records_count} records`
-)
-
+const id = computed(() => Number(route.params.id))
 const page = computed(() => {
   return Number(route.query.page ?? '0')
 })
+
+const cache = useQueryCache()
+const debouncedSearch = ref('')
+
+const {data: glossary} = useQuery({
+  key: () => GLOSSARY_KEYS.byId(id.value),
+  query: async () => {
+    return await retrieveGlossary(id.value)
+  },
+  placeholderData: (prevData) => prevData,
+})
+
+const {data: records} = useQuery({
+  key: () => {
+    if (debouncedSearch.value.trim().length > 0) {
+      return GLOSSARY_KEYS.recordsWithSearch(
+        id.value,
+        page.value,
+        debouncedSearch.value.trim()
+      )
+    } else {
+      return GLOSSARY_KEYS.recordsByIdPaged(id.value, page.value)
+    }
+  },
+  query: async () => {
+    return await listRecords(id.value, page.value, debouncedSearch.value.trim())
+  },
+  placeholderData: (prevData) => prevData,
+})
+
+const docName = computed(
+  () =>
+    `${glossary.value?.name} (ID: ${id.value}): ${glossary.value?.records_count} records`
+)
 
 const router = useRouter()
 const updatePage = async (page: number) => {
@@ -56,22 +73,11 @@ const updatePage = async (page: number) => {
   })
 }
 
-watch(page, async () => {
-  if (!glossary.value) {
-    return
-  }
-  await store.loadRecords(page.value, search.value.trim())
-})
-
 const search = ref('')
 const searchRecords = debounce(() => {
   window.umami.track('glossary-search')
-
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  store.loadRecords(page.value, search.value.trim())
-
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  updatePage(0)
+  debouncedSearch.value = search.value
+  void updatePage(0)
 }, 500)
 
 watch(search, () => {
@@ -107,9 +113,9 @@ const currentRecordId = ref<number>(-1)
       </IconField>
     </div>
     <Paginator
-      v-if="records && records?.length"
+      v-if="records && records?.records.length"
       :rows="100"
-      :total-records="store.filteredRecordsCount"
+      :total-records="records?.total_rows"
       :first="page * 100"
       @page="updatePage($event.page)"
     />
@@ -118,7 +124,7 @@ const currentRecordId = ref<number>(-1)
       class="flex flex-col gap-1"
     >
       <DataTable
-        :value="records"
+        :value="records.records"
         size="small"
       >
         <Column
@@ -170,9 +176,9 @@ const currentRecordId = ref<number>(-1)
       </DataTable>
     </div>
     <Paginator
-      v-if="records && records?.length"
+      v-if="records && records?.records.length"
       :rows="100"
-      :total-records="store.filteredRecordsCount"
+      :total-records="records?.total_rows"
       :first="page * 100"
       @page="updatePage($event.page)"
     />
@@ -181,14 +187,16 @@ const currentRecordId = ref<number>(-1)
       v-if="glossary !== undefined"
       v-model="addTermDialogVisible"
       :glossary-id="glossary?.id"
-      @close="loadGlossary"
+      @close="cache.invalidateQueries({key: GLOSSARY_KEYS.recordsById(id)})"
     />
 
     <EditTermDialog
       v-if="glossary !== undefined"
       v-model="editTermDialogVisible"
+      :glossary-id="id"
+      :current-page="page"
       :record-id="currentRecordId"
-      @close="loadGlossary"
+      @close="cache.invalidateQueries({key: GLOSSARY_KEYS.recordsById(id)})"
     />
   </div>
 </template>

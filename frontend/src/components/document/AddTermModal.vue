@@ -18,6 +18,7 @@ import {
 import {GlossaryResponse} from '../../client/schemas/GlossaryResponse'
 import {debounce} from '../../utilities/utils'
 import {getProjectGlossaries} from '../../client/services/ProjectsService'
+import {GLOSSARY_KEYS} from '../../queries/glossaries'
 
 const {projectId} = defineProps<{
   projectId: number
@@ -73,11 +74,12 @@ const submit = async () => {
 }
 
 const {data: foundTerms} = useQuery({
-  key: () => [
-    'glossary-records',
-    selectedGlossary.value?.id ?? -1,
-    debouncedSearch.value,
-  ],
+  key: () =>
+    GLOSSARY_KEYS.recordsWithSearch(
+      selectedGlossary.value?.id ?? -1,
+      0,
+      debouncedSearch.value
+    ),
   query: async () =>
     (await listRecords(selectedGlossary.value!.id, 0, debouncedSearch.value))
       .records,

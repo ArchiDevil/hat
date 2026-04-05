@@ -3,14 +3,15 @@ import {ref, watchEffect} from 'vue'
 import {Button, Dialog, InputText} from 'primevue'
 import {
   deleteGlossaryRecord,
+  listRecords,
   updateGlossaryRecord,
 } from '../../client/services/GlossaryService'
-import {storeToRefs} from 'pinia'
-import {useCurrentGlossaryStore} from '../../stores/current_glossary'
+import {useQuery} from '@pinia/colada'
+import {GLOSSARY_KEYS} from '../../queries/glossaries'
 
-const {records} = storeToRefs(useCurrentGlossaryStore())
-
-const {recordId} = defineProps<{
+const {glossaryId, currentPage, recordId} = defineProps<{
+  glossaryId: number
+  currentPage: number
   recordId: number
 }>()
 
@@ -24,8 +25,17 @@ const source = ref('')
 const target = ref('')
 const comment = ref('')
 
+const {data: records} = useQuery({
+  key: () => GLOSSARY_KEYS.recordsByIdPaged(glossaryId, currentPage),
+  query: () => {
+    return listRecords(glossaryId, currentPage)
+  },
+})
+
 watchEffect(() => {
-  const currentRecord = records.value.find((r) => r.id == recordId)
+  if (!records.value) return
+
+  const currentRecord = records.value.records.find((r) => r.id == recordId)
   if (!currentRecord) return
 
   source.value = currentRecord.source

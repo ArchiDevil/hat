@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
 import {Button, Panel} from 'primevue'
+import {useQueryCache} from '@pinia/colada'
 
 import {useTmStore} from '../stores/tm'
-import {useGlossaryStore} from '../stores/glossary'
+import {GLOSSARY_KEYS, useGlossaries} from '../queries/glossaries'
 
 import TmRecord from '../components/TmRecord.vue'
 import PageNav from '../components/PageNav.vue'
@@ -19,7 +20,9 @@ import ProjectSettingsModal from '../components/ProjectSettingsModal.vue'
 import {isAdmin} from '../utilities/auth'
 
 const tmStore = useTmStore()
-const glossaryStore = useGlossaryStore()
+
+const queryCache = useQueryCache()
+const {data: glossaries} = useGlossaries()
 
 const docSettingsVisible = ref(false)
 const selectedDocumentId = ref<number | undefined>(undefined)
@@ -36,7 +39,6 @@ const uploadXliffVisible = ref(false)
 
 onMounted(async () => {
   await tmStore.fetchMemories()
-  await glossaryStore.fetchGlossaries()
 })
 </script>
 
@@ -93,13 +95,13 @@ onMounted(async () => {
       <Panel header="Glossaries">
         <GlossaryUploadingDialog
           v-if="isAdmin()"
-          @uploaded="glossaryStore.fetchGlossaries()"
+          @uploaded="queryCache.invalidateQueries({key: GLOSSARY_KEYS.root})"
         />
         <GlossaryRecord
-          v-for="file in glossaryStore.glossaries"
+          v-for="file in glossaries"
           :key="file.id"
           :file="file"
-          @update="glossaryStore.fetchGlossaries()"
+          @update="queryCache.invalidateQueries({key: GLOSSARY_KEYS.root})"
         />
       </Panel>
 

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import {ref, watchEffect} from 'vue'
 import {Button, Dialog, InputText} from 'primevue'
-import {useGlossaryStore} from '../../stores/glossary'
-import {isAdmin} from '../../utilities/auth'
 
-const store = useGlossaryStore()
+import {isAdmin} from '../../utilities/auth'
+import {useGlossaries} from '../../queries/glossaries'
+import {
+  deleteGlossary,
+  updateGlossary,
+} from '../../client/services/GlossaryService'
 
 const props = defineProps<{
   glossaryId: number
@@ -14,9 +17,11 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const {data: glossaries} = useGlossaries()
+
 const name = ref('')
 watchEffect(() => {
-  const glossary = store.glossaries.find((g) => g.id == props.glossaryId)
+  const glossary = glossaries.value?.find((g) => g.id == props.glossaryId)
   if (!glossary) return
 
   name.value = glossary.name
@@ -25,10 +30,10 @@ watchEffect(() => {
 const model = defineModel<boolean>()
 
 const busyDelete = ref(false)
-const deleteGlossary = async () => {
+const remove = async () => {
   try {
     busyDelete.value = true
-    await store.delete(props.glossaryId)
+    await deleteGlossary(props.glossaryId)
     model.value = false
   } catch (error) {
     console.error(error)
@@ -40,10 +45,10 @@ const deleteGlossary = async () => {
 }
 
 const busyUpdate = ref(false)
-const updateGlossary = async () => {
+const update = async () => {
   try {
     busyUpdate.value = true
-    await store.update(props.glossaryId, {name: name.value})
+    await updateGlossary(props.glossaryId, {name: name.value})
   } catch (error) {
     console.error(error)
   } finally {
@@ -87,7 +92,7 @@ const updateGlossary = async () => {
           severity="danger"
           :loading="busyDelete"
           :disabled="busyDelete || busyUpdate"
-          @click="deleteGlossary"
+          @click="remove"
         />
         <Button
           type="button"
@@ -101,7 +106,7 @@ const updateGlossary = async () => {
           label="Save"
           :loading="busyUpdate"
           :disabled="busyDelete || busyUpdate"
-          @click="updateGlossary"
+          @click="update"
         />
       </div>
     </div>

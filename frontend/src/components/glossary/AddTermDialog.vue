@@ -8,6 +8,7 @@ import {
   listRecords,
 } from '../../client/services/GlossaryService'
 import {debounce} from '../../utilities/utils'
+import {GLOSSARY_KEYS} from '../../queries/glossaries'
 
 const {glossaryId} = defineProps<{
   glossaryId: number
@@ -52,7 +53,8 @@ const submit = async () => {
 }
 
 const {data: foundTerms} = useQuery({
-  key: () => ['glossary-records', glossaryId, debouncedSearch.value],
+  key: () =>
+    GLOSSARY_KEYS.recordsWithSearch(glossaryId, 0, debouncedSearch.value),
   query: async () =>
     (await listRecords(glossaryId, 0, debouncedSearch.value)).records,
   enabled: () => debouncedSearch.value.length > 2,

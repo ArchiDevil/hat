@@ -6,7 +6,7 @@ import {User} from '../src/client/schemas/User'
 export const defaultUser: User = {
   id: 12,
   email: 'test@example.com',
-  role: 'user',
+  role: 'admin',
   username: 'test',
   disabled: false,
 }

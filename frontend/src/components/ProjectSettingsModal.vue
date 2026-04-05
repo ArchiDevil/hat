@@ -3,7 +3,7 @@ import {ref, watchEffect, computed} from 'vue'
 import {useQueryCache} from '@pinia/colada'
 import {Button, Dialog, InputText, Listbox, Select} from 'primevue'
 
-import {useGlossaryStore} from '../stores/glossary'
+import {useGlossaries} from '../queries/glossaries'
 import {PROJECT_KEYS} from '../queries/projects'
 import {TM_KEYS, useTranslationMemories} from '../queries/tms'
 
@@ -21,9 +21,9 @@ const {projectId} = defineProps<{
 }>()
 
 const busy = ref(false)
-const glossaryStore = useGlossaryStore()
 
 const {data: tms} = useTranslationMemories()
+const {data: glossaries} = useGlossaries()
 
 const modalVisible = defineModel<boolean>()
 const chosenTms = ref<{id: number; name: string}[]>([])
@@ -59,7 +59,9 @@ const resetTmState = () => {
 
 const chosenGlossaries = ref<{id: number; name: string}[]>([])
 const glossaryOptions = computed(() => {
-  return glossaryStore.glossaries.map((glossary) => {
+  if (!glossaries.value) return []
+
+  return glossaries.value?.map((glossary) => {
     return {id: glossary.id, name: glossary.name}
   })
 })

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {MandeError} from 'mande'
+import {useQueryCache} from '@pinia/colada'
+import {FileUpload, FileUploadUploaderEvent} from 'primevue'
 
-import {useGlossaryStore} from '../../stores/glossary'
-
-import FileUpload, {FileUploadUploaderEvent} from 'primevue/fileupload'
+import {createGlossaryFromFile} from '../../client/services/GlossaryService'
 
 const emit = defineEmits<{
   uploaded: []
@@ -12,6 +12,7 @@ const emit = defineEmits<{
 
 const uploading = ref(false)
 const status = ref('')
+const queryCache = useQueryCache()
 
 const removeFileCb = ref<(idx: number) => void>()
 const saveCallback = (removeFileCallback: (idx: number) => void) => {
@@ -27,7 +28,10 @@ const uploadFile = async (event: FileUploadUploaderEvent) => {
   try {
     uploading.value = true
     status.value = 'Uploading...'
-    await useGlossaryStore().create(files[0].name, files[0])
+    await createGlossaryFromFile(files[0].name, {file: files[0]})
+    await queryCache.invalidateQueries({
+      key: [],
+    })
     uploading.value = false
     status.value = 'Uploading finished. You may choose another file.'
     if (removeFileCb.value) removeFileCb.value(0)

@@ -19,12 +19,15 @@ import {GlossaryRecordUpdate} from '../src/client/schemas/GlossaryRecordUpdate'
 import {GlossaryResponse} from '../src/client/schemas/GlossaryResponse'
 import {GlossarySchema} from '../src/client/schemas/GlossarySchema'
 
-const glossarySegments: GlossaryRecordSchema[] = new Array(125)
-  .fill(null)
-  .map((_, idx) => {
+const genSegments = (
+  startId: number,
+  glossaryId: number,
+  count: number
+): GlossaryRecordSchema[] => {
+  return new Array(count).fill(null).map((_, idx) => {
     return {
-      id: idx + 1,
-      glossary_id: 51,
+      id: startId + idx,
+      glossary_id: glossaryId,
       created_at: faker.date.recent().toISOString().split('.')[0],
       updated_at: faker.date.recent().toISOString().split('.')[0],
       source: faker.commerce.productName(),
@@ -33,8 +36,11 @@ const glossarySegments: GlossaryRecordSchema[] = new Array(125)
       created_by_user: defaultUser,
     }
   })
+}
 
-export const glossaries: GlossaryResponse[] = [
+export const glossaries: (GlossaryResponse & {
+  segments: GlossaryRecordSchema[]
+})[] = [
   {
     id: 51,
     name: 'Some glossary',
@@ -43,7 +49,8 @@ export const glossaries: GlossaryResponse[] = [
     processing_status: 'done',
     upload_time: faker.date.recent().toISOString().split('.')[0],
     created_by_user: defaultUser,
-    records_count: glossarySegments.length,
+    segments: genSegments(1, 51, 125),
+    records_count: 125,
   },
   {
     id: 52,
@@ -53,7 +60,8 @@ export const glossaries: GlossaryResponse[] = [
     processing_status: 'done',
     upload_time: faker.date.recent().toISOString().split('.')[0],
     created_by_user: defaultUser,
-    records_count: glossarySegments.length,
+    segments: genSegments(1000, 52, 280),
+    records_count: 280,
   },
 ]
 
@@ -63,52 +71,57 @@ export const glossaryMocks = [
   ),
   http.get<{id: string}>('http://localhost:8000/glossary/:id', ({params}) => {
     const idx = glossaries.findIndex((g) => g.id === Number(params.id))
-    if (idx !== -1) {
-      return HttpResponse.json<AwaitedReturnType<typeof retrieveGlossary>>(
-        glossaries.at(idx)
-      )
-    } else {
+    if (idx === -1) {
       return new HttpResponse(null, {status: 404})
     }
+
+    return HttpResponse.json<AwaitedReturnType<typeof retrieveGlossary>>(
+      glossaries.at(idx)
+    )
   }),
   http.put<{id: string}, GlossarySchema>(
     'http://localhost:8000/glossary/:id',
     async ({request, params}) => {
       const idx = glossaries.findIndex((g) => g.id === Number(params.id))
-      if (idx !== -1) {
-        const json = await request.json()
-        glossaries.at(idx)!.name = json.name
-        return HttpResponse.json<AwaitedReturnType<typeof deleteGlossary>>({
-          message: 'Ok',
-        })
-      } else {
+      if (idx === -1) {
         return new HttpResponse(null, {status: 404})
       }
+
+      const json = await request.json()
+      glossaries.at(idx)!.name = json.name
+      return HttpResponse.json<AwaitedReturnType<typeof deleteGlossary>>({
+        message: 'Ok',
+      })
     }
   ),
   http.delete<{id: string}>(
     'http://localhost:8000/glossary/:id',
     ({params}) => {
       const idx = glossaries.findIndex((g) => g.id === Number(params.id))
-      if (idx !== -1) {
-        glossaries.splice(idx)
-        return HttpResponse.json<AwaitedReturnType<typeof deleteGlossary>>({
-          message: 'Ok',
-        })
-      } else {
+      if (idx === -1) {
         return new HttpResponse(null, {status: 404})
       }
+
+      glossaries.splice(idx)
+      return HttpResponse.json<AwaitedReturnType<typeof deleteGlossary>>({
+        message: 'Ok',
+      })
     }
   ),
   http.get<{id: string}>(
     'http://localhost:8000/glossary/:id/records',
-    ({request}) => {
+    ({request, params}) => {
       const searchParams = new URL(request.url).searchParams
       const page = Number(searchParams.get('page') ?? '0')
       let search = searchParams.get('search')
       if (search == 'null' || search == 'undefined') search = ''
 
-      const records = glossarySegments
+      const glossary = glossaries.find((g) => g.id == parseInt(params.id))
+      if (!glossary) {
+        return new HttpResponse(null, {status: 404})
+      }
+
+      const records = glossary.segments
         .filter(
           (seg) =>
             seg.source.includes(search ?? '') ||
@@ -118,7 +131,7 @@ export const glossaryMocks = [
 
       return HttpResponse.json<AwaitedReturnType<typeof listRecords>>({
         records,
-        total_rows: records.length,
+        total_rows: search == '' ? glossary.segments.length : records.length,
       })
     }
   ),
@@ -127,9 +140,13 @@ export const glossaryMocks = [
     async ({request, params}) => {
       const json = await request.json()
 
-      // TODO: ideally it should be stored in a corresponding glossary
-      glossarySegments.push({
-        id: glossarySegments.at(-1)!.id + 1,
+      const glossary = glossaries.find((g) => g.id == parseInt(params.id))
+      if (!glossary) {
+        return new HttpResponse(null, {status: 404})
+      }
+
+      glossary.segments.push({
+        id: glossary.segments.at(-1)!.id + 1,
         created_at: '12',
         created_by_user: {
           id: 12,
@@ -142,55 +159,67 @@ export const glossaryMocks = [
         updated_at: '2024-12-03T12:31:22',
       })
       return HttpResponse.json<AwaitedReturnType<typeof createGlossaryRecord>>(
-        glossarySegments.at(-1)
+        glossary.segments.at(-1)
       )
     }
   ),
   http.put<{id: string}, GlossaryRecordUpdate>(
     'http://localhost:8000/glossary/records/:id',
     async ({request, params}) => {
-      const idx = glossarySegments.findIndex((s) => s.id == Number(params.id))
-      if (idx !== -1) {
-        const json = await request.json()
+      const id = parseInt(params.id)
+      const json = await request.json()
 
-        glossarySegments.at(idx)!.source = json.source
-        glossarySegments.at(idx)!.target = json.target
-        glossarySegments.at(idx)!.comment = json.comment
+      let found = false
+      for (const glossary of glossaries) {
+        const idx = glossary.segments.findIndex((s) => s.id == id)
+        if (idx !== -1) {
+          glossary.segments[idx].source = json.source
+          glossary.segments[idx].target = json.target
+          glossary.segments[idx].comment = json.comment
+          found = true
+        }
+      }
 
-        return HttpResponse.json<
-          AwaitedReturnType<typeof updateGlossaryRecord>
-        >({
-          id: glossarySegments.at(idx)!.id,
-          created_at: '12',
-          created_by_user: {
-            id: 12,
-            username: 'test',
-          },
-          glossary_id: Number(params.id),
-          comment: json.comment,
-          source: json.source,
-          target: json.target,
-          updated_at: '2024-12-03T12:31:22',
-        })
-      } else {
+      if (!found) {
         return new HttpResponse(null, {status: 404})
       }
+
+      return HttpResponse.json<AwaitedReturnType<typeof updateGlossaryRecord>>({
+        id: id,
+        created_at: '12',
+        created_by_user: {
+          id: 12,
+          username: 'test',
+        },
+        glossary_id: Number(params.id),
+        comment: json.comment,
+        source: json.source,
+        target: json.target,
+        updated_at: '2024-12-03T12:31:22',
+      })
     }
   ),
   http.delete<{id: string}>(
     'http://localhost:8000/glossary/records/:id',
     ({params}) => {
-      const idx = glossarySegments.findIndex((s) => s.id == Number(params.id))
-      if (idx !== -1) {
-        glossarySegments.splice(idx)
-        return HttpResponse.json<
-          AwaitedReturnType<typeof deleteGlossaryRecord>
-        >({
-          message: 'Ok',
-        })
-      } else {
+      const id = parseInt(params.id)
+
+      let found = false
+      for (const glossary of glossaries) {
+        const idx = glossary.segments.findIndex((s) => s.id == id)
+        if (idx !== -1) {
+          glossary.segments.splice(idx)
+          found = true
+        }
+      }
+
+      if (!found) {
         return new HttpResponse(null, {status: 404})
       }
+
+      return HttpResponse.json<AwaitedReturnType<typeof deleteGlossaryRecord>>({
+        message: 'Ok',
+      })
     }
   ),
 ]
