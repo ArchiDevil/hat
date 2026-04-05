@@ -9,9 +9,10 @@ import {
 import {useQuery} from '@pinia/colada'
 import {GLOSSARY_KEYS} from '../../queries/glossaries'
 
-const {glossaryId, currentPage, recordId} = defineProps<{
+const {glossaryId, currentPage, currentSearch, recordId} = defineProps<{
   glossaryId: number
   currentPage: number
+  currentSearch: string
   recordId: number
 }>()
 
@@ -26,7 +27,8 @@ const target = ref('')
 const comment = ref('')
 
 const {data: records} = useQuery({
-  key: () => GLOSSARY_KEYS.recordsByIdPaged(glossaryId, currentPage),
+  key: () =>
+    GLOSSARY_KEYS.recordsWithSearch(glossaryId, currentPage, currentSearch),
   query: () => {
     return listRecords(glossaryId, currentPage)
   },

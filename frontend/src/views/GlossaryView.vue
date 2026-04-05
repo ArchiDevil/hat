@@ -195,6 +195,7 @@ const currentRecordId = ref<number>(-1)
       v-model="editTermDialogVisible"
       :glossary-id="id"
       :current-page="page"
+      :current-search="debouncedSearch"
       :record-id="currentRecordId"
       @close="cache.invalidateQueries({key: GLOSSARY_KEYS.recordsById(id)})"
     />
