@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, useTemplateRef, watch} from 'vue'
 
-import Button from 'primevue/button'
+import {Button} from 'primevue'
 
 import {cleanableDebounce} from '../utilities/utils'
 
@@ -10,7 +10,6 @@ const props = defineProps<{
   source: string
   target: string
   focused?: boolean
-  editable?: boolean
   disabled?: boolean
   approved?: boolean
   repetitionsCount?: number
@@ -87,7 +86,7 @@ const showHistory = () => {
     :class="{
       'pi-arrow-circle-down': repeatEnabled,
       'pi-times-circle text-red-800': !repeatEnabled,
-      'opacity-0': !(editable && repetitionsCount && repetitionsCount > 1),
+      'opacity-0': !(repetitionsCount && repetitionsCount > 1),
     }"
     :title="repetitionTitle"
     @click="enableRepeat"
@@ -103,13 +102,11 @@ const showHistory = () => {
   </div>
   <div
     ref="targetInput"
-    class="border rounded-border border-surface p-2 bg-white h-full h-min-11"
+    class="border rounded-border border-surface p-2 bg-white h-full h-min-11 active:border-primary focus:border-primary focus:outline-hidden"
     :class="{
       'bg-surface-200': disabled ?? false,
-      'active:border-primary focus:border-primary focus:outline-hidden':
-        editable ?? false,
     }"
-    :contenteditable="editable"
+    contenteditable
     @input="
       () => {
         emit('startEdit')
@@ -121,10 +118,7 @@ const showHistory = () => {
   >
     {{ target }}
   </div>
-  <div
-    v-if="editable"
-    class="flex flex-row text-center self-start gap-2 pr-4 h-full"
-  >
+  <div class="flex flex-row text-center self-start gap-2 pr-4 h-full">
     <Button
       class="ml-auto"
       :icon="icon"

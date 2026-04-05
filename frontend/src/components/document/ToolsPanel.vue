@@ -43,16 +43,19 @@ const openTermModal = () => {
         v-model="sourceFilter"
         placeholder="Filter by source text..."
         class="w-72"
+        size="small"
       />
       <InputText
         v-model="targetFilter"
         placeholder="Filter by target text..."
         class="w-72"
+        size="small"
       />
       <Button
         icon="pi pi-eraser"
         label="Clear Filters"
         severity="secondary"
+        size="small"
         @click="
           () => {
             sourceFilter = ''
@@ -67,12 +70,14 @@ const openTermModal = () => {
         icon="pi pi-search"
         label="Search in TM"
         severity="secondary"
+        size="small"
         @click="openTmSearch"
       />
       <Button
         icon="pi pi-globe"
         label="Add Term"
         severity="secondary"
+        size="small"
         @click="openTermModal"
       />
     </div>
