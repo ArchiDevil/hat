@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import {computed, ref, triggerRef, watch} from 'vue'
+import {ComponentPublicInstance, computed, onUpdated, ref, triggerRef, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useQuery, useQueryCache} from '@pinia/colada'
 
-import {Button, ProgressBar, Paginator, PageState} from 'primevue'
+import {Paginator} from 'primevue'
 
-import Link from '../components/NavLink.vue'
 import DocSegment from '../components/DocSegment.vue'
+import DocViewHeader from '../components/DocViewHeader.vue'
 import SubstitutionsList from '../components/document/SubstitutionsList.vue'
 import ProcessingErrorMessage from '../components/document/ProcessingErrorMessage.vue'
 import DocumentSkeleton from '../components/document/DocumentSkeleton.vue'
@@ -15,16 +15,10 @@ import TmSearchModal from '../components/TmSearchModal.vue'
 import RecordCommentModal from '../components/document/RecordCommentModal.vue'
 import AddTermModal from '../components/document/AddTermModal.vue'
 import SegmentHistoryModal from '../components/document/SegmentHistoryModal.vue'
+import GoSegmentModal from '../components/document/GoSegmentModal.vue'
 
-import {
-  getDoc,
-  getDocRecords,
-  getDownloadDocLink,
-  getDownloadOriginalDocLink,
-  getDownloadXliffLink,
-} from '../client/services/DocumentService'
+import {getDoc, getDocRecords} from '../client/services/DocumentService'
 import {updateDocRecord} from '../client/services/RecordsService'
-import {isAdmin} from '../utilities/auth'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
 // the server side somehow
@@ -38,8 +32,6 @@ const documentId = computed(() => {
 const page = computed(() => {
   return Number(route.query.page ?? '0')
 })
-
-const queryCache = useQueryCache()
 
 const {
   data: document,
@@ -69,20 +61,8 @@ const documentReady = computed(() => {
   return doc.status == 'done' || doc.status == 'error'
 })
 
-const downloadLink = computed(() => getDownloadDocLink(documentId.value))
-const originalLink = computed(() =>
-  getDownloadOriginalDocLink(documentId.value)
-)
-const xliffLink = computed(() => getDownloadXliffLink(documentId.value))
-
-const translationProgress = computed(() => {
-  const doc = document.value
-  if (!doc || doc.total_word_count === 0) return 0
-  return (doc.approved_word_count / doc.total_word_count) * 100
-})
-
-const updatePage = async (event: PageState) => {
-  await router.push({query: {page: event.page}})
+const updatePage = async (page: number) => {
+  await router.push({query: {page}})
 }
 
 const sourceFilter = ref('')
@@ -119,6 +99,7 @@ const {data: recordsData, refetch: refetchRecords} = useQuery({
 
 const recordsCount = computed(() => recordsData.value?.total_records)
 
+const queryCache = useQueryCache()
 const onSegmentUpdate = async (
   id: number,
   text: string,
@@ -167,18 +148,32 @@ const onSegmentCommit = async (
   id: number,
   text: string,
   updateRepeats: boolean,
-  idx: number
+  rowNumber: number
 ) => {
   await onSegmentUpdate(id, text, true, updateRepeats, true)
-  focusSegment(idx + 1)
+  focusSegment(rowNumber + 1)
 }
 
-const focusSegment = (newIdx: number) => {
-  if (!recordsData.value?.records.length) return
-  focusedSegmentIdx.value = Math.min(
-    newIdx,
-    recordsData.value?.records.length - 1
-  )
+type DocSegmentInstance = ComponentPublicInstance<typeof DocSegment>
+const segmentRefs = new Map<number, DocSegmentInstance>()
+
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+const storeSegmentRef = (rowNumber: number, segment: DocSegmentInstance | Element) => {
+  if (segment == null || segment instanceof Element) return
+  segmentRefs.set(rowNumber, segment)
+}
+
+const focusSegment = (newRow: number) => {
+  focusedRowNumber.value = newRow
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const row = segmentRefs.get(newRow)
+  if (row === undefined) {
+    console.error('Unable to find segment', row)
+    return
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  row.focus()
 }
 
 const onSegmentStartEdit = (id: number) => {
@@ -196,16 +191,31 @@ const onSegmentStartEdit = (id: number) => {
   triggerRef(recordsData)
 }
 
-const focusedSegmentIdx = ref<number>()
+let pendingFocusRow: number | undefined = undefined
+
+onUpdated(() => {
+  if (pendingFocusRow !== undefined) {
+    focusSegment(pendingFocusRow)
+    pendingFocusRow = undefined
+  }
+})
+
+const goToSegment = async (rowNumber: number) => {
+  const targetPage = Math.floor(rowNumber / 100)
+  await updatePage(targetPage)
+  pendingFocusRow = rowNumber
+}
+
+const focusedRowNumber = ref<number>()
 const currentSegmentId = computed(() => {
-  if (!recordsData.value || focusedSegmentIdx.value == undefined)
-    return undefined
-  if (focusedSegmentIdx.value >= recordsData.value.records.length)
-    return undefined
-  return recordsData.value.records[focusedSegmentIdx.value].id
+  return recordsData.value?.records.find(
+    (r) => r.row_number === focusedRowNumber.value
+  )?.id
 })
 
 const showTmSearchModal = ref(false)
+const showAddTermModal = ref(false)
+const showGoModal = ref(false)
 
 const showCommentsModal = ref(false)
 const commentsRecordId = ref<number>()
@@ -214,23 +224,12 @@ const onAddComment = (recordId: number) => {
   showCommentsModal.value = true
 }
 
-const showAddTermModal = ref(false)
-
 const showHistoryModal = ref(false)
 const historyRecordId = ref<number>()
 const onShowHistory = (recordId: number) => {
   historyRecordId.value = recordId
   showHistoryModal.value = true
 }
-
-const percentage = computed(() =>
-  document.value !== undefined
-    ? Number(
-        (document.value.approved_word_count / document.value.total_word_count) *
-          100
-      )
-    : 0.0
-)
 </script>
 
 <template>
@@ -239,45 +238,11 @@ const percentage = computed(() =>
     class="w-full h-screen grid grid-rows-[auto_1fr] overflow-hidden"
   >
     <div class="bg-surface-0 border-b border-surface">
-      <div class="flex flex-row gap-2 items-center ml-4 mt-4 mb-1">
-        <Button
-          as="a"
-          href="/"
-          icon="pi pi-home"
-          severity="secondary"
-          size="small"
-        />
+      <DocViewHeader
+        v-if="document"
+        :document="document"
+      />
 
-        <h2 class="text-xl font-bold">
-          {{ document?.name }}
-        </h2>
-        <ProgressBar
-          class="w-64 h-3 inline-block mx-2"
-          :value="translationProgress"
-          :show-value="false"
-        />
-        {{ document?.approved_word_count }} /
-        {{ document?.total_word_count }} words
-        <span class="text-gray-500">({{ percentage.toFixed(2) }}%)</span>
-        <Link
-          v-if="isAdmin()"
-          :href="downloadLink"
-          class="inline-block"
-          title="Download current file"
-        />
-        <Link
-          v-if="isAdmin()"
-          :href="originalLink"
-          class="inline-block"
-          title="Download original file"
-        />
-        <Link
-          v-if="isAdmin()"
-          :href="xliffLink"
-          class="inline-block"
-          title="Download XLIFF file"
-        />
-      </div>
       <template v-if="documentReady && !documentLoading">
         <ProcessingErrorMessage
           v-if="document?.status == 'error'"
@@ -291,6 +256,7 @@ const percentage = computed(() =>
         @target-filter-update="(val) => (targetFilter = val)"
         @open-tm-search="showTmSearchModal = true"
         @open-add-term="showAddTermModal = true"
+        @open-go-modal="showGoModal = true"
       />
 
       <div
@@ -302,7 +268,7 @@ const percentage = computed(() =>
           :total-records="recordsCount"
           :first="page * 100"
           class="inline-block"
-          @page="(event) => updatePage(event)"
+          @page="(event) => updatePage(event.page)"
         />
       </div>
     </div>
@@ -312,29 +278,37 @@ const percentage = computed(() =>
       <template v-if="documentReady">
         <template v-if="recordsData">
           <div
-            class="grid grid-cols-[auto_auto_1fr_1fr_auto] gap-1 overflow-scroll mb-1 max-h-full py-2"
+            class="grid grid-cols-[auto_auto_1fr_1fr_auto] gap-1 overflow-y-scroll mb-1 max-h-full py-2"
           >
             <DocSegment
-              v-for="(record, idx) in recordsData?.records"
+              v-for="record in recordsData?.records"
               :key="record.id"
+              :ref="(seg) => {
+                if (seg !== null)
+                  storeSegmentRef(record.row_number, seg)
+              }
+              "
               :row-number="record.row_number"
-              editable
               :source="record.source"
               :target="record.target"
               :disabled="record.loading"
-              :focused="currentSegmentId == record.id"
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
               :has-comments="record.has_comments"
               @commit="
                 (text, updateRepeats) =>
-                  onSegmentCommit(record.id, text, updateRepeats, idx)
+                  onSegmentCommit(
+                    record.id,
+                    text,
+                    updateRepeats,
+                    record.row_number
+                  )
               "
               @update-record="
                 (text, updateRepeats) =>
                   onSegmentUpdate(record.id, text, false, updateRepeats, false)
               "
-              @focus="focusedSegmentIdx = idx"
+              @focus="focusedRowNumber = record.row_number"
               @start-edit="() => onSegmentStartEdit(record.id)"
               @add-comment="() => onAddComment(record.id)"
               @view-history="() => onShowHistory(record.id)"
@@ -376,5 +350,10 @@ const percentage = computed(() =>
     :show="showHistoryModal"
     :record-id="historyRecordId ?? -1"
     @close="showHistoryModal = false"
+  />
+
+  <GoSegmentModal
+    v-model="showGoModal"
+    @go="(rowNumber) => goToSegment(rowNumber)"
   />
 </template>

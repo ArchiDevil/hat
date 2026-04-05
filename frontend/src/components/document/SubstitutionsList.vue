@@ -66,7 +66,7 @@ const {data: substitutions} = useQuery({
 </script>
 
 <template>
-  <div class="h-full overflow-scroll p-2">
+  <div class="h-full overflow-y-scroll p-2">
     <div class="text-base w-md grid grid-cols-[auto_1fr_1fr] gap-y-3 gap-x-3">
       <template
         v-for="(sub, i) in substitutions"
