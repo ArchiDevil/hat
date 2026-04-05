@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref, useTemplateRef, watch} from 'vue'
+import {computed, ref, useTemplateRef} from 'vue'
 
 import {Button} from 'primevue'
 
@@ -9,7 +9,6 @@ const props = defineProps<{
   rowNumber: number
   source: string
   target: string
-  focused?: boolean
   disabled?: boolean
   approved?: boolean
   repetitionsCount?: number
@@ -41,19 +40,10 @@ const onKeyPress = (event: KeyboardEvent) => {
   if (!targetInput.value?.textContent) {
     return
   }
-  if (event.key == 'Enter' && event.ctrlKey) {
+  if (event.code == 'Enter' && event.ctrlKey) {
     commitData()
   }
 }
-
-watch(
-  () => props.focused,
-  () => {
-    if (props.focused) {
-      targetInput.value?.focus()
-    }
-  }
-)
 
 const repeatEnabled = ref(true)
 const enableRepeat = () => {
@@ -78,6 +68,17 @@ const showCommentsDialog = () => {
 const showHistory = () => {
   emit('viewHistory')
 }
+
+const onFocus = () => {
+  targetInput.value?.focus()
+  targetInput.value?.scrollIntoView({
+    block: 'nearest',
+  })
+}
+
+defineExpose({
+  focus: onFocus,
+})
 </script>
 
 <template>
@@ -106,7 +107,7 @@ const showHistory = () => {
     :class="{
       'bg-surface-200': disabled ?? false,
     }"
-    contenteditable
+    contenteditable="plaintext-only"
     @input="
       () => {
         emit('startEdit')

@@ -8,6 +8,7 @@ const emit = defineEmits<{
   targetFilterUpdate: [string]
   openTmSearch: []
   openAddTerm: []
+  openGoModal: []
 }>()
 
 const sourceFilter = ref('')
@@ -33,6 +34,11 @@ const openTmSearch = () => {
 
 const openTermModal = () => {
   emit('openAddTerm')
+}
+
+const openGoModal = () => {
+  window.umami.track('go-segment-open')
+  emit('openGoModal')
 }
 </script>
 
@@ -65,6 +71,13 @@ const openTermModal = () => {
             emit('targetFilterUpdate', targetFilter)
           }
         "
+      />
+      <Button
+        icon="pi pi-reply"
+        label="Go to Segment"
+        severity="secondary"
+        size="small"
+        @click="openGoModal"
       />
       <Button
         icon="pi pi-search"

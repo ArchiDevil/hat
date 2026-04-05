@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref, triggerRef, watch} from 'vue'
+import {ComponentPublicInstance, computed, onUpdated, ref, triggerRef, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useQuery, useQueryCache} from '@pinia/colada'
 
@@ -15,6 +15,7 @@ import TmSearchModal from '../components/TmSearchModal.vue'
 import RecordCommentModal from '../components/document/RecordCommentModal.vue'
 import AddTermModal from '../components/document/AddTermModal.vue'
 import SegmentHistoryModal from '../components/document/SegmentHistoryModal.vue'
+import GoSegmentModal from '../components/document/GoSegmentModal.vue'
 
 import {getDoc, getDocRecords} from '../client/services/DocumentService'
 import {updateDocRecord} from '../client/services/RecordsService'
@@ -153,8 +154,26 @@ const onSegmentCommit = async (
   focusSegment(rowNumber + 1)
 }
 
+type DocSegmentInstance = ComponentPublicInstance<typeof DocSegment>
+const segmentRefs = new Map<number, DocSegmentInstance>()
+
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+const storeSegmentRef = (rowNumber: number, segment: DocSegmentInstance | Element) => {
+  if (segment == null || segment instanceof Element) return
+  segmentRefs.set(rowNumber, segment)
+}
+
 const focusSegment = (newRow: number) => {
   focusedRowNumber.value = newRow
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const row = segmentRefs.get(newRow)
+  if (row === undefined) {
+    console.error('Unable to find segment', row)
+    return
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  row.focus()
 }
 
 const onSegmentStartEdit = (id: number) => {
@@ -172,6 +191,21 @@ const onSegmentStartEdit = (id: number) => {
   triggerRef(recordsData)
 }
 
+let pendingFocusRow: number | undefined = undefined
+
+onUpdated(() => {
+  if (pendingFocusRow !== undefined) {
+    focusSegment(pendingFocusRow)
+    pendingFocusRow = undefined
+  }
+})
+
+const goToSegment = async (rowNumber: number) => {
+  const targetPage = Math.floor(rowNumber / 100)
+  await updatePage(targetPage)
+  pendingFocusRow = rowNumber
+}
+
 const focusedRowNumber = ref<number>()
 const currentSegmentId = computed(() => {
   return recordsData.value?.records.find(
@@ -181,6 +215,7 @@ const currentSegmentId = computed(() => {
 
 const showTmSearchModal = ref(false)
 const showAddTermModal = ref(false)
+const showGoModal = ref(false)
 
 const showCommentsModal = ref(false)
 const commentsRecordId = ref<number>()
@@ -221,6 +256,7 @@ const onShowHistory = (recordId: number) => {
         @target-filter-update="(val) => (targetFilter = val)"
         @open-tm-search="showTmSearchModal = true"
         @open-add-term="showAddTermModal = true"
+        @open-go-modal="showGoModal = true"
       />
 
       <div
@@ -242,16 +278,20 @@ const onShowHistory = (recordId: number) => {
       <template v-if="documentReady">
         <template v-if="recordsData">
           <div
-            class="grid grid-cols-[auto_auto_1fr_1fr_auto] gap-1 overflow-scroll mb-1 max-h-full py-2"
+            class="grid grid-cols-[auto_auto_1fr_1fr_auto] gap-1 overflow-y-scroll mb-1 max-h-full py-2"
           >
             <DocSegment
               v-for="record in recordsData?.records"
               :key="record.id"
+              :ref="(seg) => {
+                if (seg !== null)
+                  storeSegmentRef(record.row_number, seg)
+              }
+              "
               :row-number="record.row_number"
               :source="record.source"
               :target="record.target"
               :disabled="record.loading"
-              :focused="currentSegmentId == record.id"
               :approved="record.approved"
               :repetitions-count="record.repetitions_count"
               :has-comments="record.has_comments"
@@ -310,5 +350,10 @@ const onShowHistory = (recordId: number) => {
     :show="showHistoryModal"
     :record-id="historyRecordId ?? -1"
     @close="showHistoryModal = false"
+  />
+
+  <GoSegmentModal
+    v-model="showGoModal"
+    @go="(rowNumber) => goToSegment(rowNumber)"
   />
 </template>
