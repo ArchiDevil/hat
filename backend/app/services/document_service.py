@@ -338,6 +338,7 @@ class DocumentService:
         doc_id: int,
         page: int,
         filters: doc_schema.DocumentRecordFilter | None = None,
+        selected_row: int | None = None,
     ) -> doc_schema.DocumentRecordListResponse:
         """
         Get records from a document.
@@ -357,12 +358,19 @@ class DocumentService:
         total_records = self.__query.get_document_records_count_filtered(doc, filters)
         records = self.__query.get_document_records_paged(doc, page, filters=filters)
 
+        selected_row_page = None
+        if selected_row is not None:
+            selected_row_page = self.__query.get_record_filtered_page(
+                doc, selected_row, filters
+            )
+
         return doc_schema.DocumentRecordListResponse(
             records=[
                 doc_schema.DocumentRecord.model_validate(record) for record in records
             ],
             page=page,
             total_records=total_records,
+            selected_row_page=selected_row_page,
         )
 
     def _get_document_by_id(self, doc_id: int) -> Document:

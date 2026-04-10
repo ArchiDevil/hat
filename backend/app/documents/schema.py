@@ -44,6 +44,7 @@ class DocumentRecordListResponse(BaseModel):
     records: list[DocumentRecord]
     page: int
     total_records: int
+    selected_row_page: Optional[int] = None
 
 
 class DocumentRecordUpdateResponse(Identified):
