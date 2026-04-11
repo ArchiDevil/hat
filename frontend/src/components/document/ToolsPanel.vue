@@ -9,6 +9,7 @@ const emit = defineEmits<{
   openTmSearch: []
   openAddTerm: []
   openGoModal: []
+  jumpToUnapproved: []
 }>()
 
 const sourceFilter = ref('')
@@ -40,26 +41,31 @@ const openGoModal = () => {
   window.umami.track('go-segment-open')
   emit('openGoModal')
 }
+
+const jumpToUnapproved = () => {
+  window.umami.track('jump-unconfirmed')
+  emit('jumpToUnapproved')
+}
 </script>
 
 <template>
-  <div class="p-4 bg-surface-50 rounded-lg border border-surface">
-    <div class="flex flex-row gap-4 items-center">
+  <div class="px-4 py-2 bg-surface-50 rounded-lg border border-surface">
+    <div class="flex flex-row gap-4 items-center flex-wrap">
       <InputText
         v-model="sourceFilter"
         placeholder="Filter by source text..."
-        class="w-72"
+        class="w-64"
         size="small"
       />
       <InputText
         v-model="targetFilter"
         placeholder="Filter by target text..."
-        class="w-72"
+        class="w-64"
         size="small"
       />
       <Button
         icon="pi pi-eraser"
-        label="Clear Filters"
+        label="Clear filters"
         severity="secondary"
         size="small"
         @click="
@@ -73,22 +79,29 @@ const openGoModal = () => {
         "
       />
       <Button
-        icon="pi pi-reply"
-        label="Go to Segment"
+        icon="pi pi-hashtag"
+        label="Go to segment"
         severity="secondary"
         size="small"
         @click="openGoModal"
       />
       <Button
+        icon="pi pi-reply"
+        label="Jump unapproved"
+        severity="secondary"
+        size="small"
+        @click="jumpToUnapproved"
+      />
+      <Button
         icon="pi pi-search"
-        label="Search in TM"
+        label="Search TM"
         severity="secondary"
         size="small"
         @click="openTmSearch"
       />
       <Button
         icon="pi pi-globe"
-        label="Add Term"
+        label="Add term"
         severity="secondary"
         size="small"
         @click="openTermModal"

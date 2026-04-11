@@ -80,8 +80,6 @@ const isJsonData = (content: {
 }
 
 const getMethod = (method: ServiceMethod) => {
-  const types: string[] = []
-
   // TODO: it is better to search for suitable response, not for a default
   const responseData = (() => {
     for (const response in method.description.responses) {
@@ -108,6 +106,7 @@ const getMethod = (method: ServiceMethod) => {
       }
     })
 
+  const types: string[] = []
   if (
     responseData.content &&
     ('application/octet-stream' in responseData.content ||
@@ -131,7 +130,13 @@ const getMethod = (method: ServiceMethod) => {
     const respType = responseType(responseData)
 
     // TODO: this should be done in a smarter way
-    if (
+    if (respType.split(' | ').length > 1) {
+      respType.split(' | ').forEach((t) => {
+        if (t !== 'null' && t !== 'any' && t !== 'undefined') {
+          types.push(t)
+        }
+      })
+    } else if (
       respType != 'any' &&
       respType != 'null' &&
       respType != 'undefined' &&

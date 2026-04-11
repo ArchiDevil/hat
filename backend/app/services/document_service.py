@@ -359,21 +359,32 @@ class DocumentService:
 
         return doc_schema.DocumentRecordListResponse(
             records=[
-                doc_schema.DocumentRecord.model_validate(record) for record in records
+                doc_schema.DocumentRecordExtended.model_validate(record) for record in records
             ],
             page=page,
             total_records=total_records,
         )
 
-    def get_row_page(
+    def get_record_page(
         self,
         doc_id: int,
-        row: int,
+        record_id: int,
         filters: doc_schema.DocumentRecordFilter | None = None,
     ) -> doc_schema.RowPageResponse:
         doc = self._get_document_by_id(doc_id)
-        page = self.__query.get_record_filtered_page(doc, row, filters)
+        page = self.__query.get_record_filtered_page(doc, record_id, filters)
         return doc_schema.RowPageResponse(page=page)
+
+    def get_first_unapproved_record(
+        self, doc_id: int
+    ) -> doc_schema.DocumentRecord | None:
+        doc = self._get_document_by_id(doc_id)
+        record = self.__query.get_first_unapproved_record(doc)
+
+        if not record:
+            return None
+
+        return doc_schema.DocumentRecord.model_validate(record)
 
     def _get_document_by_id(self, doc_id: int) -> Document:
         """

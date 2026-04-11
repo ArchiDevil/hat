@@ -2,10 +2,7 @@ import {http, HttpResponse} from 'msw'
 import {faker, fakerRU} from '@faker-js/faker'
 
 import {AwaitedReturnType} from './utils'
-import {
-  getDoc,
-  getDocRecords,
-} from '../src/client/services/DocumentService'
+import {getDoc, getDocRecords} from '../src/client/services/DocumentService'
 import {
   getComments,
   getRecordGlossaryRecords,
@@ -16,8 +13,8 @@ import {
 import {DocumentStatus} from '../src/client/schemas/DocumentStatus'
 import {DocumentRecordUpdate} from '../src/client/schemas/DocumentRecordUpdate'
 import {CommentResponse} from '../src/client/schemas/CommentResponse'
-import {DocumentRecord} from '../src/client/schemas/DocumentRecord'
 import {DocumentWithRecordsCount} from '../src/client/schemas/DocumentWithRecordsCount'
+import {DocumentRecordExtended} from '../src/client/schemas/DocumentRecordExtended'
 
 const segmentComments: CommentResponse[] = [
   {
@@ -182,7 +179,7 @@ const segmentComments: CommentResponse[] = [
   },
 ]
 
-const segments: DocumentRecord[] = [
+const segments: DocumentRecordExtended[] = [
   {
     id: 10000,
     approved: false,

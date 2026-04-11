@@ -355,7 +355,9 @@ def test_process_creates_task_for_xliff(
         }
 
 
-def test_process_creates_task_for_txt(admin_logged_client: TestClient, session: Session):
+def test_process_creates_task_for_txt(
+    admin_logged_client: TestClient, session: Session
+):
     with session as s:
         ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
 
@@ -601,7 +603,9 @@ def test_update_document_name_only(admin_logged_client: TestClient, session: Ses
         assert updated_doc.project_id == 1
 
 
-def test_update_document_project_only(admin_logged_client: TestClient, session: Session):
+def test_update_document_project_only(
+    admin_logged_client: TestClient, session: Session
+):
     """Test successful update of document project_id only."""
     p = ProjectQuery(session).create_project(1, ProjectCreate(name="test"))
     doc = Document(
@@ -1015,7 +1019,9 @@ def test_upload_xliff_document_not_found(admin_logged_client: TestClient):
 def test_upload_xliff_invalid_format(admin_logged_client: TestClient):
     """Test XLIFF upload with invalid XLIFF format."""
     with open("tests/fixtures/small.txt", "rb") as fp:
-        response = admin_logged_client.post("/document/upload_xliff", files={"file": fp})
+        response = admin_logged_client.post(
+            "/document/upload_xliff", files={"file": fp}
+        )
     assert response.status_code == 400
     assert "Invalid XLIFF format" in response.json()["detail"]
 
@@ -1080,3 +1086,104 @@ def test_upload_xliff_unauthenticated(fastapi_client: TestClient):
     with open("tests/fixtures/upload_test.xliff", "rb") as fp:
         response = fastapi_client.post("/document/upload_xliff", files={"file": fp})
     assert response.status_code == 401
+
+
+def test_get_first_unapproved_returns_first_unapproved(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that the endpoint returns the first unapproved record."""
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(
+                source="First",
+                target="Первый",
+                approved=True,
+            ),
+            DocumentRecord(
+                source="Second",
+                target="",
+                approved=False,
+            ),
+            DocumentRecord(
+                source="Third",
+                target="",
+                approved=False,
+            ),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="done",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get("/document/1/first_unapproved")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == 2
+    assert data["source"] == "Second"
+    assert data["approved"] is False
+
+
+def test_get_first_unapproved_returns_null_when_all_approved(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that the endpoint returns null when all records are approved."""
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(source="First", target="Первый", approved=True),
+            DocumentRecord(source="Second", target="Второй", approved=True),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="done",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get("/document/1/first_unapproved")
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_get_first_unapproved_returns_null_when_no_records(
+    user_logged_client: TestClient, session: Session
+):
+    """Test that the endpoint returns null when document has no records."""
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=[],
+                processing_status="done",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get("/document/1/first_unapproved")
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_get_first_unapproved_returns_404_for_unknown_doc(
+    user_logged_client: TestClient,
+):
+    """Test that the endpoint returns 404 for non-existent document."""
+    response = user_logged_client.get("/document/999/first_unapproved")
+    assert response.status_code == 404

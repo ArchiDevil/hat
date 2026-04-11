@@ -203,21 +203,10 @@ class GenericDocsQuery:
     def get_record_filtered_page(
         self,
         doc: Document,
-        row_number: int,
+        record_id: int,
         filters: DocumentRecordFilter | None = None,
         page_records: int = 100,
     ) -> int | None:
-        record_id = self.__db.execute(
-            select(DocumentRecord.id)
-            .filter(DocumentRecord.document_id == doc.id)
-            .order_by(DocumentRecord.id)
-            .offset(row_number - 1)
-            .limit(1)
-        ).scalar_one_or_none()
-
-        if record_id is None:
-            return None
-
         exists_query = self._apply_filters(
             select(DocumentRecord.id).filter(
                 DocumentRecord.document_id == doc.id,
@@ -256,6 +245,17 @@ class GenericDocsQuery:
         self.__db.commit()
         self.__db.refresh(document)
         return document
+
+    def get_first_unapproved_record(self, doc: Document) -> DocumentRecord | None:
+        return self.__db.execute(
+            select(DocumentRecord)
+            .filter(
+                DocumentRecord.document_id == doc.id,
+                DocumentRecord.approved.is_(False),
+            )
+            .order_by(DocumentRecord.id)
+            .limit(1)
+        ).scalar_one_or_none()
 
     def get_record_ids_by_source(self, doc_id: int, source: str) -> list[int]:
         return list(

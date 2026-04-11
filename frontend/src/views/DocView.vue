@@ -27,7 +27,8 @@ import GoSegmentModal from '../components/document/GoSegmentModal.vue'
 import {
   getDoc,
   getDocRecords,
-  getRowPage,
+  getFirstUnapproved,
+  getRecordPage,
 } from '../client/services/DocumentService'
 import {updateDocRecord} from '../client/services/RecordsService'
 
@@ -76,25 +77,37 @@ const updatePage = async (page: number) => {
   await router.push({query: {page}})
 }
 
-let pendingFocusRow: number | undefined = undefined
+type PendingFocus = {type: 'row'; row: number} | {type: 'id'; id: number}
+const pendingFocus = ref<PendingFocus>()
+
+const resolvePendingFocus = () => {
+  if (pendingFocus.value === undefined) return
+
+  if (pendingFocus.value.type === 'row') {
+    focusSegment({row: pendingFocus.value.row})
+  } else if (pendingFocus.value.type === 'id') {
+    focusSegment({id: pendingFocus.value.id})
+  }
+
+  pendingFocus.value = undefined
+}
 
 onUpdated(() => {
-  if (pendingFocusRow !== undefined) {
-    focusSegment(pendingFocusRow)
-    pendingFocusRow = undefined
-  }
+  resolvePendingFocus()
 })
 
 const goToSegment = async (rowNumber: number) => {
   const targetPage = Math.floor(rowNumber / 100)
   await updatePage(targetPage)
-  pendingFocusRow = rowNumber
+  pendingFocus.value = {
+    type: 'row',
+    row: rowNumber,
+  }
+  resolvePendingFocus()
 }
 
 const sourceFilter = ref('')
 const targetFilter = ref('')
-const focusedRowNumber = ref<number>()
-
 const {data: recordsData, refetch: refetchRecords} = useQuery({
   key: () => [
     'doc-records',
@@ -124,16 +137,19 @@ const {data: recordsData, refetch: refetchRecords} = useQuery({
   placeholderData: (prevData) => prevData,
 })
 
+const focusedRowNumber = ref<number>()
+const focusedSegmentId = ref<number>()
+
 watch(
   () => [documentId.value, sourceFilter.value, targetFilter.value],
   async () => {
-    if (focusedRowNumber.value === undefined) {
+    if (focusedSegmentId.value === undefined) {
       return
     }
 
-    const response = await getRowPage(
+    const response = await getRecordPage(
       documentId.value,
-      focusedRowNumber.value,
+      focusedSegmentId.value,
       sourceFilter.value.trim(),
       targetFilter.value.trim()
     )
@@ -141,7 +157,11 @@ watch(
       await updatePage(0)
     } else {
       await updatePage(response.page)
-      pendingFocusRow = focusedRowNumber.value
+      pendingFocus.value = {
+        type: 'id',
+        id: focusedSegmentId.value,
+      }
+      resolvePendingFocus()
     }
   }
 )
@@ -200,7 +220,7 @@ const onSegmentCommit = async (
   rowNumber: number
 ) => {
   await onSegmentUpdate(id, text, true, updateRepeats, true)
-  focusSegment(rowNumber + 1)
+  focusSegment({row: rowNumber + 1})
 }
 
 type DocSegmentInstance = ComponentPublicInstance<typeof DocSegment>
@@ -209,23 +229,68 @@ const segmentRefs = new Map<number, DocSegmentInstance>()
 const storeSegmentRef = (
   rowNumber: number,
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  segment: DocSegmentInstance | Element
+  segment: DocSegmentInstance | Element | null
 ) => {
   if (segment == null || segment instanceof Element) return
   segmentRefs.set(rowNumber, segment)
 }
 
-const focusSegment = (newRow: number) => {
-  focusedRowNumber.value = newRow
+const focusSegment = (lookup: {row: number} | {id: number}) => {
+  const records = recordsData.value?.records
+  if (!records) return
+
+  let row: number
+  let id: number
+
+  if ('row' in lookup) {
+    row = lookup.row
+    const record = records.find((r) => r.row_number == lookup.row)
+    if (!record) {
+      console.error('Unable to find segment by row', row)
+      return
+    }
+    id = record.id
+  } else {
+    id = lookup.id
+    const record = records.find((r) => r.id == lookup.id)
+    if (!record) {
+      console.error('Unable to find segment by id', id)
+      return
+    }
+    row = record.row_number
+  }
+
+  focusedRowNumber.value = row
+  focusedSegmentId.value = id
+
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const row = segmentRefs.get(newRow)
-  if (row === undefined) {
-    console.error('Unable to find segment', row)
+  const ref = segmentRefs.get(row)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  ref?.focus()
+}
+
+const jumpUnapproved = async () => {
+  const result = await getFirstUnapproved(documentId.value)
+  if (!result) return
+
+  const pageResult = await getRecordPage(
+    documentId.value,
+    result.id,
+    sourceFilter.value.trim(),
+    targetFilter.value.trim()
+  )
+
+  if (pageResult.page === null) {
+    console.error('Unable to find unapproved record page')
     return
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  row.focus()
+  await updatePage(pageResult.page)
+  pendingFocus.value = {
+    type: 'id',
+    id: result.id,
+  }
+  resolvePendingFocus()
 }
 
 const onSegmentStartEdit = (id: number) => {
@@ -243,27 +308,21 @@ const onSegmentStartEdit = (id: number) => {
   triggerRef(recordsData)
 }
 
-const currentSegmentId = computed(() => {
-  return recordsData.value?.records.find(
-    (r) => r.row_number === focusedRowNumber.value
-  )?.id
-})
-
 const showTmSearchModal = ref(false)
 const showAddTermModal = ref(false)
 const showGoModal = ref(false)
 
+const modalRecordId = ref<number>()
+
 const showCommentsModal = ref(false)
-const commentsRecordId = ref<number>()
 const onAddComment = (recordId: number) => {
-  commentsRecordId.value = recordId
+  modalRecordId.value = recordId
   showCommentsModal.value = true
 }
 
 const showHistoryModal = ref(false)
-const historyRecordId = ref<number>()
 const onShowHistory = (recordId: number) => {
-  historyRecordId.value = recordId
+  modalRecordId.value = recordId
   showHistoryModal.value = true
 }
 </script>
@@ -293,6 +352,7 @@ const onShowHistory = (recordId: number) => {
         @open-tm-search="showTmSearchModal = true"
         @open-add-term="showAddTermModal = true"
         @open-go-modal="showGoModal = true"
+        @jump-to-unapproved="jumpUnapproved()"
       />
 
       <div
@@ -319,11 +379,7 @@ const onShowHistory = (recordId: number) => {
             <DocSegment
               v-for="record in recordsData?.records"
               :key="record.id"
-              :ref="
-                (seg) => {
-                  if (seg !== null) storeSegmentRef(record.row_number, seg)
-                }
-              "
+              :ref="(seg) => storeSegmentRef(record.row_number, seg)"
               :row-number="record.row_number"
               :source="record.source"
               :target="record.target"
@@ -344,7 +400,7 @@ const onShowHistory = (recordId: number) => {
                 (text, updateRepeats) =>
                   onSegmentUpdate(record.id, text, false, updateRepeats, false)
               "
-              @focus="focusedRowNumber = record.row_number"
+              @focus="focusedSegmentId = record.id"
               @start-edit="() => onSegmentStartEdit(record.id)"
               @add-comment="() => onAddComment(record.id)"
               @view-history="() => onShowHistory(record.id)"
@@ -353,7 +409,7 @@ const onShowHistory = (recordId: number) => {
           <SubstitutionsList
             class="border-l border-surface"
             :document-id="documentId"
-            :current-segment-id="currentSegmentId"
+            :current-segment-id="focusedSegmentId"
           />
         </template>
         <p v-else>
@@ -372,7 +428,7 @@ const onShowHistory = (recordId: number) => {
 
   <RecordCommentModal
     v-model="showCommentsModal"
-    :record-id="commentsRecordId ?? -1"
+    :record-id="modalRecordId ?? -1"
     @add-comment="refetchRecords"
   />
 
@@ -384,7 +440,7 @@ const onShowHistory = (recordId: number) => {
 
   <SegmentHistoryModal
     :show="showHistoryModal"
-    :record-id="historyRecordId ?? -1"
+    :record-id="modalRecordId ?? -1"
     @close="showHistoryModal = false"
   />
 

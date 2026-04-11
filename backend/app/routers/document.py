@@ -67,10 +67,21 @@ def get_doc_records(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.get("/{doc_id}/records/row_page")
-def get_row_page(
+@router.get("/{doc_id}/first_unapproved")
+def get_first_unapproved(
     doc_id: int,
-    row: Annotated[int, Query(ge=1)],
+    service: Annotated[DocumentService, Depends(get_service)],
+) -> doc_schema.DocumentRecord | None:
+    try:
+        return service.get_first_unapproved_record(doc_id)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get("/{doc_id}/record_page")
+def get_record_page(
+    doc_id: int,
+    record_id: Annotated[int, Query(ge=1)],
     service: Annotated[DocumentService, Depends(get_service)],
     source: Annotated[
         str | None, Query(description="Filter by source text (contains search)")
@@ -86,7 +97,7 @@ def get_row_page(
         )
 
     try:
-        return service.get_row_page(doc_id, row, filters)
+        return service.get_record_page(doc_id, record_id, filters)
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
