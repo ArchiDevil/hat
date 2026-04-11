@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import {ComponentPublicInstance, computed, onUpdated, ref, triggerRef, watch} from 'vue'
+import {
+  ComponentPublicInstance,
+  computed,
+  onUpdated,
+  ref,
+  triggerRef,
+  watch,
+} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useQuery, useQueryCache} from '@pinia/colada'
 
@@ -17,7 +24,11 @@ import AddTermModal from '../components/document/AddTermModal.vue'
 import SegmentHistoryModal from '../components/document/SegmentHistoryModal.vue'
 import GoSegmentModal from '../components/document/GoSegmentModal.vue'
 
-import {getDoc, getDocRecords} from '../client/services/DocumentService'
+import {
+  getDoc,
+  getDocRecords,
+  getRowPage,
+} from '../client/services/DocumentService'
 import {updateDocRecord} from '../client/services/RecordsService'
 
 // TODO: 100 records per page is a magic number, it should be obtained from
@@ -65,8 +76,24 @@ const updatePage = async (page: number) => {
   await router.push({query: {page}})
 }
 
+let pendingFocusRow: number | undefined = undefined
+
+onUpdated(() => {
+  if (pendingFocusRow !== undefined) {
+    focusSegment(pendingFocusRow)
+    pendingFocusRow = undefined
+  }
+})
+
+const goToSegment = async (rowNumber: number) => {
+  const targetPage = Math.floor(rowNumber / 100)
+  await updatePage(targetPage)
+  pendingFocusRow = rowNumber
+}
+
 const sourceFilter = ref('')
 const targetFilter = ref('')
+const focusedRowNumber = ref<number>()
 
 const {data: recordsData, refetch: refetchRecords} = useQuery({
   key: () => [
@@ -96,6 +123,28 @@ const {data: recordsData, refetch: refetchRecords} = useQuery({
   enabled: () => documentReady.value,
   placeholderData: (prevData) => prevData,
 })
+
+watch(
+  () => [documentId.value, sourceFilter.value, targetFilter.value],
+  async () => {
+    if (focusedRowNumber.value === undefined) {
+      return
+    }
+
+    const response = await getRowPage(
+      documentId.value,
+      focusedRowNumber.value,
+      sourceFilter.value.trim(),
+      targetFilter.value.trim()
+    )
+    if (response.page === null) {
+      await updatePage(0)
+    } else {
+      await updatePage(response.page)
+      pendingFocusRow = focusedRowNumber.value
+    }
+  }
+)
 
 const recordsCount = computed(() => recordsData.value?.total_records)
 
@@ -157,8 +206,11 @@ const onSegmentCommit = async (
 type DocSegmentInstance = ComponentPublicInstance<typeof DocSegment>
 const segmentRefs = new Map<number, DocSegmentInstance>()
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-const storeSegmentRef = (rowNumber: number, segment: DocSegmentInstance | Element) => {
+const storeSegmentRef = (
+  rowNumber: number,
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  segment: DocSegmentInstance | Element
+) => {
   if (segment == null || segment instanceof Element) return
   segmentRefs.set(rowNumber, segment)
 }
@@ -191,22 +243,6 @@ const onSegmentStartEdit = (id: number) => {
   triggerRef(recordsData)
 }
 
-let pendingFocusRow: number | undefined = undefined
-
-onUpdated(() => {
-  if (pendingFocusRow !== undefined) {
-    focusSegment(pendingFocusRow)
-    pendingFocusRow = undefined
-  }
-})
-
-const goToSegment = async (rowNumber: number) => {
-  const targetPage = Math.floor(rowNumber / 100)
-  await updatePage(targetPage)
-  pendingFocusRow = rowNumber
-}
-
-const focusedRowNumber = ref<number>()
 const currentSegmentId = computed(() => {
   return recordsData.value?.records.find(
     (r) => r.row_number === focusedRowNumber.value
@@ -283,10 +319,10 @@ const onShowHistory = (recordId: number) => {
             <DocSegment
               v-for="record in recordsData?.records"
               :key="record.id"
-              :ref="(seg) => {
-                if (seg !== null)
-                  storeSegmentRef(record.row_number, seg)
-              }
+              :ref="
+                (seg) => {
+                  if (seg !== null) storeSegmentRef(record.row_number, seg)
+                }
               "
               :row-number="record.row_number"
               :source="record.source"
