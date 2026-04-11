@@ -161,7 +161,6 @@ watch(
         type: 'id',
         id: focusedSegmentId.value,
       }
-      resolvePendingFocus()
     }
   }
 )
