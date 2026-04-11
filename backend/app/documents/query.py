@@ -99,28 +99,30 @@ class GenericDocsQuery:
         result = self.__db.execute(stmt).one()
         return result[0] or 0, result[1] or 0
 
+    @staticmethod
+    def _apply_filters(
+        query, filters: DocumentRecordFilter | None, source_col, target_col
+    ):
+        if not filters:
+            return query
+        filter_conditions = []
+        if filters.source_filter:
+            filter_conditions.append(source_col.ilike(f"%{filters.source_filter}%"))
+        if filters.target_filter:
+            filter_conditions.append(target_col.ilike(f"%{filters.target_filter}%"))
+        if filter_conditions:
+            query = query.filter(and_(*filter_conditions))
+        return query
+
     def get_document_records_count_filtered(
         self, doc: Document, filters: DocumentRecordFilter | None = None
     ) -> int:
         base_query = select(func.count(DocumentRecord.id)).filter(
             DocumentRecord.document_id == doc.id
         )
-
-        filter_conditions = []
-        if filters:
-            if filters.source_filter:
-                filter_conditions.append(
-                    DocumentRecord.source.ilike(f"%{filters.source_filter}%")
-                )
-
-            if filters.target_filter:
-                filter_conditions.append(
-                    DocumentRecord.target.ilike(f"%{filters.target_filter}%")
-                )
-
-            if filter_conditions:
-                base_query = base_query.filter(and_(*filter_conditions))
-
+        base_query = self._apply_filters(
+            base_query, filters, DocumentRecord.source, DocumentRecord.target
+        )
         return self.__db.execute(base_query).scalar_one()
 
     def get_document_records_paged(
@@ -186,22 +188,9 @@ class GenericDocsQuery:
             )
         )
 
-        # Apply filters if provided
-        if filters:
-            filter_conditions = []
-
-            if filters.source_filter:
-                filter_conditions.append(
-                    base_subquery.c.source.ilike(f"%{filters.source_filter}%")
-                )
-
-            if filters.target_filter:
-                filter_conditions.append(
-                    base_subquery.c.target.ilike(f"%{filters.target_filter}%")
-                )
-
-            if filter_conditions:
-                query = query.filter(and_(*filter_conditions))
+        query = self._apply_filters(
+            query, filters, base_subquery.c.source, base_subquery.c.target
+        )
 
         query = (
             query.order_by(base_subquery.c.id)
@@ -210,6 +199,48 @@ class GenericDocsQuery:
         )
 
         return self.__db.execute(query).all()
+
+    def get_record_filtered_page(
+        self,
+        doc: Document,
+        row_number: int,
+        filters: DocumentRecordFilter | None = None,
+        page_records: int = 100,
+    ) -> int | None:
+        record_id = self.__db.execute(
+            select(DocumentRecord.id)
+            .filter(DocumentRecord.document_id == doc.id)
+            .order_by(DocumentRecord.id)
+            .offset(row_number - 1)
+            .limit(1)
+        ).scalar_one_or_none()
+
+        if record_id is None:
+            return None
+
+        exists_query = self._apply_filters(
+            select(DocumentRecord.id).filter(
+                DocumentRecord.document_id == doc.id,
+                DocumentRecord.id == record_id,
+            ),
+            filters,
+            DocumentRecord.source,
+            DocumentRecord.target,
+        )
+        if self.__db.execute(exists_query).scalar_one_or_none() is None:
+            return None
+
+        count_query = self._apply_filters(
+            select(func.count(DocumentRecord.id)).filter(
+                DocumentRecord.document_id == doc.id,
+                DocumentRecord.id < record_id,
+            ),
+            filters,
+            DocumentRecord.source,
+            DocumentRecord.target,
+        )
+        position = self.__db.execute(count_query).scalar_one()
+        return position // page_records
 
     def update_document(
         self, doc_id: int, name: str | None, project_id: int | None

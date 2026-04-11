@@ -914,3 +914,177 @@ def test_has_comments_with_multiple_comments(
 
     # Should still be True even with multiple comments
     assert records_response[0]["has_comments"]
+
+
+def test_row_page_without_filter(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get(
+        "/document/1/records/row_page", params={"row": 1}
+    )
+    assert response.status_code == 200
+    assert response.json()["page"] == 0
+
+
+def test_row_page_with_source_filter(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+            DocumentRecord(source="Hello Universe", target="Привет Вселенная"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get(
+        "/document/1/records/row_page",
+        params={"source": "Hello", "row": 1},
+    )
+    assert response.status_code == 200
+    assert response.json()["page"] == 0
+
+
+def test_row_page_with_target_filter(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+            DocumentRecord(source="Hello Universe", target="Привет Вселенная"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get(
+        "/document/1/records/row_page",
+        params={"target": "Привет", "row": 3},
+    )
+    assert response.status_code == 200
+    assert response.json()["page"] == 0
+
+
+def test_row_page_not_matching_filter_is_null(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+            DocumentRecord(source="Goodbye", target="Пока"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get(
+        "/document/1/records/row_page",
+        params={"source": "Hello", "row": 2},
+    )
+    assert response.status_code == 200
+    assert response.json()["page"] is None
+
+
+def test_row_page_out_of_range_is_null(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(source="Hello World", target="Привет Мир"),
+        ]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get(
+        "/document/1/records/row_page",
+        params={"source": "Hello", "row": 99},
+    )
+    assert response.status_code == 200
+    assert response.json()["page"] is None
+
+
+def test_row_page_with_pagination(
+    user_logged_client: TestClient, session: Session
+):
+    with session as s:
+        p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
+        records = [
+            DocumentRecord(source=f"Hello {i}", target=f"Привет {i}")
+            for i in range(150)
+        ] + [DocumentRecord(source="Goodbye", target="Пока")]
+        s.add(
+            Document(
+                name="test_doc.txt",
+                type=DocumentType.txt,
+                records=records,
+                processing_status="pending",
+                created_by=1,
+                project_id=p.id,
+            )
+        )
+        s.commit()
+
+    response = user_logged_client.get(
+        "/document/1/records/row_page",
+        params={"source": "Hello", "row": 101},
+    )
+    assert response.status_code == 200
+    assert response.json()["page"] == 1

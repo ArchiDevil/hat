@@ -18,7 +18,7 @@ from app.base.exceptions import BusinessLogicError, EntityNotFound, Unauthorized
 from app.db import get_db
 from app.documents import schema as doc_schema
 from app.services import DocumentService
-from app.user.depends import get_current_user_id, has_user_role, has_admin_role
+from app.user.depends import get_current_user_id, has_admin_role, has_user_role
 
 router = APIRouter(
     prefix="/document", tags=["document"], dependencies=[Depends(has_user_role)]
@@ -63,6 +63,30 @@ def get_doc_records(
 
     try:
         return service.get_document_records(doc_id, page, filters)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get("/{doc_id}/records/row_page")
+def get_row_page(
+    doc_id: int,
+    row: Annotated[int, Query(ge=1)],
+    service: Annotated[DocumentService, Depends(get_service)],
+    source: Annotated[
+        str | None, Query(description="Filter by source text (contains search)")
+    ] = None,
+    target: Annotated[
+        str | None, Query(description="Filter by target text (contains search)")
+    ] = None,
+) -> doc_schema.RowPageResponse:
+    filters = None
+    if source or target:
+        filters = doc_schema.DocumentRecordFilter(
+            source_filter=source, target_filter=target
+        )
+
+    try:
+        return service.get_row_page(doc_id, row, filters)
     except EntityNotFound as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 

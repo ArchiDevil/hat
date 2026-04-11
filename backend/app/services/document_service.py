@@ -365,6 +365,16 @@ class DocumentService:
             total_records=total_records,
         )
 
+    def get_row_page(
+        self,
+        doc_id: int,
+        row: int,
+        filters: doc_schema.DocumentRecordFilter | None = None,
+    ) -> doc_schema.RowPageResponse:
+        doc = self._get_document_by_id(doc_id)
+        page = self.__query.get_record_filtered_page(doc, row, filters)
+        return doc_schema.RowPageResponse(page=page)
+
     def _get_document_by_id(self, doc_id: int) -> Document:
         """
         Get a document by ID.

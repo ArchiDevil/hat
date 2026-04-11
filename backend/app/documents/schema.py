@@ -46,6 +46,10 @@ class DocumentRecordListResponse(BaseModel):
     total_records: int
 
 
+class RowPageResponse(BaseModel):
+    page: int | None
+
+
 class DocumentRecordUpdateResponse(Identified):
     source: str
     target: str

@@ -11,3 +11,11 @@ export const getApiBase = () => {
 }
 
 export const api = mande(getApiBase())
+
+export const filterQuery = (query: Record<string, any>) => {
+  return Object.fromEntries(
+    Object.entries(query).filter(
+      ([_, value]) => value !== undefined && value !== null
+    )
+  )
+}
