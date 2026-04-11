@@ -916,9 +916,7 @@ def test_has_comments_with_multiple_comments(
     assert records_response[0]["has_comments"]
 
 
-def test_row_page_without_filter(
-    user_logged_client: TestClient, session: Session
-):
+def test_record_page_without_filter(user_logged_client: TestClient, session: Session):
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
@@ -938,13 +936,13 @@ def test_row_page_without_filter(
         s.commit()
 
     response = user_logged_client.get(
-        "/document/1/records/row_page", params={"row": 1}
+        "/document/1/record_page", params={"record_id": 1}
     )
     assert response.status_code == 200
     assert response.json()["page"] == 0
 
 
-def test_row_page_with_source_filter(
+def test_record_page_with_source_filter(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
@@ -967,14 +965,14 @@ def test_row_page_with_source_filter(
         s.commit()
 
     response = user_logged_client.get(
-        "/document/1/records/row_page",
-        params={"source": "Hello", "row": 1},
+        "/document/1/record_page",
+        params={"source": "Hello", "record_id": 1},
     )
     assert response.status_code == 200
     assert response.json()["page"] == 0
 
 
-def test_row_page_with_target_filter(
+def test_record_page_with_target_filter(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
@@ -997,14 +995,14 @@ def test_row_page_with_target_filter(
         s.commit()
 
     response = user_logged_client.get(
-        "/document/1/records/row_page",
-        params={"target": "Привет", "row": 3},
+        "/document/1/record_page",
+        params={"target": "Привет", "record_id": 3},
     )
     assert response.status_code == 200
     assert response.json()["page"] == 0
 
 
-def test_row_page_not_matching_filter_is_null(
+def test_record_page_not_matching_filter_is_null(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
@@ -1026,14 +1024,14 @@ def test_row_page_not_matching_filter_is_null(
         s.commit()
 
     response = user_logged_client.get(
-        "/document/1/records/row_page",
-        params={"source": "Hello", "row": 2},
+        "/document/1/record_page",
+        params={"source": "Hello", "record_id": 2},
     )
     assert response.status_code == 200
     assert response.json()["page"] is None
 
 
-def test_row_page_out_of_range_is_null(
+def test_record_page_out_of_range_is_null(
     user_logged_client: TestClient, session: Session
 ):
     with session as s:
@@ -1054,16 +1052,14 @@ def test_row_page_out_of_range_is_null(
         s.commit()
 
     response = user_logged_client.get(
-        "/document/1/records/row_page",
-        params={"source": "Hello", "row": 99},
+        "/document/1/record_page",
+        params={"source": "Hello", "record_id": 99},
     )
     assert response.status_code == 200
     assert response.json()["page"] is None
 
 
-def test_row_page_with_pagination(
-    user_logged_client: TestClient, session: Session
-):
+def test_record_page_with_pagination(user_logged_client: TestClient, session: Session):
     with session as s:
         p = ProjectQuery(s).create_project(1, ProjectCreate(name="test"))
         records = [
@@ -1083,8 +1079,8 @@ def test_row_page_with_pagination(
         s.commit()
 
     response = user_logged_client.get(
-        "/document/1/records/row_page",
-        params={"source": "Hello", "row": 101},
+        "/document/1/record_page",
+        params={"source": "Hello", "record_id": 101},
     )
     assert response.status_code == 200
     assert response.json()["page"] == 1

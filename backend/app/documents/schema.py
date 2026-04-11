@@ -33,6 +33,11 @@ class DocumentRecord(Identified):
     source: str
     target: str
     approved: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentRecordExtended(DocumentRecord):
     repetitions_count: int
     has_comments: bool
     row_number: int
@@ -41,7 +46,7 @@ class DocumentRecord(Identified):
 
 
 class DocumentRecordListResponse(BaseModel):
-    records: list[DocumentRecord]
+    records: list[DocumentRecordExtended]
     page: int
     total_records: int
 
