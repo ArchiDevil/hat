@@ -7,6 +7,7 @@ import {StatusMessage} from '../schemas/StatusMessage'
 import {DocumentUpdateResponse} from '../schemas/DocumentUpdateResponse'
 import {DocumentUpdate} from '../schemas/DocumentUpdate'
 import {DocumentRecordListResponse} from '../schemas/DocumentRecordListResponse'
+import {DocumentRecord} from '../schemas/DocumentRecord'
 import {RowPageResponse} from '../schemas/RowPageResponse'
 import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
@@ -25,8 +26,11 @@ export const updateDocument = async (doc_id: number, content: DocumentUpdate): P
 export const getDocRecords = async (doc_id: number, page?: number | null, source?: string | null, target?: string | null): Promise<DocumentRecordListResponse> => {
   return await api.get<DocumentRecordListResponse>(`/document/${doc_id}/records`, {query: filterQuery({page, source, target})})
 }
-export const getRowPage = async (doc_id: number, row: number, source?: string | null, target?: string | null): Promise<RowPageResponse> => {
-  return await api.get<RowPageResponse>(`/document/${doc_id}/records/row_page`, {query: filterQuery({row, source, target})})
+export const getFirstUnapproved = async (doc_id: number): Promise<DocumentRecord | null> => {
+  return await api.get<DocumentRecord | null>(`/document/${doc_id}/first_unapproved`)
+}
+export const getRecordPage = async (doc_id: number, record_id: number, source?: string | null, target?: string | null): Promise<RowPageResponse> => {
+  return await api.get<RowPageResponse>(`/document/${doc_id}/record_page`, {query: filterQuery({record_id, source, target})})
 }
 export const createDoc = async (data: Body_create_doc_document__post): Promise<Document> => {
   const formData = new FormData()
