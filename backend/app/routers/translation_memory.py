@@ -7,12 +7,15 @@ from sqlalchemy.orm import Session
 from app.base.exceptions import EntityNotFound
 from app.db import get_db
 from app.models import StatusMessage
+from app.permissions import P, PermissionChecker
 from app.services import TranslationMemoryService
 from app.translation_memory import schema
-from app.user.depends import get_current_user_id, has_user_role, has_admin_role
+from app.user.depends import get_current_user_id
 
 router = APIRouter(
-    prefix="/translation_memory", tags=["tms"], dependencies=[Depends(has_user_role)]
+    prefix="/translation_memory",
+    tags=["tms"],
+    dependencies=[Depends(PermissionChecker(P.TM_READ))],
 )
 
 
@@ -64,7 +67,7 @@ def get_memory_records_similar(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.post("/upload", dependencies=[Depends(has_admin_role)])
+@router.post("/upload", dependencies=[Depends(PermissionChecker(P.TM_UPLOAD))])
 async def create_memory_from_file(
     file: Annotated[UploadFile, File()],
     service: Annotated[TranslationMemoryService, Depends(get_service)],
@@ -79,7 +82,7 @@ async def create_memory_from_file(
     "/",
     response_model=schema.TranslationMemory,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.TM_CREATE))],
 )
 def create_translation_memory(
     settings: schema.TranslationMemoryCreationSettings,
@@ -89,7 +92,7 @@ def create_translation_memory(
     return service.create_memory(settings.name, current_user)
 
 
-@router.delete("/{tm_id}", dependencies=[Depends(has_admin_role)])
+@router.delete("/{tm_id}", dependencies=[Depends(PermissionChecker(P.TM_DELETE))])
 def delete_memory(
     tm_id: int, service: Annotated[TranslationMemoryService, Depends(get_service)]
 ) -> StatusMessage:
@@ -108,7 +111,7 @@ def delete_memory(
             "content": {"application/octet-stream": {"schema": {"type": "string"}}},
         }
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.TM_DOWNLOAD))],
 )
 def download_memory(
     tm_id: int, service: Annotated[TranslationMemoryService, Depends(get_service)]

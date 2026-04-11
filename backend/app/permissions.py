@@ -17,6 +17,12 @@ class P:
     GLOSSARY_DELETE = "glossary:delete"
     GLOSSARY_RECORD_CREATE = "glossary_record:create"
 
+    TM_READ = "tm:read"
+    TM_CREATE = "tm:create"
+    TM_DELETE = "tm:delete"
+    TM_UPLOAD = "tm:upload"
+    TM_DOWNLOAD = "tm:download"
+
 
 ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
     "admin": frozenset(
@@ -28,12 +34,18 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.GLOSSARY_RECORD_CREATE,
             P.GLOSSARY_UPLOAD,
             P.GLOSSARY_DOWNLOAD,
+            P.TM_READ,
+            P.TM_CREATE,
+            P.TM_DELETE,
+            P.TM_UPLOAD,
+            P.TM_DOWNLOAD,
         }
     ),
     "user": frozenset(
         {
             P.GLOSSARY_READ,
             P.GLOSSARY_RECORD_CREATE,
+            P.TM_READ,
         }
     ),
 }
