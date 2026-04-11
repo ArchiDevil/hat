@@ -26,12 +26,15 @@ from app.glossary.schema import (
 )
 from app.glossary.tasks import create_glossary_from_file_tasks
 from app.models import StatusMessage
+from app.permissions import P, PermissionChecker
 from app.services import GlossaryService
-from app.user.depends import get_current_user_id, has_user_role, has_admin_role
+from app.user.depends import get_current_user_id
 from app.utils import encode_to_latin_1
 
 router = APIRouter(
-    prefix="/glossary", tags=["glossary"], dependencies=[Depends(has_user_role)]
+    prefix="/glossary",
+    tags=["glossary"],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_READ))],
 )
 
 
@@ -82,7 +85,7 @@ def retrieve_glossary(
     description="Create glossary",
     response_model=GlossaryResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_CREATE))],
 )
 def create_glossary(
     glossary: GlossarySchema,
@@ -111,7 +114,7 @@ def create_glossary(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_UPDATE))],
 )
 def update_glossary(
     glossary_id: int,
@@ -142,7 +145,7 @@ def update_glossary(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_DELETE))],
 )
 def delete_glossary(
     glossary_id: int, service: Annotated[GlossaryService, Depends(get_service)]
@@ -217,7 +220,7 @@ def create_glossary_record(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_UPDATE))],
 )
 def update_glossary_record(
     record_id: int,
@@ -248,7 +251,7 @@ def update_glossary_record(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_DELETE))],
 )
 def delete_glossary_record(
     record_id: int, service: Annotated[GlossaryService, Depends(get_service)]
@@ -267,7 +270,7 @@ def delete_glossary_record(
     description="Load xlsx glossary file",
     response_model=GlossaryLoadFileResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_UPLOAD))],
 )
 def create_glossary_from_file(
     user_id: Annotated[int, Depends(get_current_user_id)],
@@ -311,7 +314,7 @@ def create_glossary_from_file(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_DOWNLOAD))],
 )
 def download_glossary_csv(
     glossary_id: int,
