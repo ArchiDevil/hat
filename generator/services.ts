@@ -189,7 +189,7 @@ const getMethod = (method: ServiceMethod) => {
         .join(', ')
     }
 
-    const queryMethodParams = !query ? '' : `, {query: Object.fromEntries(Object.entries({${query}}).filter(([_, value]) => value !== undefined && value !== null))}`
+    const queryMethodParams = !query ? '' : `, {query: filterQuery({${query}})}`
     if (method.description.requestBody) {
       if (isFormData(method.description.requestBody.content)) {
         functionBody = [

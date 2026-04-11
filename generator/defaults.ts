@@ -14,6 +14,14 @@ export const genDefaults = (output: string, apiPrefix: string): void => {
     ``,
     `export const api = mande(getApiBase())`,
     ``,
+    `export const filterQuery = (query: Record<string, any>) => {`,
+    `  return Object.fromEntries(`,
+    `    Object.entries(query).filter(`,
+    `      ([_, value]) => value !== undefined && value !== null`,
+    `    )`,
+    `  )`,
+    `}`,
+    ``,
   ].join('\n')
 
   const fileName = `${output}/defaults.ts`
