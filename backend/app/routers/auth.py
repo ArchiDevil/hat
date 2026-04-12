@@ -11,7 +11,7 @@ from app.db import get_db
 from app.services import AuthService
 from app.services.user_service import UserService
 from app.settings import settings
-from app.user.depends import has_user_role
+from app.user.depends import get_current_user_id
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -49,7 +49,7 @@ def login(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
-@router.post("/logout", dependencies=[Depends(has_user_role)])
+@router.post("/logout", dependencies=[Depends(get_current_user_id)])
 def logout(response: Response) -> models.StatusMessage:
     # Logout doesn't need database access, just clear the cookie
     response.delete_cookie("session")
