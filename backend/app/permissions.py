@@ -26,6 +26,12 @@ class P:
     RECORD_READ = "record:read"
     RECORD_EDIT = "record:edit"
 
+    DOCUMENT_READ = "document:read"
+    DOCUMENT_CREATE = "document:create"
+    DOCUMENT_DELETE = "document:delete"
+    DOCUMENT_UPDATE = "document:update"
+    DOCUMENT_DOWNLOAD = "document:download"
+
     COMMENT_CREATE = "comment:create"
     COMMENT_MANAGE = "comment:manage"
 
@@ -47,6 +53,11 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.TM_DOWNLOAD,
             P.RECORD_READ,
             P.RECORD_EDIT,
+            P.DOCUMENT_READ,
+            P.DOCUMENT_CREATE,
+            P.DOCUMENT_DELETE,
+            P.DOCUMENT_UPDATE,
+            P.DOCUMENT_DOWNLOAD,
             P.COMMENT_CREATE,
             P.COMMENT_MANAGE,
         }
@@ -58,6 +69,7 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.TM_READ,
             P.RECORD_READ,
             P.RECORD_EDIT,
+            P.DOCUMENT_READ,
             P.COMMENT_CREATE,
             P.COMMENT_MANAGE,
         }

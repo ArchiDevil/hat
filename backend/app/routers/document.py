@@ -17,11 +17,14 @@ from app import models
 from app.base.exceptions import BusinessLogicError, EntityNotFound, UnauthorizedAccess
 from app.db import get_db
 from app.documents import schema as doc_schema
+from app.permissions import P, PermissionChecker
 from app.services import DocumentService
-from app.user.depends import get_current_user_id, has_admin_role, has_user_role
+from app.user.depends import get_current_user_id
 
 router = APIRouter(
-    prefix="/document", tags=["document"], dependencies=[Depends(has_user_role)]
+    prefix="/document",
+    tags=["document"],
+    dependencies=[Depends(PermissionChecker(P.DOCUMENT_READ))],
 )
 
 
@@ -40,7 +43,9 @@ def get_doc(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.get("/{doc_id}/records")
+@router.get(
+    "/{doc_id}/records", dependencies=[Depends(PermissionChecker(P.RECORD_READ))]
+)
 def get_doc_records(
     doc_id: int,
     service: Annotated[DocumentService, Depends(get_service)],
@@ -67,7 +72,10 @@ def get_doc_records(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.get("/{doc_id}/first_unapproved")
+@router.get(
+    "/{doc_id}/first_unapproved",
+    dependencies=[Depends(PermissionChecker(P.RECORD_READ))],
+)
 def get_first_unapproved(
     doc_id: int,
     service: Annotated[DocumentService, Depends(get_service)],
@@ -78,7 +86,9 @@ def get_first_unapproved(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.get("/{doc_id}/record_page")
+@router.get(
+    "/{doc_id}/record_page", dependencies=[Depends(PermissionChecker(P.RECORD_READ))]
+)
 def get_record_page(
     doc_id: int,
     record_id: Annotated[int, Query(ge=1)],
@@ -102,7 +112,9 @@ def get_record_page(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.delete("/{doc_id}", dependencies=[Depends(has_admin_role)])
+@router.delete(
+    "/{doc_id}", dependencies=[Depends(PermissionChecker(P.DOCUMENT_DELETE))]
+)
 def delete_doc(
     doc_id: int, service: Annotated[DocumentService, Depends(get_service)]
 ) -> models.StatusMessage:
@@ -112,7 +124,7 @@ def delete_doc(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.post("/", dependencies=[Depends(has_admin_role)])
+@router.post("/", dependencies=[Depends(PermissionChecker(P.DOCUMENT_CREATE))])
 async def create_doc(
     file: Annotated[UploadFile, File()],
     service: Annotated[DocumentService, Depends(get_service)],
@@ -127,7 +139,9 @@ async def create_doc(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.post("/{doc_id}/process", dependencies=[Depends(has_admin_role)])
+@router.post(
+    "/{doc_id}/process", dependencies=[Depends(PermissionChecker(P.DOCUMENT_PROCESS))]
+)
 def process_doc(
     doc_id: int,
     settings: doc_schema.DocumentProcessingSettings,
@@ -148,7 +162,7 @@ def process_doc(
             "content": {"application/octet-stream": {"schema": {"type": "string"}}},
         }
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.DOCUMENT_DOWNLOAD))],
 )
 def download_doc(
     doc_id: int, service: Annotated[DocumentService, Depends(get_service)]
@@ -168,7 +182,7 @@ def download_doc(
             "content": {"application/octet-stream": {"schema": {"type": "string"}}},
         }
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.DOCUMENT_DOWNLOAD))],
 )
 def download_original_doc(
     doc_id: int, service: Annotated[DocumentService, Depends(get_service)]
@@ -188,7 +202,7 @@ def download_original_doc(
             "content": {"application/octet-stream": {"schema": {"type": "string"}}},
         }
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.DOCUMENT_DOWNLOAD))],
 )
 def download_xliff(
     doc_id: int, service: Annotated[DocumentService, Depends(get_service)]
@@ -199,7 +213,7 @@ def download_xliff(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.put("/{doc_id}", dependencies=[Depends(has_admin_role)])
+@router.put("/{doc_id}", dependencies=[Depends(PermissionChecker(P.DOCUMENT_UPDATE))])
 def update_document(
     doc_id: int,
     update_data: doc_schema.DocumentUpdate,
@@ -220,7 +234,9 @@ def update_document(
         )
 
 
-@router.post("/upload_xliff", dependencies=[Depends(has_admin_role)])
+@router.post(
+    "/upload_xliff", dependencies=[Depends(PermissionChecker(P.DOCUMENT_UPDATE))]
+)
 async def upload_xliff(
     service: Annotated[DocumentService, Depends(get_service)],
     current_user: Annotated[int, Depends(get_current_user_id)],
