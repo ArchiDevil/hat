@@ -7,6 +7,7 @@ from app.base.exceptions import BusinessLogicError, EntityNotFound, Unauthorized
 from app.db import get_db
 from app.glossary.schema import GlossaryRecordSchema
 from app.models import StatusMessage
+from app.permissions import P, PermissionChecker
 from app.projects.schema import (
     DetailedProjectResponse,
     ProjectCreate,
@@ -22,10 +23,12 @@ from app.translation_memory.schema import (
     TranslationMemoryListResponse,
     TranslationMemoryListSimilarResponse,
 )
-from app.user.depends import get_current_user_id, has_user_role, has_admin_role
+from app.user.depends import get_current_user_id
 
 router = APIRouter(
-    prefix="/projects", tags=["projects"], dependencies=[Depends(has_user_role)]
+    prefix="/projects",
+    tags=["projects"],
+    dependencies=[Depends(PermissionChecker(P.PROJECT_READ))],
 )
 
 
@@ -84,7 +87,7 @@ def retrieve_project(
     description="Create project",
     response_model=ProjectResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.PROJECT_CREATE))],
 )
 def create_project(
     project: ProjectCreate,
@@ -108,7 +111,7 @@ def create_project(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.PROJECT_UPDATE))],
 )
 def update_project(
     project_id: int,
@@ -144,7 +147,7 @@ def update_project(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.PROJECT_DELETE))],
 )
 def delete_project(
     project_id: int,
@@ -209,7 +212,7 @@ def get_project_glossaries(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.PROJECT_MANAGE_RESOURCES))],
 )
 def set_project_glossaries(
     project_id: int,
@@ -240,6 +243,7 @@ def set_project_glossaries(
             },
         },
     },
+    dependencies=[Depends(PermissionChecker(P.GLOSSARY_READ))],
 )
 def project_glossary_search(
     project_id: int,
@@ -311,7 +315,7 @@ def get_project_translation_memories(
             },
         },
     },
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.PROJECT_MANAGE_RESOURCES))],
 )
 def set_project_translation_memories(
     project_id: int,
@@ -344,6 +348,7 @@ def set_project_translation_memories(
             },
         },
     },
+    dependencies=[Depends(PermissionChecker(P.TM_READ))],
 )
 def project_tm_search(
     project_id: int,
@@ -374,6 +379,7 @@ def project_tm_search(
             },
         },
     },
+    dependencies=[Depends(PermissionChecker(P.TM_READ))],
 )
 def project_tm_search_similar(
     project_id: int,

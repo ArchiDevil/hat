@@ -31,6 +31,13 @@ class P:
     DOCUMENT_DELETE = "document:delete"
     DOCUMENT_UPDATE = "document:update"
     DOCUMENT_DOWNLOAD = "document:download"
+    DOCUMENT_PROCESS = "document:process"
+
+    PROJECT_READ = "project:read"
+    PROJECT_CREATE = "project:create"
+    PROJECT_UPDATE = "project:update"
+    PROJECT_DELETE = "project:delete"
+    PROJECT_MANAGE_RESOURCES = "project:manage_resources"
 
     COMMENT_CREATE = "comment:create"
     COMMENT_MANAGE = "comment:manage"
@@ -58,6 +65,12 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.DOCUMENT_DELETE,
             P.DOCUMENT_UPDATE,
             P.DOCUMENT_DOWNLOAD,
+            P.DOCUMENT_PROCESS,
+            P.PROJECT_READ,
+            P.PROJECT_CREATE,
+            P.PROJECT_UPDATE,
+            P.PROJECT_DELETE,
+            P.PROJECT_MANAGE_RESOURCES,
             P.COMMENT_CREATE,
             P.COMMENT_MANAGE,
         }
@@ -70,6 +83,7 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.RECORD_READ,
             P.RECORD_EDIT,
             P.DOCUMENT_READ,
+            P.PROJECT_READ,
             P.COMMENT_CREATE,
             P.COMMENT_MANAGE,
         }
