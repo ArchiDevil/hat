@@ -7,14 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import StatusMessage
+from app.permissions import P, PermissionChecker
 from app.registration_token.schema import RegistrationTokenResponse
 from app.services.registration_token_service import RegistrationTokenService
-from app.user.depends import get_current_user_id, has_admin_role
+from app.user.depends import get_current_user_id
 
 router = APIRouter(
     prefix="/registration_tokens",
     tags=["tokens"],
-    dependencies=[Depends(has_admin_role)],
+    dependencies=[Depends(PermissionChecker(P.USER_MANAGE))],
 )
 
 

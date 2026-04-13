@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 from app import models
 from app.base.exceptions import EntityNotFound
 from app.db import get_db
+from app.permissions import P, PermissionChecker
 from app.services import UserService
-from app.user.depends import has_admin_role
 
 router = APIRouter(
-    prefix="/users", tags=["users"], dependencies=[Depends(has_admin_role)]
+    prefix="/users",
+    tags=["users"],
+    dependencies=[Depends(PermissionChecker(P.USER_MANAGE))],
 )
 
 

@@ -42,6 +42,8 @@ class P:
     COMMENT_CREATE = "comment:create"
     COMMENT_MANAGE = "comment:manage"
 
+    USER_MANAGE = "user:manage"
+
 
 ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
     "admin": frozenset(
@@ -73,6 +75,7 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.PROJECT_MANAGE_RESOURCES,
             P.COMMENT_CREATE,
             P.COMMENT_MANAGE,
+            P.USER_MANAGE,
         }
     ),
     "user": frozenset(
