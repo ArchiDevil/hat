@@ -9,12 +9,15 @@ from app.db import get_db
 from app.documents import schema as doc_schema
 from app.documents.models import DocumentRecordHistoryChangeType
 from app.glossary.schema import GlossaryRecordSchema
+from app.permissions import P, PermissionChecker
 from app.services.record_service import RecordService
 from app.translation_memory.schema import MemorySubstitution
-from app.user.depends import get_current_user_id, has_user_role
+from app.user.depends import get_current_user_id
 
 router = APIRouter(
-    prefix="/records", tags=["records"], dependencies=[Depends(has_user_role)]
+    prefix="/records",
+    tags=["records"],
+    dependencies=[Depends(PermissionChecker(P.RECORD_READ))],
 )
 
 
@@ -22,7 +25,7 @@ def get_service(db: Annotated[Session, Depends(get_db)]):
     return RecordService(db)
 
 
-@router.put("/{record_id}")
+@router.put("/{record_id}", dependencies=[Depends(PermissionChecker(P.RECORD_EDIT))])
 def update_doc_record(
     record_id: int,
     record: doc_schema.DocumentRecordUpdate,
@@ -48,7 +51,10 @@ def get_comments(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
-@router.post("/{record_id}/comments")
+@router.post(
+    "/{record_id}/comments",
+    dependencies=[Depends(PermissionChecker(P.COMMENT_CREATE))],
+)
 def create_comment(
     record_id: int,
     comment_data: CommentCreate,

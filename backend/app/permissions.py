@@ -23,6 +23,12 @@ class P:
     TM_UPLOAD = "tm:upload"
     TM_DOWNLOAD = "tm:download"
 
+    RECORD_READ = "record:read"
+    RECORD_EDIT = "record:edit"
+
+    COMMENT_CREATE = "comment:create"
+    COMMENT_MANAGE = "comment:manage"
+
 
 ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
     "admin": frozenset(
@@ -39,6 +45,10 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.TM_DELETE,
             P.TM_UPLOAD,
             P.TM_DOWNLOAD,
+            P.RECORD_READ,
+            P.RECORD_EDIT,
+            P.COMMENT_CREATE,
+            P.COMMENT_MANAGE,
         }
     ),
     "user": frozenset(
@@ -46,6 +56,10 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
             P.GLOSSARY_READ,
             P.GLOSSARY_RECORD_CREATE,
             P.TM_READ,
+            P.RECORD_READ,
+            P.RECORD_EDIT,
+            P.COMMENT_CREATE,
+            P.COMMENT_MANAGE,
         }
     ),
 }
