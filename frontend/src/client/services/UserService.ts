@@ -2,8 +2,8 @@
 
 import {getApiBase, api, filterQuery} from '../defaults'
 
-import {User} from '../schemas/User'
+import {UserWithPermissions} from '../schemas/UserWithPermissions'
 
-export const getCurrentUser = async (): Promise<User> => {
-  return await api.get<User>(`/user/`)
+export const getCurrentUser = async (): Promise<UserWithPermissions> => {
+  return await api.get<UserWithPermissions>(`/user/`)
 }
