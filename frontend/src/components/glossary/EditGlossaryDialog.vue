@@ -2,7 +2,7 @@
 import {ref, watchEffect} from 'vue'
 import {Button, Dialog, InputText} from 'primevue'
 
-import {isAdmin} from '../../utilities/auth'
+import {hasPermission} from '../../utilities/auth'
 import {useGlossaries} from '../../queries/glossaries'
 import {
   deleteGlossary,
@@ -85,7 +85,7 @@ const update = async () => {
 
       <div class="flex justify-end gap-2">
         <Button
-          v-if="isAdmin()"
+          v-if="hasPermission('glossary:delete')"
           class="mr-auto"
           type="button"
           label="Delete"

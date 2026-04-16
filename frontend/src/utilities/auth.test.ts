@@ -22,7 +22,8 @@ describe('auth utilities', () => {
       username: 'testuser',
       email: 'test@example.com',
       role: 'user',
-      disabled: false
+      disabled: false,
+      permissions: []
     }
 
     expect(isAdmin()).toBe(false)
@@ -35,7 +36,8 @@ describe('auth utilities', () => {
       username: 'admin',
       email: 'admin@example.com',
       role: 'admin',
-      disabled: false
+      disabled: false,
+      permissions: []
     }
 
     expect(isAdmin()).toBe(true)

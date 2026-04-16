@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app import models
+from app.permissions import ROLE_PERMISSIONS
 
 # pylint: disable=C0116
 
@@ -9,7 +10,9 @@ from app import models
 def test_can_get_current_user(user_logged_client: TestClient, session: Session):
     response = user_logged_client.get("/user/")
     assert response.status_code == 200
-    assert response.json() == {
+    data = response.json()
+    assert data.pop("permissions") == sorted(ROLE_PERMISSIONS["user"])
+    assert data == {
         "id": 1,
         "username": "test",
         "email": "test@test.com",

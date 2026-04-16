@@ -1,13 +1,12 @@
 import {acceptHMRUpdate, defineStore} from 'pinia'
-
-import {User} from '../client/schemas/User'
 import {getCurrentUser} from '../client/services/UserService'
 import {logout} from '../client/services/AuthService'
+import {UserWithPermissions} from '../client/schemas/UserWithPermissions'
 
 export const useUserStore = defineStore('user', {
   state() {
     return {
-      currentUser: undefined as User | undefined,
+      currentUser: undefined as UserWithPermissions | undefined,
       lastTimeRequested: new Date(),
     }
   },

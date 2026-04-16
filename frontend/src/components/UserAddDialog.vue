@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import {ref} from 'vue'
+import {Button, Checkbox, InputText, Select, Password} from 'primevue'
 
 import {UserToCreate} from '../client/schemas/UserToCreate'
 import {createUser} from '../client/services/UsersService'
-
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
-import Password from 'primevue/password'
 
 const emit = defineEmits<{
   create: []
@@ -70,6 +65,7 @@ const create = async () => {
           v-model="user.role"
           :options="[
             {value: 'user', name: 'User'},
+            {value: 'project_manager', name: 'Project Manager'},
             {value: 'admin', name: 'Administrator'},
           ]"
           option-label="name"

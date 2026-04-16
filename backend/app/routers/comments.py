@@ -8,11 +8,14 @@ from app.base.exceptions import EntityNotFound, UnauthorizedAccess
 from app.comments.schema import CommentResponse, CommentUpdate
 from app.db import get_db
 from app.models import StatusMessage
+from app.permissions import P, PermissionChecker
 from app.services import CommentService
-from app.user.depends import get_current_user_id, has_user_role
+from app.user.depends import get_current_user_id
 
 router = APIRouter(
-    prefix="/comments", tags=["comments"], dependencies=[Depends(has_user_role)]
+    prefix="/comments",
+    tags=["comments"],
+    dependencies=[Depends(PermissionChecker(P.COMMENT_MANAGE))],
 )
 
 
