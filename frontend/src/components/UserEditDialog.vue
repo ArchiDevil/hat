@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import {ref} from 'vue'
+import {Button, Checkbox, InputText, Select} from 'primevue'
 
 import {updateUser} from '../client/services/UsersService'
 import {User} from '../client/schemas/User'
-
-import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 
 const emit = defineEmits<{
   finish: []
@@ -54,6 +50,7 @@ const update = async () => {
           v-model="user.role"
           :options="[
             {value: 'user', name: 'User'},
+            {value: 'project_manager', name: 'Project Manager'},
             {value: 'admin', name: 'Administrator'},
           ]"
           option-label="name"

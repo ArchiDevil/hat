@@ -79,6 +79,24 @@ ROLE_PERMISSIONS: dict[str, frozenset[P]] = {
             P.USER_MANAGE,
         }
     ),
+    "project_manager": frozenset(
+        {
+            P.GLOSSARY_READ,
+            P.GLOSSARY_CREATE,
+            P.GLOSSARY_UPDATE,
+            P.GLOSSARY_RECORD_CREATE,
+            P.GLOSSARY_DOWNLOAD,
+            P.TM_READ,
+            P.TM_DOWNLOAD,
+            P.RECORD_READ,
+            P.RECORD_EDIT,
+            P.DOCUMENT_READ,
+            P.DOCUMENT_DOWNLOAD,
+            P.PROJECT_READ,
+            P.COMMENT_CREATE,
+            P.COMMENT_MANAGE,
+        }
+    ),
     "user": frozenset(
         {
             P.GLOSSARY_READ,
