@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.base.schema import Identified
+from app.permissions import P
 
 
 class DocumentStatus(Enum):
@@ -73,6 +74,10 @@ class ShortUser(Identified):
 
 class User(Identified, UserFields):
     pass
+
+
+class UserWithPermissions(User):
+    permissions: list[P]
 
 
 class AuthFields(BaseModel):

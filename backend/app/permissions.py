@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -8,7 +9,7 @@ from app.schema import User
 from app.user.depends import get_current_user_id
 
 
-class P:
+class P(StrEnum):
     GLOSSARY_READ = "glossary:read"
     GLOSSARY_UPLOAD = "glossary:upload"
     GLOSSARY_DOWNLOAD = "glossary:download"
@@ -45,7 +46,7 @@ class P:
     USER_MANAGE = "user:manage"
 
 
-ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
+ROLE_PERMISSIONS: dict[str, frozenset[P]] = {
     "admin": frozenset(
         {
             P.GLOSSARY_READ,
@@ -95,7 +96,7 @@ ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
 
 
 class PermissionChecker:
-    def __init__(self, permission: str) -> None:
+    def __init__(self, permission: P) -> None:
         self._permission = permission
 
     def __call__(
