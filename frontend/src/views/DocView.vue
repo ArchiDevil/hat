@@ -98,12 +98,16 @@ onUpdated(() => {
 
 const goToSegment = async (rowNumber: number) => {
   const targetPage = Math.floor(rowNumber / 100)
+  const currentPage = page.value
   await updatePage(targetPage)
   pendingFocus.value = {
     type: 'row',
     row: rowNumber,
   }
-  resolvePendingFocus()
+
+  if (currentPage == targetPage) {
+    resolvePendingFocus()
+  }
 }
 
 const sourceFilter = ref('')
@@ -284,12 +288,17 @@ const jumpUnapproved = async () => {
     return
   }
 
+  const currentPage = page.value
+
   await updatePage(pageResult.page)
   pendingFocus.value = {
     type: 'id',
     id: result.id,
   }
-  resolvePendingFocus()
+
+  if (currentPage == pageResult.page) {
+    resolvePendingFocus()
+  }
 }
 
 const onSegmentStartEdit = (id: number) => {
