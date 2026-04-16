@@ -11,7 +11,7 @@ import {
   getDownloadXliffLink,
 } from '../client/services/DocumentService'
 
-import {isAdmin} from '../utilities/auth'
+import {hasPermission} from '../utilities/auth'
 
 const {document} = defineProps<{
   document: DocumentWithRecordsCount
@@ -52,19 +52,19 @@ const percentage = computed(
     {{ document.approved_word_count }} / {{ document.total_word_count }} words
     <span class="text-gray-500">({{ percentage.toFixed(2) }}%)</span>
     <Link
-      v-if="isAdmin()"
+      v-if="hasPermission('document:download')"
       :href="downloadLink"
       class="inline-block"
       title="Download current file"
     />
     <Link
-      v-if="isAdmin()"
+      v-if="hasPermission('document:download')"
       :href="originalLink"
       class="inline-block"
       title="Download original file"
     />
     <Link
-      v-if="isAdmin()"
+      v-if="hasPermission('document:download')"
       :href="xliffLink"
       class="inline-block"
       title="Download XLIFF file"

@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
+import {Button, ProgressBar} from 'primevue'
 
 import {DocumentWithRecordsCount} from '../client/schemas/DocumentWithRecordsCount'
-
-import Button from 'primevue/button'
-import ProgressBar from 'primevue/progressbar'
-
 import RoutingLink from './RoutingLink.vue'
-import {isAdmin} from '../utilities/auth'
+import {hasPermission} from '../utilities/auth'
 
 const emit = defineEmits<{
   delete: []
@@ -87,7 +84,7 @@ const deleteFile = async () => {
       {{ status }}
     </span>
     <Button
-      v-if="isAdmin()"
+      v-if="hasPermission('document:update')"
       icon="pi pi-cog"
       severity="secondary"
       :disabled="busy"
@@ -96,7 +93,7 @@ const deleteFile = async () => {
       @click="$emit('openSettings', document.id)"
     />
     <Button
-      v-if="isAdmin()"
+      v-if="hasPermission('document:delete')"
       class="ml-auto"
       icon="pi pi-trash"
       severity="danger"

@@ -20,7 +20,7 @@ import PageNav from '../components/PageNav.vue'
 
 import {GlossaryRecordSchema} from '../client/schemas/GlossaryRecordSchema'
 import {debounce} from '../utilities/utils'
-import {isAdmin} from '../utilities/auth'
+import {hasPermission} from '../utilities/auth'
 import {GLOSSARY_KEYS} from '../queries/glossaries'
 import {listRecords, retrieveGlossary} from '../client/services/GlossaryService'
 
@@ -157,7 +157,7 @@ const currentRecordId = ref<number>(-1)
         <Column header-style="width: 3rem">
           <template #body="{data}">
             <Button
-              v-if="isAdmin()"
+              v-if="hasPermission('glossary:update')"
               icon="pi pi-pencil"
               aria-label="Edit"
               size="small"

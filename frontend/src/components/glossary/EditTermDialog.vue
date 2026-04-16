@@ -8,6 +8,7 @@ import {
 } from '../../client/services/GlossaryService'
 import {useQuery} from '@pinia/colada'
 import {GLOSSARY_KEYS} from '../../queries/glossaries'
+import {hasPermission} from '../../utilities/auth'
 
 const {glossaryId, currentPage, currentSearch, recordId} = defineProps<{
   glossaryId: number
@@ -120,6 +121,7 @@ const deleteRecord = async () => {
 
       <div class="flex justify-end gap-2">
         <Button
+          v-if="hasPermission('glossary:delete')"
           class="mr-auto"
           type="button"
           label="Delete"

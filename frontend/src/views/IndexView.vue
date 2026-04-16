@@ -17,7 +17,7 @@ import AddProjectModal from '../components/AddProjectModal.vue'
 import AddDocumentModal from '../components/AddDocumentModal.vue'
 import UploadXliffModal from '../components/UploadXliffModal.vue'
 import ProjectSettingsModal from '../components/ProjectSettingsModal.vue'
-import {isAdmin} from '../utilities/auth'
+import {hasPermission} from '../utilities/auth'
 
 const tmStore = useTmStore()
 
@@ -50,10 +50,11 @@ onMounted(async () => {
       <Panel header="Projects">
         <template #icons>
           <div
-            v-if="isAdmin()"
+            v-if="hasPermission('project:create') || hasPermission('document:update')"
             class="flex flex-row gap-4"
           >
             <Button
+              v-if="hasPermission('document:update')"
               icon="pi pi-file-arrow-up"
               size="small"
               label="Update translations"
@@ -61,6 +62,7 @@ onMounted(async () => {
               @click="uploadXliffVisible = true"
             />
             <Button
+              v-if="hasPermission('project:create')"
               icon="pi pi-plus"
               size="small"
               label="Add new project"
@@ -94,7 +96,7 @@ onMounted(async () => {
 
       <Panel header="Glossaries">
         <GlossaryUploadingDialog
-          v-if="isAdmin()"
+          v-if="hasPermission('glossary:create') && hasPermission('glossary:upload')"
           @uploaded="queryCache.invalidateQueries({key: GLOSSARY_KEYS.root})"
         />
         <GlossaryRecord
@@ -107,7 +109,7 @@ onMounted(async () => {
 
       <Panel header="Translation Memories">
         <TmxUploadingDialog
-          v-if="isAdmin()"
+          v-if="hasPermission('tm:create') && hasPermission('tm:upload')"
           @uploaded="tmStore.fetchMemories()"
         />
         <TmRecord
