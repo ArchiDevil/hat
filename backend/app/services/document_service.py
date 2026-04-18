@@ -183,7 +183,12 @@ class DocumentService:
         self.__query.enqueue_document(doc)
 
         task_config = doc_schema.DocumentTaskDescription(
-            type=doc.type.value, document_id=doc_id, settings=settings
+            document_id=doc_id,
+            task_data=doc_schema.DocumentProcessingTaskData(
+                task_type="document_processing",
+                document_type=doc.type.value,
+                settings=settings,
+            ),
         )
         self.__db.add(
             schema.DocumentTask(
@@ -359,7 +364,8 @@ class DocumentService:
 
         return doc_schema.DocumentRecordListResponse(
             records=[
-                doc_schema.DocumentRecordExtended.model_validate(record) for record in records
+                doc_schema.DocumentRecordExtended.model_validate(record)
+                for record in records
             ],
             page=page,
             total_records=total_records,

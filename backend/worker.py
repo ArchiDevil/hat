@@ -390,18 +390,20 @@ def process_task(session: Session, task: DocumentTask) -> bool:
 
         logging.info("New task found: %s", task.id)
 
-        task_data = DocumentTaskDescription.model_validate_json(task.data)
+        task_desc = DocumentTaskDescription.model_validate_json(task.data)
+        task_data = task_desc.task_data
 
-        if task_data.type not in ["txt", "xliff"]:
-            logging.error("Task data 'type' field is not 'txt' or 'xliff'")
+        if task_data.task_type != "document_processing":
+            raise RuntimeError("Unable to handle task type", task_data.task_type)
+
+        if task_data.document_type not in ["txt", "xliff"]:
             raise AttributeError("Task data 'type' field is not 'txt' or 'xliff'")
 
-        doc = GenericDocsQuery(session).get_document(task_data.document_id)
+        doc = GenericDocsQuery(session).get_document(task_desc.document_id)
 
         # TODO: what if the doc processing was started and left in a processing state?
         if not doc or doc.processing_status != DocumentStatus.PENDING.value:
-            logging.error("Document not found or not in a pending state")
-            return False
+            raise RuntimeError("Document not found or not in a pending state")
 
         doc.processing_status = DocumentStatus.PROCESSING.value
         session.commit()

@@ -346,11 +346,14 @@ def test_process_creates_task_for_xliff(
         assert task.status == "pending"
         loaded_data = json.loads(task.data)
         assert loaded_data == {
-            "type": "xliff",
             "document_id": 1,
-            "settings": {
-                "machine_translation_settings": None,
-                "similarity_threshold": 1.0,
+            "task_data": {
+                "task_type": "document_processing",
+                "document_type": "xliff",
+                "settings": {
+                    "machine_translation_settings": None,
+                    "similarity_threshold": 1.0,
+                },
             },
         }
 
@@ -380,11 +383,14 @@ def test_process_creates_task_for_txt(
         assert task.status == "pending"
         loaded_data = json.loads(task.data)
         assert loaded_data == {
-            "type": "txt",
             "document_id": 1,
-            "settings": {
-                "machine_translation_settings": None,
-                "similarity_threshold": 1.0,
+            "task_data": {
+                "task_type": "document_processing",
+                "document_type": "txt",
+                "settings": {
+                    "machine_translation_settings": None,
+                    "similarity_threshold": 1.0,
+                },
             },
         }
 

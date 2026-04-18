@@ -74,10 +74,15 @@ class DocumentProcessingSettings(BaseModel):
     similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
-class DocumentTaskDescription(BaseModel):
-    type: Literal["xliff", "txt"]
-    document_id: int
+class DocumentProcessingTaskData(BaseModel):
+    task_type: Literal["document_processing"]
+    document_type: Literal["xliff", "txt"]
     settings: DocumentProcessingSettings
+
+
+class DocumentTaskDescription(BaseModel):
+    document_id: int
+    task_data: DocumentProcessingTaskData
 
 
 class DocTranslationMemory(BaseModel):

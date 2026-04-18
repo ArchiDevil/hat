@@ -17,6 +17,7 @@ from app.documents.models import (
 )
 from app.documents.schema import (
     DocumentProcessingSettings,
+    DocumentProcessingTaskData,
     DocumentTaskDescription,
 )
 from app.glossary.models import Glossary, GlossaryRecord
@@ -62,10 +63,13 @@ def create_task(
 ):
     return DocumentTask(
         data=DocumentTaskDescription(
-            type=type_,
             document_id=1,
-            settings=DocumentProcessingSettings(
-                machine_translation_settings=mt_settings,
+            task_data=DocumentProcessingTaskData(
+                task_type="document_processing",
+                document_type=type_,
+                settings=DocumentProcessingSettings(
+                    machine_translation_settings=mt_settings,
+                ),
             ),
         ).model_dump_json(),
         status="pending",
