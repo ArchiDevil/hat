@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import (
+    api_tokens,
     auth,
     comments,
     document,
@@ -16,6 +17,7 @@ from app.routers import (
 from app.settings import settings
 
 ROUTERS = (
+    api_tokens,
     auth,
     comments,
     document,

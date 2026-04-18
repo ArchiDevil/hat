@@ -1,5 +1,6 @@
 """Service layer module for business logic operations."""
 
+from app.services.api_token_service import ApiTokenService
 from app.services.auth_service import AuthService
 from app.services.comment_service import CommentService
 from app.services.document_service import DocumentService
@@ -9,6 +10,7 @@ from app.services.translation_memory_service import TranslationMemoryService
 from app.services.user_service import UserService
 
 __all__ = [
+    "ApiTokenService",
     "AuthService",
     "CommentService",
     "DocumentService",

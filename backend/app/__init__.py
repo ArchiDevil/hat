@@ -1,3 +1,4 @@
+from app.api_token.models import ApiToken
 from app.comments.models import Comment
 from app.db import Base
 from app.documents.models import (
@@ -19,6 +20,7 @@ from app.schema import (
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 
 __all__ = [
+    "ApiToken",
     "Base",
     "Comment",
     "DocumentTask",
