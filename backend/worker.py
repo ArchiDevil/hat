@@ -99,7 +99,7 @@ class WorkerSegment:
         return True
 
 
-def get_segment_translation(
+def find_segment_translation(
     source: str,
     threshold: float,
     tm_ids: list[int],
@@ -140,66 +140,7 @@ def get_segment_translation(
     return None
 
 
-def process_document(
-    doc: Document,
-    settings: DocumentProcessingSettings,
-    session: Session,
-) -> bool:
-    tm_ids = [x.id for x in doc.project.translation_memories]
-    glossary_ids = [x.id for x in doc.project.glossaries]
-
-    start_time = time.time()
-    segments = extract_segments(doc)
-    logging.info(
-        "Segments extraction time: %.2f seconds, speed: %.2f segment/second",
-        time.time() - start_time,
-        len(segments) / (time.time() - start_time + 0.01),
-    )
-
-    start_time = time.time()
-    translate_indices = substitute_segments(
-        settings, session, segments, tm_ids, glossary_ids
-    )
-    logging.info(
-        "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
-        time.time() - start_time,
-        (len(segments) - len(translate_indices)) / (time.time() - start_time + 0.01),
-        len(segments) - len(translate_indices),
-        len(segments),
-    )
-
-    start_time = time.time()
-    mt_result = (
-        translate_segments(
-            segments,
-            translate_indices,
-            glossary_ids,
-            settings.machine_translation_settings,
-            session,
-        )
-        if settings.machine_translation_settings is not None
-        else True
-    )
-    logging.info(
-        "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
-        time.time() - start_time,
-        (len(translate_indices)) / (time.time() - start_time + 0.01),
-        len(translate_indices),
-        len(segments),
-    )
-
-    start_time = time.time()
-    create_doc_segments(doc, session, segments)
-    logging.info(
-        "Database segments creation time: %.2f seconds, speed: %.2f segment/second",
-        time.time() - start_time,
-        len(segments) / (time.time() - start_time + 0.01),
-    )
-
-    return mt_result
-
-
-def extract_segments(doc: Document) -> Sequence[WorkerSegment]:
+def extract_segments_from_file(doc: Document) -> Sequence[WorkerSegment]:
     if doc.type == DocumentType.xliff:
         xliff_document = doc.xliff
         xliff_data = extract_xliff_content(xliff_document.original_document.encode())
@@ -235,12 +176,12 @@ def substitute_segments(
         if not segment.needs_processing:
             continue
 
-        translation = get_segment_translation(
-            segment.original_segment.original,
-            settings.similarity_threshold,
-            tm_ids,
-            glossary_ids,
-            session,
+        translation = find_segment_translation(
+            source=segment.original_segment.original,
+            threshold=settings.similarity_threshold,
+            tm_ids=tm_ids,
+            glossary_ids=glossary_ids,
+            session=session,
         )
         if not translation:
             to_translate.append(idx)
@@ -380,6 +321,65 @@ def create_doc_segments(
         session.commit()
     else:
         logging.error("Unsupported document type %s", doc.type)
+
+
+def process_document(
+    doc: Document,
+    settings: DocumentProcessingSettings,
+    session: Session,
+) -> bool:
+    start_time = time.time()
+    segments = extract_segments_from_file(doc)
+    logging.info(
+        "Segments extraction time: %.2f seconds, speed: %.2f segment/second",
+        time.time() - start_time,
+        len(segments) / (time.time() - start_time + 0.01),
+    )
+
+    tm_ids = [x.id for x in doc.project.translation_memories]
+    glossary_ids = [x.id for x in doc.project.glossaries]
+
+    start_time = time.time()
+    translate_indices = substitute_segments(
+        settings, session, segments, tm_ids, glossary_ids
+    )
+    logging.info(
+        "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
+        time.time() - start_time,
+        (len(segments) - len(translate_indices)) / (time.time() - start_time + 0.01),
+        len(segments) - len(translate_indices),
+        len(segments),
+    )
+
+    start_time = time.time()
+    mt_result = (
+        translate_segments(
+            segments,
+            translate_indices,
+            glossary_ids,
+            settings.machine_translation_settings,
+            session,
+        )
+        if settings.machine_translation_settings is not None
+        else True
+    )
+    logging.info(
+        "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
+        time.time() - start_time,
+        (len(translate_indices)) / (time.time() - start_time + 0.01),
+        len(translate_indices),
+        len(segments),
+    )
+
+    start_time = time.time()
+    create_doc_segments(doc, session, segments)
+    logging.info(
+        "Database segments creation time: %.2f seconds, speed: %.2f segment/second",
+        time.time() - start_time,
+        len(segments) / (time.time() - start_time + 0.01),
+    )
+
+    return mt_result
 
 
 def process_task(session: Session, task: DocumentTask) -> bool:
