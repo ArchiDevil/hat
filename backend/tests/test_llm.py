@@ -224,9 +224,7 @@ def test_translate_lines_success(mock_openai):
 
     lines = [("line1", []), ("line2", [])]
 
-    result, has_error = llm.translate_lines(lines, "test_api_key")
-
-    assert not has_error
+    result = llm.translate_lines(lines, "test_api_key")
     assert result == ["translation1", "translation2"]
     mock_openai.assert_called_once_with(
         api_key="test_api_key", base_url="https://api.test.com/v4", http_client=None
@@ -247,9 +245,7 @@ def test_translate_lines_with_glossaries(mock_openai):
 
     lines = [("hello world", [("hello", "привет")])]
 
-    result, has_error = llm.translate_lines(lines, "test_api_key")
-
-    assert not has_error
+    result = llm.translate_lines(lines, "test_api_key")
     assert result == ["translation1"]
 
     # Check that glossary was included in the prompt
@@ -282,9 +278,8 @@ def test_translate_lines_api_error_retry(mock_openai, caplog):
     lines = [("line1", [])]
 
     with caplog.at_level(logging.WARNING):
-        result, has_error = llm.translate_lines(lines, "test_api_key")
+        result = llm.translate_lines(lines, "test_api_key")
 
-    assert not has_error
     assert result == ["translation1"]
     assert mock_client.chat.completions.create.call_count == 2
     assert "Failed to get answer from LLM, attempt 1" in caplog.text
@@ -305,14 +300,11 @@ def test_translate_lines_all_attempts_fail(mock_openai, caplog):
     lines = [("line1", []), ("line2", [])]
 
     with caplog.at_level(logging.ERROR):
-        result, has_error = llm.translate_lines(lines, "test_api_key")
+        result = llm.translate_lines(lines, "test_api_key")
 
     # Should return empty strings for all lines (task_size = 40)
     assert len(result) == 40  # 40 empty strings from task_size
     assert all(line == "" for line in result)  # All should be empty
-    assert (
-        not has_error
-    )  # Note: llm.translate_lines returns False even when all attempts fail
     assert mock_client.chat.completions.create.call_count == 3  # 3 attempts
     assert "Was unable to get answer from LLM, returning empty list" in caplog.text
 
@@ -349,9 +341,7 @@ def test_translate_lines_large_batch(mock_openai):
     # Create 81 lines (should be split into 3 batches: 40, 40, 1)
     lines = [(f"line{i}", []) for i in range(81)]
 
-    result, has_error = llm.translate_lines(lines, "test_api_key")
-
-    assert not has_error
+    result = llm.translate_lines(lines, "test_api_key")
     assert len(result) == 81
     assert mock_client.chat.completions.create.call_count == 3
 
@@ -369,10 +359,9 @@ def test_translate_lines_empty_content(mock_openai):
 
     lines = [("line1", [])]
 
-    result, has_error = llm.translate_lines(lines, "test_api_key")
+    result = llm.translate_lines(lines, "test_api_key")
 
     # Should handle None content gracefully - returns empty strings for all failed attempts
-    assert not has_error
     assert len(result) == 40  # task_size = 40, all failed so 40 empty strings
     assert all(line == "" for line in result)  # All should be empty
     assert mock_client.chat.completions.create.call_count == 3  # Should retry 3 times
@@ -394,9 +383,7 @@ def test_translate_lines_context_generation(mock_openai):
 
     lines = [(f"line{i}", []) for i in range(10)]
 
-    result, has_error = llm.translate_lines(lines, "test_api_key")
-
-    assert not has_error
+    result = llm.translate_lines(lines, "test_api_key")
     assert len(result) == 10
     assert "translation0" in result
 

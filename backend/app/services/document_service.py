@@ -182,20 +182,59 @@ class DocumentService:
         doc = self._get_document_by_id(doc_id)
         self.__query.enqueue_document(doc)
 
-        task_config = doc_schema.DocumentTaskDescription(
-            document_id=doc_id,
-            task_data=doc_schema.DocumentProcessingTaskData(
-                task_type="document_processing",
-                document_type=doc.type.value,
-                settings=settings,
+        tasks: list[schema.DocumentTask] = [
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.CreateSegmentsTaskData(
+                        task_type="create_segments"
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.SubstituteSegmentsTaskData(
+                        task_type="substitute_segments",
+                        settings=doc_schema.SubstituteSegmentsSettings(
+                            similarity_threshold=settings.similarity_threshold
+                        ),
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+        ]
+
+        if settings.machine_translation_settings:
+            tasks.append(
+                schema.DocumentTask(
+                    data=doc_schema.DocumentTaskDescription(
+                        document_id=doc_id,
+                        task_data=doc_schema.TranslateSegmentsTaskData(
+                            task_type="translate_segments",
+                            settings=doc_schema.TranslateSegmentsSettings(
+                                machine_translation_settings=settings.machine_translation_settings
+                            ),
+                        ),
+                    ).model_dump_json(),
+                    status=models.TaskStatus.PENDING.value,
+                )
+            )
+
+        tasks.append(
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.FinalizeDocumentTaskData(
+                        task_type="finalize_document"
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
             ),
         )
-        self.__db.add(
-            schema.DocumentTask(
-                data=task_config.model_dump_json(),
-                status=models.TaskStatus.PENDING.value,
-            )
-        )
+
+        self.__db.add_all(tasks)
         self.__db.commit()
         return models.StatusMessage(message="Ok")
 

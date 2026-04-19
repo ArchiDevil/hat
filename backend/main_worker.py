@@ -21,12 +21,16 @@ from app.documents.models import (
     XliffRecord,
 )
 from app.documents.query import GenericDocsQuery
-from app.documents.schema import DocumentProcessingSettings, DocumentTaskDescription
+from app.documents.schema import (
+    DocumentTaskDescription,
+    SubstituteSegmentsSettings,
+    TranslateSegmentsSettings,
+)
 from app.formats.txt import TxtSegment
 from app.formats.xliff import XliffSegment
 from app.glossary.query import GlossaryQuery
 from app.linguistic.word_count import count_words
-from app.models import DocumentStatus, MachineTranslationSettings, TaskStatus
+from app.models import DocumentStatus, TaskStatus
 from app.schema import DocumentTask
 from app.translators import llm, yandex
 from app.translators.common import LineWithGlossaries
@@ -41,7 +45,7 @@ from worker.utils import (
 
 def substitute_segments(
     doc: Document,
-    settings: DocumentProcessingSettings,
+    settings: SubstituteSegmentsSettings,
     session: Session,
     tm_ids: list[int],
     glossary_ids: list[int],
@@ -111,11 +115,9 @@ def substitute_segments(
 def translate_segments(
     doc: Document,
     glossary_ids: list[int],
-    mt_settings: MachineTranslationSettings,
+    settings: TranslateSegmentsSettings,
     session: Session,
-) -> bool:
-    mt_failed = False
-
+):
     # TODO: this might be harmful with LLM translation as it is loses
     # the connectivity of the context
     # TODO: this is unsafe on LARGE files, consider doing it in pages
@@ -146,45 +148,39 @@ def translate_segments(
             )
         )
 
-    try:
-        if mt_settings.type == "yandex":
-            translated, mt_failed = yandex.translate_lines(
-                sentences_with_ctx,
-                oauth_token=mt_settings.oauth_token,
-                folder_id=mt_settings.folder_id,
+    mt_failed = False
+    if settings.machine_translation_settings.type == "yandex":
+        translated, mt_failed = yandex.translate_lines(
+            sentences_with_ctx,
+            oauth_token=settings.machine_translation_settings.oauth_token,
+            folder_id=settings.machine_translation_settings.folder_id,
+        )
+    elif settings.machine_translation_settings.type == "llm":
+        translated = llm.translate_lines(
+            sentences_with_ctx,
+            api_key=settings.machine_translation_settings.api_key,
+        )
+
+    for idx, translated_line in enumerate(translated):
+        empty_records[idx].target = translated_line
+        history_records.append(
+            DocumentRecordHistory(
+                record_id=empty_records[idx].id,
+                diff=json.dumps(
+                    {
+                        "ops": [["insert", 0, 0, empty_records[idx].target]],
+                        "old_len": 0,
+                    }
+                ),
+                change_type=DocumentRecordHistoryChangeType.machine_translation,
             )
-        elif mt_settings.type == "llm":
-            translated, mt_failed = llm.translate_lines(
-                sentences_with_ctx, api_key=mt_settings.api_key
-            )
-        else:
-            logging.fatal("Unknown translation API")
-            raise RuntimeError("Unknown translation API")
+        )
 
-        for idx, translated_line in enumerate(translated):
-            empty_records[idx].target = translated_line
-            history_records.append(
-                DocumentRecordHistory(
-                    record_id=empty_records[idx].id,
-                    diff=json.dumps(
-                        {
-                            "ops": [["insert", 0, 0, empty_records[idx].target]],
-                            "old_len": 0,
-                        }
-                    ),
-                    change_type=DocumentRecordHistoryChangeType.machine_translation,
-                )
-            )
+    session.add_all(history_records)
+    session.commit()
 
-        session.add_all(history_records)
-        session.commit()
-
-    # TODO: handle specific exceptions instead of a generic one
-    except Exception as e:
-        logging.error("Machine translation error %s", e)
-        return False
-
-    return not mt_failed
+    if mt_failed:
+        raise RuntimeError("Machine translation error")
 
 
 def create_doc_segments(
@@ -255,48 +251,9 @@ def create_doc_segments(
     session.commit()
 
 
-def process_document(
-    doc: Document,
-    settings: DocumentProcessingSettings,
-    session: Session,
-) -> bool:
-    # Phase 1: Extraction
-    start_time = time.time()
-    segments = extract_segments_from_file(doc)
-    create_doc_segments(doc, session, segments)
-    logging.info(
-        "Segments extraction and creation time: %.2f seconds",
-        time.time() - start_time,
-    )
-
-    # Phase 2: Substitution
-    start_time = time.time()
-    tm_ids = [x.id for x in doc.project.translation_memories]
-    glossary_ids = [x.id for x in doc.project.glossaries]
-    substitute_segments(doc, settings, session, tm_ids, glossary_ids)
-    logging.info(
-        "Segments substitution time: %.2f seconds",
-        time.time() - start_time,
-    )
-
-    # Phase 3: Machine Translation
-    start_time = time.time()
-    mt_result = (
-        translate_segments(
-            doc,
-            glossary_ids,
-            settings.machine_translation_settings,
-            session,
-        )
-        if settings.machine_translation_settings is not None
-        else True
-    )
-    logging.info(
-        "Machine translation time: %.2f seconds",
-        time.time() - start_time,
-    )
-
-    return mt_result
+def finalize_document(doc: Document, session: Session):
+    doc.processing_status = DocumentStatus.DONE.value
+    session.commit()
 
 
 def process_task(session: Session, task: DocumentTask) -> bool:
@@ -309,37 +266,60 @@ def process_task(session: Session, task: DocumentTask) -> bool:
         logging.info("New task found: %s", task.id)
 
         task_desc = DocumentTaskDescription.model_validate_json(task.data)
-        task_data = task_desc.task_data
-
-        if task_data.task_type != "document_processing":
-            raise RuntimeError("Unable to handle task type", task_data.task_type)
-
-        if task_data.document_type not in ["txt", "xliff"]:
-            raise AttributeError("Task data 'type' field is not 'txt' or 'xliff'")
-
         doc = GenericDocsQuery(session).get_document(task_desc.document_id)
-
         if not doc:
             raise RuntimeError("Document not found")
 
-        # TODO: what if the doc processing was started and left in a processing state?
-        if doc.processing_status != DocumentStatus.PENDING.value:
-            if doc.processing_status == DocumentStatus.PROCESSING.value:
-                doc.processing_status = DocumentStatus.ERROR.value
-                session.commit()
-            raise RuntimeError("Document not in a pending state")
+        if doc.processing_status == DocumentStatus.ERROR.value:
+            raise RuntimeError("Document processing failed before")
 
-        doc.processing_status = DocumentStatus.PROCESSING.value
-        session.commit()
+        task_data = task_desc.task_data
 
-        if not process_document(doc, task_data.settings, session):
-            doc.processing_status = DocumentStatus.ERROR.value
+        if doc.processing_status == DocumentStatus.PENDING.value:
+            doc.processing_status = DocumentStatus.PROCESSING.value
             session.commit()
-            logging.error("Processing failed for document %d", doc.id)
-            return False
 
-        doc.processing_status = DocumentStatus.DONE.value
-        session.commit()
+        if task_data.task_type == "create_segments":
+            task_start_time = time.time()
+            segments = extract_segments_from_file(doc)
+            create_doc_segments(doc, session, segments)
+            logging.info(
+                "Segments extraction and creation time: %.2f seconds",
+                time.time() - task_start_time,
+            )
+        elif task_data.task_type == "substitute_segments":
+            task_start_time = time.time()
+            substitute_segments(
+                doc,
+                task_data.settings,
+                session,
+                [x.id for x in doc.project.translation_memories],
+                [x.id for x in doc.project.glossaries],
+            )
+            logging.info(
+                "Segments substitution time: %.2f seconds",
+                time.time() - task_start_time,
+            )
+        elif task_data.task_type == "translate_segments":
+            task_start_time = time.time()
+            translate_segments(
+                doc,
+                [x.id for x in doc.project.glossaries],
+                task_data.settings,
+                session,
+            )
+            logging.info(
+                "Machine translation time: %.2f seconds",
+                time.time() - task_start_time,
+            )
+        elif task_data.task_type == "finalize_document":
+            task_start_time = time.time()
+            finalize_document(doc, session)
+            logging.info(
+                "Finalization time: %.2f seconds",
+                time.time() - task_start_time,
+            )
+
         return True
     except Exception as e:
         logging.error("Task processing failed: %s", str(e))

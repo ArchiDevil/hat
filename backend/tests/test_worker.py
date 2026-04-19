@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from typing import Literal
 
 import pytest
 from sqlalchemy.orm import Session
@@ -16,9 +15,13 @@ from app.documents.models import (
     XliffRecord,
 )
 from app.documents.schema import (
-    DocumentProcessingSettings,
-    DocumentProcessingTaskData,
+    CreateSegmentsTaskData,
     DocumentTaskDescription,
+    FinalizeDocumentTaskData,
+    SubstituteSegmentsSettings,
+    SubstituteSegmentsTaskData,
+    TranslateSegmentsSettings,
+    TranslateSegmentsTaskData,
 )
 from app.glossary.models import Glossary, GlossaryRecord
 from app.models import (
@@ -33,8 +36,6 @@ from app.projects.models import (
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
 from main_worker import process_task
-
-# pylint: disable=C0116
 
 
 def get_session() -> Session:
@@ -56,24 +57,53 @@ def create_xliff_doc(data: str):
     return XliffDocument(parent_id=1, original_document=data)
 
 
-def create_task(
-    *,
-    type_: Literal["xliff", "txt"] = "xliff",
-    mt_settings: YandexTranslatorSettings | None = None,
-):
-    return DocumentTask(
-        data=DocumentTaskDescription(
-            document_id=1,
-            task_data=DocumentProcessingTaskData(
-                task_type="document_processing",
-                document_type=type_,
-                settings=DocumentProcessingSettings(
-                    machine_translation_settings=mt_settings,
+def create_tasks(*, mt_settings: YandexTranslatorSettings | None = None):
+    tasks = [
+        DocumentTask(
+            data=DocumentTaskDescription(
+                document_id=1,
+                task_data=CreateSegmentsTaskData(task_type="create_segments"),
+            ).model_dump_json(),
+            status="pending",
+        ),
+        DocumentTask(
+            data=DocumentTaskDescription(
+                document_id=1,
+                task_data=SubstituteSegmentsTaskData(
+                    task_type="substitute_segments",
+                    settings=SubstituteSegmentsSettings(),
                 ),
+            ).model_dump_json(),
+            status="pending",
+        ),
+    ]
+
+    if mt_settings:
+        tasks.append(
+            DocumentTask(
+                data=DocumentTaskDescription(
+                    document_id=1,
+                    task_data=TranslateSegmentsTaskData(
+                        task_type="translate_segments",
+                        settings=TranslateSegmentsSettings(
+                            machine_translation_settings=mt_settings
+                        ),
+                    ),
+                ).model_dump_json(),
+                status="pending",
             ),
-        ).model_dump_json(),
-        status="pending",
+        )
+
+    tasks.append(
+        DocumentTask(
+            data=DocumentTaskDescription(
+                document_id=1,
+                task_data=FinalizeDocumentTaskData(task_type="finalize_document"),
+            ).model_dump_json(),
+            status="pending",
+        ),
     )
+    return tasks
 
 
 def test_process_task_sets_xliff_records(session: Session):
@@ -113,12 +143,13 @@ def test_process_task_sets_xliff_records(session: Session):
             ]
         )
 
-        task = create_task()
-        s.add(task)
+        tasks = create_tasks()
+        s.add_all(tasks)
         s.commit()
 
-        result = process_task(s, task)
-        assert result
+        for task in tasks:
+            result = process_task(s, task)
+            assert result
 
         doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
@@ -241,12 +272,13 @@ def test_process_task_sets_txt_records(session: Session):
             ]
         )
 
-        task = create_task(type_="txt")
-        s.add(task)
+        tasks = create_tasks()
+        s.add_all(tasks)
         s.commit()
 
-        result = process_task(s, task)
-        assert result
+        for task in tasks:
+            result = process_task(s, task)
+            assert result
 
         doc = s.query(Document).filter_by(id=1).one()
         assert doc.processing_status == "done"
@@ -375,14 +407,15 @@ def test_process_task_uses_correct_tm_ids(session: Session):
                 Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
-                create_task(),
+                *create_tasks(),
                 ProjectTmAssociation(project_id=1, tm_id=2, mode="read"),
             ]
         )
         s.commit()
 
-        result = process_task(s, s.query(DocumentTask).one())
-        assert result
+        for task in s.query(DocumentTask).all():
+            result = process_task(s, task)
+            assert result
 
         doc = s.query(Document).filter_by(id=1).one()
         assert doc.records[0].source == "Regional Effects"
@@ -394,20 +427,15 @@ def test_process_task_uses_correct_tm_ids(session: Session):
     [
         {
             "document_id": 1,
-            "settings": {
+            "task_data": {"task_type": "create_segments_incorrect"},
+        },
+        {
+            "task_data": {
                 "use_machine_translation": False,
                 "machine_translation_settings": None,
             },
         },
         {
-            "type": "xliff",
-            "settings": {
-                "use_machine_translation": False,
-                "machine_translation_settings": None,
-            },
-        },
-        {
-            "type": "xliff",
             "document_id": 1,
         },
         {
@@ -450,7 +478,7 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
                 Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
-                create_task(
+                *create_tasks(
                     mt_settings=YandexTranslatorSettings(
                         type="yandex", folder_id="12345", oauth_token="fake"
                     ),
@@ -465,7 +493,8 @@ def test_process_task_puts_doc_in_error_state(monkeypatch, session: Session):
         monkeypatch.setattr("app.translators.yandex.translate_lines", fake_translate)
 
         try:
-            process_task(s, s.query(DocumentTask).one())
+            for task in s.query(DocumentTask).all():
+                process_task(s, task)
         except AttributeError:
             pass
 
@@ -502,14 +531,15 @@ def test_process_task_uses_correct_glossary_ids(session: Session):
                 Project(name="test", created_by=1),
                 create_doc(name="small.xliff", type_=DocumentType.xliff),
                 create_xliff_doc(file_data),
-                create_task(),
+                *create_tasks(),
                 ProjectGlossaryAssociation(project_id=1, glossary_id=2),
             ]
         )
         s.commit()
 
-        result = process_task(s, s.query(DocumentTask).one())
-        assert result
+        for task in s.query(DocumentTask).all():
+            result = process_task(s, task)
+            assert result
 
         doc = s.query(Document).filter_by(id=1).one()
 
