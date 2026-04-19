@@ -138,7 +138,6 @@ class XliffRecord(Base):
     parent_id: Mapped[int] = mapped_column(ForeignKey("document_record.id"))
     segment_id: Mapped[int] = mapped_column()
     document_id: Mapped[int] = mapped_column(ForeignKey("xliff_document.id"))
-    state: Mapped[str] = mapped_column()
 
     parent: Mapped["DocumentRecord"] = relationship()
     document: Mapped["XliffDocument"] = relationship(back_populates="records")

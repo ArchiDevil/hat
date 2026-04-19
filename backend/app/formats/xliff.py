@@ -87,7 +87,7 @@ class XliffSegment(BaseSegment):
         self._state = value
 
     def __str__(self) -> str:
-        return f"XliffSegment({self.id_}, {self._approved}, {self.original}, {self.translation})"
+        return f"XliffSegment(id={self.id_}, approved={self._approved}, original={self.original}, translation={self.translation})"
 
     def __repr__(self) -> str:
         return self.__str__()

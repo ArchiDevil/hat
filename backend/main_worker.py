@@ -5,8 +5,9 @@
 import json
 import logging
 import time
-from typing import Iterable, Sequence
+from typing import Sequence
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -32,88 +33,152 @@ from app.translators.common import LineWithGlossaries
 from worker.types import WorkerSegment
 from worker.utils import (
     RecordSource,
+    convert_segment_src,
     extract_segments_from_file,
     find_segment_translation,
 )
 
 
 def substitute_segments(
+    doc: Document,
     settings: DocumentProcessingSettings,
     session: Session,
-    segments: Iterable[WorkerSegment],
     tm_ids: list[int],
     glossary_ids: list[int],
-) -> list[int]:
-    """
-    Process what is possible to process, save segment indices for further machine
-    translation processing.
-    """
-    to_translate: list[int] = []
-    for idx, segment in enumerate(segments):
-        if not segment.needs_processing:
-            continue
+):
+    # TODO: this is unsafe on LARGE files, consider doing it in pages
+    empty_records = list(
+        session.execute(
+            select(DocumentRecord).where(
+                DocumentRecord.document_id == doc.id,
+                DocumentRecord.target == "",
+                DocumentRecord.approved.is_(False),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    history_records: list[DocumentRecordHistory] = []
 
+    for record in empty_records:
         translation = find_segment_translation(
-            source=segment.original_segment.original,
+            source=record.source,
             threshold=settings.similarity_threshold,
             tm_ids=tm_ids,
             glossary_ids=glossary_ids,
             session=session,
         )
+
         if not translation:
-            to_translate.append(idx)
             continue
 
         target_translation, segment_src = translation
-        segment.original_segment.translation = target_translation or ""
-        segment.segment_source = segment_src
+        record.target = target_translation or ""
+
+        # I hate it
+        if segment_src == RecordSource.full_match:
+            old_history = session.execute(
+                select(DocumentRecordHistory).where(
+                    DocumentRecordHistory.record_id == record.id,
+                    DocumentRecordHistory.change_type
+                    == DocumentRecordHistoryChangeType.initial_import.value,
+                )
+            ).scalar_one_or_none()
+            if old_history:
+                old_history.diff = json.dumps(
+                    {"ops": [["insert", 0, 0, record.target]], "old_len": 0}
+                )
+                session.commit()
+        else:
+            history_records.append(
+                DocumentRecordHistory(
+                    record_id=record.id,
+                    diff=json.dumps(
+                        {"ops": [["insert", 0, 0, record.target]], "old_len": 0}
+                    ),
+                    change_type=convert_segment_src(segment_src),
+                )
+            )
+
         if segment_src in (RecordSource.full_match, RecordSource.glossary):
-            segment.approved = True
-    return to_translate
+            record.approved = True
+
+    # Create records history after update
+    session.add_all(history_records)
+    session.commit()
 
 
 def translate_segments(
-    segments: Sequence[WorkerSegment],
-    translate_indices: Sequence[int],
+    doc: Document,
     glossary_ids: list[int],
     mt_settings: MachineTranslationSettings,
     session: Session,
 ) -> bool:
-    if not translate_indices:
-        return True
-
     mt_failed = False
+
+    # TODO: this might be harmful with LLM translation as it is loses
+    # the connectivity of the context
+    # TODO: this is unsafe on LARGE files, consider doing it in pages
+    empty_records = list(
+        session.execute(
+            select(DocumentRecord).where(
+                DocumentRecord.document_id == doc.id,
+                DocumentRecord.target == "",
+                DocumentRecord.approved.is_(False),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    history_records: list[DocumentRecordHistory] = []
+
+    sentences_with_ctx: list[LineWithGlossaries] = []
+    for record in empty_records:
+        sentences_with_ctx.append(
+            (
+                record.source,
+                [
+                    (x.source, x.target)
+                    for x in GlossaryQuery(session).get_glossary_records_for_phrase(
+                        record.source, glossary_ids
+                    )
+                ],
+            )
+        )
+
     try:
-        # TODO: this might be harmful with LLM translation as it is loses
-        # the connectivity of the context
-        segments_to_translate = [
-            segments[idx].original_segment.original for idx in translate_indices
-        ]
-        data_to_translate: list[LineWithGlossaries] = []
-        for segment in segments_to_translate:
-            glossary_records = GlossaryQuery(session).get_glossary_records_for_phrase(
-                segment, glossary_ids
-            )
-            data_to_translate.append(
-                (segment, [(x.source, x.target) for x in glossary_records])
-            )
         if mt_settings.type == "yandex":
             translated, mt_failed = yandex.translate_lines(
-                data_to_translate,
+                sentences_with_ctx,
                 oauth_token=mt_settings.oauth_token,
                 folder_id=mt_settings.folder_id,
             )
         elif mt_settings.type == "llm":
             translated, mt_failed = llm.translate_lines(
-                data_to_translate, api_key=mt_settings.api_key
+                sentences_with_ctx, api_key=mt_settings.api_key
             )
         else:
             logging.fatal("Unknown translation API")
             raise RuntimeError("Unknown translation API")
+
         for idx, translated_line in enumerate(translated):
-            segments[
-                translate_indices[idx]
-            ].original_segment.translation = translated_line
+            empty_records[idx].target = translated_line
+            history_records.append(
+                DocumentRecordHistory(
+                    record_id=empty_records[idx].id,
+                    diff=json.dumps(
+                        {
+                            "ops": [["insert", 0, 0, empty_records[idx].target]],
+                            "old_len": 0,
+                        }
+                    ),
+                    change_type=DocumentRecordHistoryChangeType.machine_translation,
+                )
+            )
+
+        session.add_all(history_records)
+        session.commit()
+
     # TODO: handle specific exceptions instead of a generic one
     except Exception as e:
         logging.error("Machine translation error %s", e)
@@ -126,7 +191,8 @@ def create_doc_segments(
     doc: Document,
     session: Session,
     segments: Sequence[WorkerSegment],
-) -> None:
+):
+    # Create generic segments
     doc_records = [
         DocumentRecord(
             document_id=doc.id,
@@ -140,31 +206,22 @@ def create_doc_segments(
     session.add_all(doc_records)
     session.commit()
 
-    def convert_segment_src(
-        src: RecordSource | None,
-    ) -> DocumentRecordHistoryChangeType:
-        if src == RecordSource.glossary:
-            return DocumentRecordHistoryChangeType.glossary_substitution
-        elif src == RecordSource.machine_translation:
-            return DocumentRecordHistoryChangeType.machine_translation
-        elif src == RecordSource.translation_memory:
-            return DocumentRecordHistoryChangeType.tm_substitution
-        else:
-            return DocumentRecordHistoryChangeType.initial_import
-
-    history_records = [
-        DocumentRecordHistory(
-            record_id=record.id,
-            diff=json.dumps({"ops": [["insert", 0, 0, record.target]], "old_len": 0}),
-            change_type=convert_segment_src(segments[i].segment_source),
+    # Create initial history
+    history_records: list[DocumentRecordHistory] = []
+    for record in doc_records:
+        history_records.append(
+            DocumentRecordHistory(
+                record_id=record.id,
+                diff=json.dumps(
+                    {"ops": [["insert", 0, 0, record.target]], "old_len": 0}
+                ),
+                change_type=DocumentRecordHistoryChangeType.initial_import,
+            )
         )
-        for i, record in enumerate(doc_records)
-    ]
     session.add_all(history_records)
     session.commit()
 
-    # create document specific segments
-    # TODO: is this possible to make it better?
+    # Create format specific segments
     if doc.type == DocumentType.xliff:
         xliff_records: Sequence[XliffRecord] = []
         for idx, segment in enumerate(segments):
@@ -177,11 +234,9 @@ def create_doc_segments(
                     parent_id=doc_records[idx].id,
                     document_id=doc.xliff.id,
                     segment_id=original.id_,
-                    state=original.state.value,
                 )
             )
         session.add_all(xliff_records)
-        session.commit()
     elif doc.type == DocumentType.txt:
         txt_records: Sequence[TxtRecord] = []
         for idx, segment in enumerate(segments):
@@ -195,9 +250,9 @@ def create_doc_segments(
                 )
             )
         session.add_all(txt_records)
-        session.commit()
     else:
         logging.error("Unsupported document type %s", doc.type)
+    session.commit()
 
 
 def process_document(
@@ -205,34 +260,30 @@ def process_document(
     settings: DocumentProcessingSettings,
     session: Session,
 ) -> bool:
+    # Phase 1: Extraction
     start_time = time.time()
     segments = extract_segments_from_file(doc)
+    create_doc_segments(doc, session, segments)
     logging.info(
-        "Segments extraction time: %.2f seconds, speed: %.2f segment/second",
+        "Segments extraction and creation time: %.2f seconds",
         time.time() - start_time,
-        len(segments) / (time.time() - start_time + 0.01),
     )
 
+    # Phase 2: Substitution
+    start_time = time.time()
     tm_ids = [x.id for x in doc.project.translation_memories]
     glossary_ids = [x.id for x in doc.project.glossaries]
-
-    start_time = time.time()
-    translate_indices = substitute_segments(
-        settings, session, segments, tm_ids, glossary_ids
-    )
+    substitute_segments(doc, settings, session, tm_ids, glossary_ids)
     logging.info(
-        "Segments substitution time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
+        "Segments substitution time: %.2f seconds",
         time.time() - start_time,
-        (len(segments) - len(translate_indices)) / (time.time() - start_time + 0.01),
-        len(segments) - len(translate_indices),
-        len(segments),
     )
 
+    # Phase 3: Machine Translation
     start_time = time.time()
     mt_result = (
         translate_segments(
-            segments,
-            translate_indices,
+            doc,
             glossary_ids,
             settings.machine_translation_settings,
             session,
@@ -241,19 +292,8 @@ def process_document(
         else True
     )
     logging.info(
-        "Machine translation time: %.2f seconds, speed: %.2f segment/second, segments: %d/%d",
+        "Machine translation time: %.2f seconds",
         time.time() - start_time,
-        (len(translate_indices)) / (time.time() - start_time + 0.01),
-        len(translate_indices),
-        len(segments),
-    )
-
-    start_time = time.time()
-    create_doc_segments(doc, session, segments)
-    logging.info(
-        "Database segments creation time: %.2f seconds, speed: %.2f segment/second",
-        time.time() - start_time,
-        len(segments) / (time.time() - start_time + 0.01),
     )
 
     return mt_result
@@ -261,6 +301,7 @@ def process_document(
 
 def process_task(session: Session, task: DocumentTask) -> bool:
     start_time = time.time()
+    doc: Document | None = None
     try:
         task.status = TaskStatus.PROCESSING.value
         session.commit()
@@ -278,9 +319,15 @@ def process_task(session: Session, task: DocumentTask) -> bool:
 
         doc = GenericDocsQuery(session).get_document(task_desc.document_id)
 
+        if not doc:
+            raise RuntimeError("Document not found")
+
         # TODO: what if the doc processing was started and left in a processing state?
-        if not doc or doc.processing_status != DocumentStatus.PENDING.value:
-            raise RuntimeError("Document not found or not in a pending state")
+        if doc.processing_status != DocumentStatus.PENDING.value:
+            if doc.processing_status == DocumentStatus.PROCESSING.value:
+                doc.processing_status = DocumentStatus.ERROR.value
+                session.commit()
+            raise RuntimeError("Document not in a pending state")
 
         doc.processing_status = DocumentStatus.PROCESSING.value
         session.commit()
@@ -296,6 +343,9 @@ def process_task(session: Session, task: DocumentTask) -> bool:
         return True
     except Exception as e:
         logging.error("Task processing failed: %s", str(e))
+        if doc is not None:
+            doc.processing_status = DocumentStatus.ERROR.value
+            session.commit()
         return False
     finally:
         logging.info("Task finished %s, removing...", task.id)

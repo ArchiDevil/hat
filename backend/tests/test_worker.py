@@ -137,11 +137,14 @@ def test_process_task_sets_xliff_records(session: Session):
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675606
-        assert xliff_record.state == "translated"
-        assert len(record.history) == 1
+        assert len(record.history) == 2
         assert (
             record.history[0].change_type
             == DocumentRecordHistoryChangeType.tm_substitution
+        )
+        assert (
+            record.history[1].change_type
+            == DocumentRecordHistoryChangeType.initial_import
         )
 
         # It does not provide text for missing TM record
@@ -154,7 +157,6 @@ def test_process_task_sets_xliff_records(session: Session):
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675607
-        assert xliff_record.state == "needs-translation"
         assert len(record.history) == 1
         assert (
             record.history[0].change_type
@@ -171,7 +173,6 @@ def test_process_task_sets_xliff_records(session: Session):
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675608
-        assert xliff_record.state == "translated"
         assert len(record.history) == 1
         assert (
             record.history[0].change_type
@@ -188,7 +189,6 @@ def test_process_task_sets_xliff_records(session: Session):
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675609
-        assert xliff_record.state == "translated"
         assert len(record.history) == 1
         assert (
             record.history[0].change_type
@@ -205,11 +205,14 @@ def test_process_task_sets_xliff_records(session: Session):
             s.query(XliffRecord).filter(XliffRecord.parent_id == record.id).one()
         )
         assert xliff_record.segment_id == 675610
-        assert xliff_record.state == "translated"
-        assert len(record.history) == 1
+        assert len(record.history) == 2
         assert (
             record.history[0].change_type
             == DocumentRecordHistoryChangeType.glossary_substitution
+        )
+        assert (
+            record.history[1].change_type
+            == DocumentRecordHistoryChangeType.initial_import
         )
 
 
@@ -326,7 +329,7 @@ def test_process_task_sets_txt_records(session: Session):
             if crlf
             else 306
         )
-        assert len(record.history) == 1
+        assert len(record.history) == 2
         assert (
             record.history[0].change_type
             == DocumentRecordHistoryChangeType.tm_substitution

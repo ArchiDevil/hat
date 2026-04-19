@@ -229,7 +229,15 @@ class DocumentService:
                 if record and not segment.approved:
                     segment.translation = record.parent.target
                     segment.approved = record.parent.approved
-                    segment.state = SegmentState(record.state)
+                    segment.state = (
+                        SegmentState.FINAL
+                        if record.parent.approved
+                        else (
+                            SegmentState.TRANSLATED
+                            if record.parent.target
+                            else (SegmentState.NEEDS_TRANSLATION)
+                        )
+                    )
 
             processed_document.commit()
             file = processed_document.write()

@@ -4,7 +4,7 @@ from typing import Sequence
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.documents.models import Document, DocumentType
+from app.documents.models import Document, DocumentRecordHistoryChangeType, DocumentType
 from app.formats.txt import extract_txt_content
 from app.formats.xliff import extract_xliff_content
 from app.glossary.models import GlossaryRecord
@@ -72,3 +72,16 @@ def find_segment_translation(
         return (tm_data.target, RecordSource.translation_memory) if tm_data else None
 
     return None
+
+
+def convert_segment_src(
+    src: RecordSource | None,
+) -> DocumentRecordHistoryChangeType:
+    if src == RecordSource.glossary:
+        return DocumentRecordHistoryChangeType.glossary_substitution
+    elif src == RecordSource.machine_translation:
+        return DocumentRecordHistoryChangeType.machine_translation
+    elif src == RecordSource.translation_memory:
+        return DocumentRecordHistoryChangeType.tm_substitution
+    else:
+        return DocumentRecordHistoryChangeType.initial_import

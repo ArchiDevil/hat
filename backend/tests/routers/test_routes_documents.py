@@ -436,25 +436,21 @@ def test_download_xliff_doc(admin_logged_client: TestClient, session: Session):
                 parent_id=1,
                 segment_id=675606,
                 document_id=1,
-                state="needs-translation",
             ),
             XliffRecord(
                 parent_id=2,
                 segment_id=675607,
                 document_id=1,
-                state="needs-translation",
             ),
             XliffRecord(
                 parent_id=3,
                 segment_id=675608,
                 document_id=1,
-                state="translated",
             ),
             XliffRecord(
                 parent_id=4,
                 segment_id=675609,
                 document_id=1,
-                state="final",
             ),
         ]
         s.add_all(records)
