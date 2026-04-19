@@ -32,7 +32,7 @@ from app.projects.models import (
 )
 from app.schema import DocumentTask
 from app.translation_memory.models import TranslationMemory, TranslationMemoryRecord
-from worker import process_task
+from main_worker import process_task
 
 # pylint: disable=C0116
 

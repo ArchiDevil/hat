@@ -5,9 +5,10 @@ RUN pip install -r /app/requirements.txt
 
 RUN python3 -m nltk.downloader punkt_tab
 
-COPY ./backend/worker.py /app/worker.py
+COPY ./backend/main_worker.py /app/main_worker.py
+COPY ./backend/worker /app/worker
 COPY ./backend/app /app/app
 
 WORKDIR /app
 EXPOSE 8000
-CMD ["python3", "/app/worker.py"]
+CMD ["python3", "/app/main_worker.py"]
