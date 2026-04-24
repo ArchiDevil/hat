@@ -25,6 +25,9 @@ const router = useRouter()
         @processed="
           (fileId) => router.push({name: 'document', params: {id: fileId}})
         "
+        @matched="
+          (fileId) => router.push({name: 'document', params: {id: fileId}})
+        "
       />
     </template>
   </Dialog>
