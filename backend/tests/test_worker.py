@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.documents.models import (
     Document,
+    DocumentRecord,
     DocumentRecordHistoryChangeType,
     DocumentType,
     TxtDocument,
@@ -18,6 +19,8 @@ from app.documents.schema import (
     CreateSegmentsTaskData,
     DocumentTaskDescription,
     FinalizeDocumentTaskData,
+    MatchSegmentsSettings,
+    MatchSegmentsTaskData,
     SubstituteSegmentsSettings,
     SubstituteSegmentsTaskData,
     TranslateSegmentsSettings,
@@ -545,3 +548,102 @@ def test_process_task_uses_correct_glossary_ids(session: Session):
 
         assert doc.records[0].source == "Regional Effects"
         assert doc.records[0].target == "Glossary entry 2"
+
+
+def test_process_task_match_segments(session: Session):
+    with session as s:
+        s.add_all(
+            [
+                Project(name="test", created_by=1),
+                create_doc(name="test.txt", type_=DocumentType.txt),
+            ]
+        )
+        s.commit()
+
+        doc = s.query(Document).filter_by(id=1).one()
+
+        records = [
+            DocumentRecord(
+                document_id=doc.id,
+                source="Hello world",
+                target="",
+                approved=False,
+                word_count=2,
+            ),
+            DocumentRecord(
+                document_id=doc.id,
+                source="Goodbye world",
+                target="",
+                approved=False,
+                word_count=2,
+            ),
+            DocumentRecord(
+                document_id=doc.id,
+                source="The end",
+                target="",
+                approved=False,
+                word_count=2,
+            ),
+        ]
+        s.add_all(records)
+        s.commit()
+
+        text_to_match = "Привет мир. До свидания мир. Конец."
+
+        task = DocumentTask(
+            data=DocumentTaskDescription(
+                document_id=doc.id,
+                task_data=MatchSegmentsTaskData(
+                    task_type="match_segments",
+                    settings=MatchSegmentsSettings(
+                        text_to_match=text_to_match,
+                        api_key="fake-key",
+                    ),
+                ),
+            ).model_dump_json(),
+            status="pending",
+        )
+        s.add(task)
+        s.commit()
+
+        from app.translators.matcher import segment_russian_text
+
+        ru_segments = segment_russian_text(text_to_match)
+
+        fake_alignments = {
+            0: [0],
+            1: [1],
+            2: [2],
+        }
+
+        def fake_match_all(*args, **kwargs):
+            return fake_alignments
+
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr("main_worker.match_all_segments", fake_match_all)
+
+        try:
+            result = process_task(s, task)
+            assert result
+        finally:
+            monkeypatch.undo()
+
+        s.expire_all()
+        doc = s.query(Document).filter_by(id=1).one()
+        assert len(doc.records) == 3
+
+        assert doc.records[0].source == "Hello world"
+        assert doc.records[0].target == ru_segments[0]
+        assert len(doc.records[0].history) == 1
+        assert (
+            doc.records[0].history[0].change_type
+            == DocumentRecordHistoryChangeType.machine_translation
+        )
+
+        assert doc.records[1].source == "Goodbye world"
+        assert doc.records[1].target == ru_segments[1]
+        assert len(doc.records[1].history) == 1
+
+        assert doc.records[2].source == "The end"
+        assert doc.records[2].target == ru_segments[2]
+        assert len(doc.records[2].history) == 1

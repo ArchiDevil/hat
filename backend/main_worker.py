@@ -23,6 +23,7 @@ from app.documents.models import (
 from app.documents.query import GenericDocsQuery
 from app.documents.schema import (
     DocumentTaskDescription,
+    MatchSegmentsSettings,
     SubstituteSegmentsSettings,
     TranslateSegmentsSettings,
 )
@@ -34,6 +35,7 @@ from app.models import DocumentStatus, TaskStatus
 from app.schema import DocumentTask
 from app.translators import llm, yandex
 from app.translators.common import LineWithGlossaries
+from app.translators.matcher import match_all_segments, segment_russian_text
 from worker.types import WorkerSegment
 from worker.utils import (
     RecordSource,
@@ -256,6 +258,57 @@ def finalize_document(doc: Document, session: Session):
     session.commit()
 
 
+def match_segments_handler(
+    doc: Document,
+    match_settings: MatchSegmentsSettings,
+    session: Session,
+):
+    records = list(
+        session.execute(
+            select(DocumentRecord)
+            .where(DocumentRecord.document_id == doc.id)
+            .order_by(DocumentRecord.id)
+        )
+        .scalars()
+        .all()
+    )
+
+    en_texts = [record.source for record in records]
+    ru_texts = segment_russian_text(match_settings.text_to_match)
+
+    alignments = match_all_segments(
+        en_texts,
+        ru_texts,
+        match_settings.api_key,
+        batch_size=match_settings.batch_size,
+        ru_batch_size=match_settings.ru_batch_size,
+        margin=match_settings.margin,
+    )
+
+    en_to_ru_texts: dict[int, str] = {}
+    for en_idx, ru_indices in alignments.items():
+        en_to_ru_texts[en_idx] = " ".join(
+            ru_texts[ri] for ri in ru_indices if 0 <= ri < len(ru_texts)
+        )
+
+    history_records: list[DocumentRecordHistory] = []
+    for idx, record in enumerate(records):
+        if idx in en_to_ru_texts:
+            record.target = en_to_ru_texts[idx]
+            history_records.append(
+                DocumentRecordHistory(
+                    record_id=record.id,
+                    diff=json.dumps(
+                        {"ops": [["insert", 0, 0, record.target]], "old_len": 0}
+                    ),
+                    change_type=DocumentRecordHistoryChangeType.machine_translation,
+                )
+            )
+
+    session.add_all(history_records)
+    session.commit()
+
+
 def process_task(session: Session, task: DocumentTask) -> bool:
     start_time = time.time()
     doc: Document | None = None
@@ -317,6 +370,13 @@ def process_task(session: Session, task: DocumentTask) -> bool:
             finalize_document(doc, session)
             logging.info(
                 "Finalization time: %.2f seconds",
+                time.time() - task_start_time,
+            )
+        elif task_data.task_type == "match_segments":
+            task_start_time = time.time()
+            match_segments_handler(doc, task_data.settings, session)
+            logging.info(
+                "Segment matching time: %.2f seconds",
                 time.time() - task_start_time,
             )
 

@@ -238,6 +238,53 @@ class DocumentService:
         self.__db.commit()
         return models.StatusMessage(message="Ok")
 
+    async def match_document(
+        self, doc_id: int, file_to_match: UploadFile, api_key: str
+    ) -> models.StatusMessage:
+        doc = self._get_document_by_id(doc_id)
+        self.__query.enqueue_document(doc)
+
+        file_data = await file_to_match.read()
+        original_document = file_data.decode("utf-8")
+
+        tasks = [
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.CreateSegmentsTaskData(
+                        task_type="create_segments"
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.MatchSegmentsTaskData(
+                        task_type="match_segments",
+                        settings=doc_schema.MatchSegmentsSettings(
+                            text_to_match=original_document,
+                            api_key=api_key,
+                        ),
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.FinalizeDocumentTaskData(
+                        task_type="finalize_document"
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+        ]
+
+        self.__db.add_all(tasks)
+        self.__db.commit()
+        return models.StatusMessage(message="Ok")
+
     def download_document(self, doc_id: int) -> StreamingResponse:
         """
         Download a document.

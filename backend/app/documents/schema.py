@@ -96,6 +96,19 @@ class TranslateSegmentsTaskData(BaseModel):
     settings: TranslateSegmentsSettings
 
 
+class MatchSegmentsSettings(BaseModel):
+    text_to_match: str
+    api_key: str
+    batch_size: int = 50
+    ru_batch_size: int = 75
+    margin: int = 15
+
+
+class MatchSegmentsTaskData(BaseModel):
+    task_type: Literal["match_segments"]
+    settings: MatchSegmentsSettings
+
+
 class FinalizeDocumentTaskData(BaseModel):
     task_type: Literal["finalize_document"]
 
@@ -106,6 +119,7 @@ class DocumentTaskDescription(BaseModel):
         CreateSegmentsTaskData
         | SubstituteSegmentsTaskData
         | TranslateSegmentsTaskData
+        | MatchSegmentsTaskData
         | FinalizeDocumentTaskData
     )
 
