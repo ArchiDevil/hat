@@ -6,13 +6,21 @@ from .base import BaseSegment
 
 
 class TxtSegment(BaseSegment):
-    def __init__(self, id_: int, source: str, target: str | None, offset: int) -> None:
-        super().__init__(id_, source, target)
+    def __init__(self, id_: int, source: str, offset: int) -> None:
+        super().__init__(id_, source, None)
         self._offset = offset
 
     @property
     def offset(self) -> int:
         return self._offset
+
+    def __str__(self) -> str:
+        return (
+            f"TxtSegment(id={self.id_}, source={self._source}, offset={self._offset})"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 class TxtData:
@@ -55,7 +63,6 @@ def extract_txt_content(content: str) -> TxtData:
                 TxtSegment(
                     id_,
                     line[padded_offset + b : padded_offset + e],
-                    None,
                     line_offset + padded_offset + b,
                 )
             )

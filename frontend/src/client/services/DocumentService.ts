@@ -12,6 +12,7 @@ import {RowPageResponse} from '../schemas/RowPageResponse'
 import {Document} from '../schemas/Document'
 import {Body_create_doc_document__post} from '../schemas/Body_create_doc_document__post'
 import {DocumentProcessingSettings} from '../schemas/DocumentProcessingSettings'
+import {Body_match_doc_document__doc_id__match_post} from '../schemas/Body_match_doc_document__doc_id__match_post'
 import {Body_upload_xliff_document_upload_xliff_post} from '../schemas/Body_upload_xliff_document_upload_xliff_post'
 
 export const getDoc = async (doc_id: number): Promise<DocumentWithRecordsCount> => {
@@ -42,6 +43,14 @@ export const createDoc = async (data: Body_create_doc_document__post): Promise<D
 }
 export const processDoc = async (doc_id: number, content: DocumentProcessingSettings): Promise<StatusMessage> => {
   return await api.post<StatusMessage>(`/document/${doc_id}/process`, content)
+}
+export const matchDoc = async (doc_id: number, data: Body_match_doc_document__doc_id__match_post): Promise<StatusMessage> => {
+  const formData = new FormData()
+  for (const key of Object.keys(data) as Array<keyof typeof data>) {
+    const val = data[key];
+    if (val !== undefined) formData.append(key, val instanceof Blob ? val : String(val))
+  }
+  return await api.post<StatusMessage>(`/document/${doc_id}/match`, formData)
 }
 export const getDownloadDocLink = (doc_id: number): string => {
   return getApiBase() + `/document/${doc_id}/download`

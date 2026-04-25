@@ -182,15 +182,106 @@ class DocumentService:
         doc = self._get_document_by_id(doc_id)
         self.__query.enqueue_document(doc)
 
-        task_config = doc_schema.DocumentTaskDescription(
-            type=doc.type.value, document_id=doc_id, settings=settings
-        )
-        self.__db.add(
+        tasks: list[schema.DocumentTask] = [
             schema.DocumentTask(
-                data=task_config.model_dump_json(),
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.CreateSegmentsTaskData(
+                        task_type="create_segments"
+                    ),
+                ).model_dump_json(),
                 status=models.TaskStatus.PENDING.value,
+            ),
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.SubstituteSegmentsTaskData(
+                        task_type="substitute_segments",
+                        settings=doc_schema.SubstituteSegmentsSettings(
+                            similarity_threshold=settings.similarity_threshold
+                        ),
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+        ]
+
+        if settings.machine_translation_settings:
+            tasks.append(
+                schema.DocumentTask(
+                    data=doc_schema.DocumentTaskDescription(
+                        document_id=doc_id,
+                        task_data=doc_schema.TranslateSegmentsTaskData(
+                            task_type="translate_segments",
+                            settings=doc_schema.TranslateSegmentsSettings(
+                                machine_translation_settings=settings.machine_translation_settings
+                            ),
+                        ),
+                    ).model_dump_json(),
+                    status=models.TaskStatus.PENDING.value,
+                )
             )
+
+        tasks.append(
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.FinalizeDocumentTaskData(
+                        task_type="finalize_document"
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
         )
+
+        self.__db.add_all(tasks)
+        self.__db.commit()
+        return models.StatusMessage(message="Ok")
+
+    async def match_document(
+        self, doc_id: int, file_to_match: UploadFile, api_key: str
+    ) -> models.StatusMessage:
+        doc = self._get_document_by_id(doc_id)
+        self.__query.enqueue_document(doc)
+
+        file_data = await file_to_match.read()
+        original_document = file_data.decode("utf-8")
+
+        tasks = [
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.CreateSegmentsTaskData(
+                        task_type="create_segments"
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.MatchSegmentsTaskData(
+                        task_type="match_segments",
+                        settings=doc_schema.MatchSegmentsSettings(
+                            text_to_match=original_document,
+                            api_key=api_key,
+                        ),
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+            schema.DocumentTask(
+                data=doc_schema.DocumentTaskDescription(
+                    document_id=doc_id,
+                    task_data=doc_schema.FinalizeDocumentTaskData(
+                        task_type="finalize_document"
+                    ),
+                ).model_dump_json(),
+                status=models.TaskStatus.PENDING.value,
+            ),
+        ]
+
+        self.__db.add_all(tasks)
         self.__db.commit()
         return models.StatusMessage(message="Ok")
 
@@ -224,7 +315,15 @@ class DocumentService:
                 if record and not segment.approved:
                     segment.translation = record.parent.target
                     segment.approved = record.parent.approved
-                    segment.state = SegmentState(record.state)
+                    segment.state = (
+                        SegmentState.FINAL
+                        if record.parent.approved
+                        else (
+                            SegmentState.TRANSLATED
+                            if record.parent.target
+                            else (SegmentState.NEEDS_TRANSLATION)
+                        )
+                    )
 
             processed_document.commit()
             file = processed_document.write()
@@ -359,7 +458,8 @@ class DocumentService:
 
         return doc_schema.DocumentRecordListResponse(
             records=[
-                doc_schema.DocumentRecordExtended.model_validate(record) for record in records
+                doc_schema.DocumentRecordExtended.model_validate(record)
+                for record in records
             ],
             page=page,
             total_records=total_records,

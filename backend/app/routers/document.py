@@ -153,6 +153,21 @@ def process_doc(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+@router.post(
+    "/{doc_id}/match", dependencies=[Depends(PermissionChecker(P.DOCUMENT_PROCESS))]
+)
+async def match_doc(
+    doc_id: int,
+    file_to_match: Annotated[UploadFile, File()],
+    api_key: Annotated[str, Form()],
+    service: Annotated[DocumentService, Depends(get_service)],
+) -> models.StatusMessage:
+    try:
+        return await service.match_document(doc_id, file_to_match, api_key)
+    except EntityNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.get(
     "/{doc_id}/download",
     response_class=StreamingResponse,

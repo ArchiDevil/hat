@@ -50,6 +50,7 @@ services:
       - LLM_BASE_API=${LLM_BASE_API}
       - LLM_MODEL=${LLM_MODEL}
       - LLM_BASE64_PROMPT=${LLM_BASE64_PROMPT}
+      - LLM_BASE64_MATCH_PROMPT=${LLM_BASE64_MATCH_PROMPT}
       - PROXY_SERVER=${PROXY_SERVER}
     restart: on-failure
     depends_on:
@@ -71,6 +72,7 @@ services:
       - LLM_BASE_API=${LLM_BASE_API}
       - LLM_MODEL=${LLM_MODEL}
       - LLM_BASE64_PROMPT=${LLM_BASE64_PROMPT}
+      - LLM_BASE64_MATCH_PROMPT=${LLM_BASE64_MATCH_PROMPT}
     restart: on-failure
     depends_on:
       db:

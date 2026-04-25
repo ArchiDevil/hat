@@ -80,9 +80,7 @@ def parse_lines(network_out: str, expected_size: int) -> tuple[list[str], bool]:
     return output, not failed
 
 
-def translate_lines(
-    lines: list[LineWithGlossaries], api_key: str
-) -> tuple[list[str], bool]:
+def translate_lines(lines: list[LineWithGlossaries], api_key: str) -> list[str]:
     """
     Translate lines of text using LLM translation.
 
@@ -100,7 +98,7 @@ def translate_lines(
             settings.llm_base_api,
             settings.llm_model,
         )
-        return [], True
+        raise ValueError("No LLM base or LLM model configured")
 
     client = OpenAI(
         api_key=api_key,
@@ -142,4 +140,4 @@ def translate_lines(
             for _ in range(task_size):
                 output.append("")
 
-    return output, False
+    return output

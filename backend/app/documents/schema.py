@@ -74,10 +74,54 @@ class DocumentProcessingSettings(BaseModel):
     similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
+class CreateSegmentsTaskData(BaseModel):
+    task_type: Literal["create_segments"]
+
+
+class SubstituteSegmentsSettings(BaseModel):
+    similarity_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
+
+
+class SubstituteSegmentsTaskData(BaseModel):
+    task_type: Literal["substitute_segments"]
+    settings: SubstituteSegmentsSettings
+
+
+class TranslateSegmentsSettings(BaseModel):
+    machine_translation_settings: MachineTranslationSettings
+
+
+class TranslateSegmentsTaskData(BaseModel):
+    task_type: Literal["translate_segments"]
+    settings: TranslateSegmentsSettings
+
+
+class MatchSegmentsSettings(BaseModel):
+    text_to_match: str
+    api_key: str
+    batch_size: int = 50
+    ru_batch_size: int = 75
+    margin: int = 15
+
+
+class MatchSegmentsTaskData(BaseModel):
+    task_type: Literal["match_segments"]
+    settings: MatchSegmentsSettings
+
+
+class FinalizeDocumentTaskData(BaseModel):
+    task_type: Literal["finalize_document"]
+
+
 class DocumentTaskDescription(BaseModel):
-    type: Literal["xliff", "txt"]
     document_id: int
-    settings: DocumentProcessingSettings
+    task_data: (
+        CreateSegmentsTaskData
+        | SubstituteSegmentsTaskData
+        | TranslateSegmentsTaskData
+        | MatchSegmentsTaskData
+        | FinalizeDocumentTaskData
+    )
 
 
 class DocTranslationMemory(BaseModel):
