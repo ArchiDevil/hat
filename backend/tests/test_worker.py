@@ -606,9 +606,9 @@ def test_process_task_match_segments(session: Session):
         s.add(task)
         s.commit()
 
-        from app.translators.matcher import segment_russian_text
+        from app.translators.matcher import segment_text_to_match
 
-        ru_segments = segment_russian_text(text_to_match)
+        ru_segments = segment_text_to_match(text_to_match)
 
         fake_alignments = {
             0: [0],

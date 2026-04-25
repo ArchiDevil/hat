@@ -7,26 +7,6 @@ from openai import OpenAI
 from app.formats.txt import extract_txt_content
 from app.settings import settings
 
-SYSTEM_PROMPT = (
-    "You are a precise segment alignment tool. You will receive numbered English segments "
-    "and numbered Russian segments from translated documents. Your task is to identify which "
-    "Russian segment(s) correspond to each English segment.\n\n"
-    "Rules:\n"
-    "- Each English segment maps to one or more Russian segments (1-to-many).\n"
-    "- Each English segment appears at most once in the response.\n"
-    "- The same Russian segment can appear in multiple lines if it corresponds to multiple English segments.\n"
-    "- Match based on semantic meaning — the Russian text is a translation/adaptation of the English.\n"
-    "- If a segment has no match, omit it from the response.\n"
-    "- Preserve document order — segments should appear in roughly ascending index order.\n\n"
-    "Respond ONLY with alignment pairs in this exact format, one pair per line:\n"
-    "[EN_INDEX] -> [RU_INDEX,RU_INDEX,...]\n\n"
-    "Examples:\n"
-    "[1] -> [1,2]\n"
-    "[2] -> [3]\n"
-    "[3] -> [5,6]\n"
-    "[4] -> [7]"
-)
-
 ALIGNMENT_RE = re.compile(r"^\[(\d+)\]\s*->\s*\[([\d,]+)\]$")
 
 
@@ -38,29 +18,32 @@ def _parse_response(text: str) -> list[tuple[int, list[int]]]:
         if not m:
             logging.warning("Matcher: skipping unparseable line: %s", line)
             continue
-        en_id = int(m.group(1))
-        ru_ids = [int(x) for x in m.group(2).split(",") if x]
-        if ru_ids:
-            results.append((en_id, ru_ids))
+        orig_id = int(m.group(1))
+        match_ids = [int(x) for x in m.group(2).split(",") if x]
+        if match_ids:
+            results.append((orig_id, match_ids))
     return results
 
 
-def _build_user_prompt(en_segments: list[str], ru_segments: list[str]) -> str:
-    en_lines = "\n".join(f"[{i + 1}] {seg}" for i, seg in enumerate(en_segments))
-    ru_lines = "\n".join(f"[{i + 1}] {seg}" for i, seg in enumerate(ru_segments))
+def _build_user_prompt(orig_segments: list[str], match_segments: list[str]) -> str:
+    orig_lines = "\n".join(f"[{i + 1}] {seg}" for i, seg in enumerate(orig_segments))
+    match_lines = "\n".join(f"[{i + 1}] {seg}" for i, seg in enumerate(match_segments))
     return (
-        f"<english_segments>\n{en_lines}\n</english_segments>\n\n"
-        f"<russian_segments>\n{ru_lines}\n</russian_segments>"
+        f"<english_segments>\n{orig_lines}\n</english_segments>\n\n"
+        f"<russian_segments>\n{match_lines}\n</russian_segments>"
     )
 
 
 def match_segments_batch(
-    en_segments: list[str],
-    ru_segments: list[str],
+    original_segments: list[str],
+    to_match_segments: list[str],
     api_key: str,
 ) -> list[tuple[int, list[int]]]:
     if not settings.llm_base_api or not settings.llm_model:
         raise ValueError("No LLM base or LLM model configured")
+
+    if not settings.llm_match_prompt:
+        raise ValueError("No LLM match prompt configured")
 
     client = OpenAI(
         api_key=api_key,
@@ -70,13 +53,13 @@ def match_segments_batch(
         else None,
     )
 
-    prompt = _build_user_prompt(en_segments, ru_segments)
+    prompt = _build_user_prompt(original_segments, to_match_segments)
 
     for attempt in range(3):
         completion = client.chat.completions.create(
             model=settings.llm_model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": settings.llm_match_prompt},
                 {"role": "user", "content": prompt},
             ],
             extra_body={"thinking": {"type": "disabled"}},
@@ -92,45 +75,45 @@ def match_segments_batch(
 
 
 def match_all_segments(
-    en_texts: list[str],
-    ru_texts: list[str],
+    original_texts: list[str],
+    to_match_texts: list[str],
     api_key: str,
     batch_size: int = 50,
-    ru_batch_size: int = 75,
+    match_batch_size: int = 75,
     margin: int = 15,
 ) -> dict[int, list[int]]:
     result: dict[int, list[int]] = {}
-    last_matched_ru = 0
+    last_matched_idx = 0
 
-    for batch_idx in range(0, len(en_texts), batch_size):
-        en_batch = en_texts[batch_idx : batch_idx + batch_size]
-        if not en_batch:
+    for batch_idx in range(0, len(original_texts), batch_size):
+        orig_batch = original_texts[batch_idx : batch_idx + batch_size]
+        if not orig_batch:
             break
 
         if batch_idx == 0:
-            ru_start = 0
+            match_start = 0
         else:
-            ru_start = max(0, last_matched_ru - margin)
+            match_start = max(0, last_matched_idx - margin)
 
-        ru_end = min(ru_start + ru_batch_size, len(ru_texts))
-        ru_batch = ru_texts[ru_start:ru_end]
+        match_end = min(match_start + match_batch_size, len(to_match_texts))
+        match_batch = to_match_texts[match_start:match_end]
 
-        if not ru_batch:
+        if not match_batch:
             break
 
-        batch_result = match_segments_batch(en_batch, ru_batch, api_key)
+        batch_result = match_segments_batch(orig_batch, match_batch, api_key)
 
-        for en_idx, ru_indices in batch_result:
-            global_en = en_idx - 1 + batch_idx
-            global_ru = [idx - 1 + ru_start for idx in ru_indices]
-            result[global_en] = global_ru
+        for orig_idx, match_indices in batch_result:
+            global_orig = orig_idx - 1 + batch_idx
+            global_match = [idx - 1 + match_start for idx in match_indices]
+            result[global_orig] = global_match
 
-            if global_ru:
-                last_matched_ru = max(last_matched_ru, max(global_ru) + 1)
+            if global_match:
+                last_matched_idx = max(last_matched_idx, max(global_match) + 1)
 
     return result
 
 
-def segment_russian_text(text: str) -> list[str]:
+def segment_text_to_match(text: str) -> list[str]:
     txt_data = extract_txt_content(text)
     return [seg.original for seg in txt_data.segments]

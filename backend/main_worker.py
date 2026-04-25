@@ -35,7 +35,7 @@ from app.models import DocumentStatus, TaskStatus
 from app.schema import DocumentTask
 from app.translators import llm, yandex
 from app.translators.common import LineWithGlossaries
-from app.translators.matcher import match_all_segments, segment_russian_text
+from app.translators.matcher import match_all_segments, segment_text_to_match
 from worker.types import WorkerSegment
 from worker.utils import (
     RecordSource,
@@ -274,14 +274,14 @@ def match_segments_handler(
     )
 
     en_texts = [record.source for record in records]
-    ru_texts = segment_russian_text(match_settings.text_to_match)
+    ru_texts = segment_text_to_match(match_settings.text_to_match)
 
     alignments = match_all_segments(
         en_texts,
         ru_texts,
         match_settings.api_key,
         batch_size=match_settings.batch_size,
-        ru_batch_size=match_settings.ru_batch_size,
+        match_batch_size=match_settings.ru_batch_size,
         margin=match_settings.margin,
     )
 
